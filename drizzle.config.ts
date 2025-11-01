@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { defineConfig } from 'drizzle-kit';
 
-// Clean de connection string - verwijder alle query parameters
+// Drizzle Kit is een CLI tool die een traditionele PostgreSQL client gebruikt
+// We verwijderen alleen de query parameters, maar behouden de pooled connection (-pooler)
 const databaseUrl = process.env.DATABASE_URL || 'postgresql://placeholder';
 const cleanDatabaseUrl = databaseUrl.split('?')[0];
 
