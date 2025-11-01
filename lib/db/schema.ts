@@ -1,0 +1,104 @@
+import { integer, pgTable, varchar, text, timestamp, boolean } from "drizzle-orm/pg-core";
+
+// User Preferences - applicatie specifieke instellingen per gebruiker
+// Gebruik Clerk User ID direct als foreign key
+export const userPreferencesTable = pgTable("user_preferences", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  clerkUserId: varchar({ length: 255 }).notNull().unique(), // Clerk User ID
+  theme: varchar({ length: 50 }).default('theme-slate'),
+  language: varchar({ length: 10 }).default('nl'),
+  emailNotifications: boolean().default(true),
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+
+// Projects - uitgebreid schema voor projectbeheer
+export const projectsTable = pgTable("projects", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  projectId: varchar({ length: 50 }).notNull().unique(), // Uniek project ID (bijv. PROJ-2024-001)
+  name: varchar({ length: 255 }).notNull(),
+  description: text(),
+  status: varchar({ length: 50 }).default('active'), // active, on-hold, completed, cancelled
+  
+  // Project details
+  projectManager: varchar({ length: 255 }), // Naam van de projectmanager
+  projectManagerId: varchar({ length: 255 }), // Clerk User ID van de projectmanager
+  organization: varchar({ length: 255 }), // Organisatie/bedrijfsnaam
+  
+  // Datum informatie
+  startDate: timestamp(),
+  endDate: timestamp(),
+  plannedEndDate: timestamp(),
+  
+  // Budget informatie (optioneel)
+  budget: integer(), // In centen voor precisie
+  currency: varchar({ length: 10 }).default('EUR'),
+  
+  // Eigenaar en toegang
+  ownerId: varchar({ length: 255 }).notNull(), // Clerk User ID van eigenaar
+  
+  // Metadata
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+
+// Optioneel: Team members tabel voor meerdere mensen per project
+export const projectMembersTable = pgTable("project_members", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  projectId: integer().notNull().references(() => projectsTable.id, { onDelete: "cascade" }),
+  clerkUserId: varchar({ length: 255 }).notNull(),
+  role: varchar({ length: 50 }).notNull(), // project-manager, developer, designer, etc.
+  joinedAt: timestamp().defaultNow().notNull(),
+});
+
+// Safety Incidents - veiligheidsmeldingen voor ondergrondse infrastructuur
+export const safetyIncidentsTable = pgTable("safety_incidents", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  incidentId: varchar({ length: 50 }).notNull().unique(), // Uniek incident ID (bijv. VM-2024-001)
+  title: varchar({ length: 255 }).notNull(),
+  description: text().notNull(),
+  
+  // Categorisatie - specifiek voor ondergrondse infrastructuur
+  category: varchar({ length: 100 }).notNull(), // graafschade, lekkage, verzakking, corrosie, obstructie, elektrisch, structureel, verontreiniging, etc.
+  severity: varchar({ length: 50 }).notNull(), // low, medium, high, critical
+  status: varchar({ length: 50 }).default('open'), // open, investigating, resolved, closed
+  priority: varchar({ length: 50 }).default('medium'), // low, medium, high, urgent
+  
+  // Infrastructuur specifiek
+  infrastructureType: varchar({ length: 100 }), // riool, water, gas, elektra, telecom, metro, tunnel, etc.
+  location: text(), // Locatie/adres van het incident
+  coordinates: varchar({ length: 100 }), // GPS coördinaten
+  depth: varchar({ length: 50 }), // Diepte in meters
+  
+  // Project koppeling (nullable - voor algemene meldingen)
+  projectId: integer().references(() => projectsTable.id, { onDelete: "set null" }),
+  
+  // Impact en acties
+  impact: text(), // Beschrijving van de impact (bijv. hinder, uitval diensten)
+  mitigation: text(), // Genomen of voorgestelde maatregelen
+  affectedSystems: text(), // Welke systemen/infrastructuur is getroffen
+  
+  // Veiligheid en risico
+  safetyMeasures: text(), // Genomen veiligheidsmaatregelen ter plaatse
+  riskAssessment: text(), // Risico inschatting
+  
+  // Personen en instanties
+  reportedBy: varchar({ length: 255 }).notNull(), // Clerk User ID van melder
+  assignedTo: varchar({ length: 255 }), // Clerk User ID van toegewezen persoon
+  contractor: varchar({ length: 255 }), // Aannemer/uitvoerende partij
+  
+  // Datums
+  detectedDate: timestamp(), // Wanneer is het incident gedetecteerd
+  reportedDate: timestamp().defaultNow().notNull(), // Wanneer is het gerapporteerd
+  resolvedDate: timestamp(), // Wanneer is het opgelost
+  
+  // Documentatie
+  tags: text(), // Comma-separated tags
+  externalReference: varchar({ length: 255 }), // Link naar externe documentatie/KLIC melding
+  photos: text(), // JSON array met foto URLs
+  
+  // Metadata
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+

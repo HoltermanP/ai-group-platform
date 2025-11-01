@@ -1,15 +1,22 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeSwitcher } from "@/components/theme-switcher";
+import Link from "next/link";
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
@@ -23,12 +30,148 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
-      </body>
-    </html>
+    <ClerkProvider
+      appearance={{
+        variables: {
+          colorPrimary: "hsl(var(--primary))",
+          colorBackground: "hsl(var(--card))",
+          colorInputBackground: "hsl(var(--background))",
+          colorInputText: "hsl(var(--foreground))",
+          colorText: "hsl(var(--card-foreground))",
+          colorTextSecondary: "hsl(var(--muted-foreground))",
+          colorDanger: "hsl(var(--destructive))",
+          colorSuccess: "hsl(var(--chart-2))",
+          colorWarning: "hsl(var(--chart-4))",
+          colorTextOnPrimaryBackground: "hsl(var(--primary-foreground))",
+          fontSize: "1rem",
+          borderRadius: "var(--radius)",
+        },
+        elements: {
+          // Root & Layout
+          rootBox: "bg-background/80 backdrop-blur-sm",
+          card: "bg-card border-border shadow-xl",
+          
+          // Headers
+          headerTitle: "text-card-foreground font-semibold",
+          headerSubtitle: "text-muted-foreground",
+          
+          // Social buttons
+          socialButtonsBlockButton: "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80 transition-colors font-medium",
+          socialButtonsBlockButtonText: "text-secondary-foreground",
+          socialButtonsBlockButtonArrow: "text-secondary-foreground",
+          
+          // Form elements
+          formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-semibold shadow-sm",
+          formFieldInput: "bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary focus:border-primary",
+          formFieldLabel: "text-card-foreground font-medium",
+          formFieldInputShowPasswordButton: "text-muted-foreground hover:text-foreground",
+          
+          // Text & Links  
+          formHeaderTitle: "text-card-foreground",
+          formHeaderSubtitle: "text-muted-foreground",
+          footerActionLink: "text-primary hover:text-primary/80 transition-colors font-medium",
+          footerActionText: "text-muted-foreground",
+          
+          // Dividers
+          dividerLine: "bg-border",
+          dividerText: "text-muted-foreground",
+          
+          // Identity
+          identityPreviewText: "text-card-foreground",
+          identityPreviewEditButton: "text-muted-foreground hover:text-foreground border-border",
+          
+          // User button
+          userButtonBox: "shadow-none",
+          userButtonPopoverCard: "bg-popover border-border shadow-xl",
+          userButtonPopoverActionButton: "text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
+          userButtonPopoverActionButtonText: "text-popover-foreground",
+          userButtonPopoverActionButtonIcon: "text-muted-foreground",
+          userButtonPopoverFooter: "border-border",
+          
+          // Badge & Alert
+          badge: "bg-primary/10 text-primary border-primary/20",
+          alert: "bg-destructive/10 border-destructive/20 text-destructive",
+          alertText: "text-destructive",
+          
+          // Form field states
+          formFieldSuccessText: "text-chart-2",
+          formFieldErrorText: "text-destructive",
+          formFieldWarningText: "text-chart-4",
+          formFieldHintText: "text-muted-foreground",
+          
+          // Modal
+          modalContent: "bg-card",
+          modalCloseButton: "text-muted-foreground hover:text-foreground transition-colors",
+          
+          // Other
+          otpCodeFieldInput: "bg-background border-border text-foreground",
+          formResendCodeLink: "text-primary hover:text-primary/80",
+        },
+      }}
+    >
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${poppins.variable} font-sans antialiased`}
+        >
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="theme-slate"
+            enableSystem={false}
+            storageKey="ai-group-theme"
+          >
+            <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+                <div className="flex items-center gap-8">
+                  <Link href="/" className="text-xl font-bold text-foreground hover:text-primary transition-colors">
+                    AI Group Platform
+                  </Link>
+                  <SignedIn>
+                    <nav className="hidden md:flex gap-6">
+                      <Link 
+                        href="/dashboard" 
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Dashboard
+                      </Link>
+                      <Link 
+                        href="/dashboard/projects" 
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Projecten
+                      </Link>
+                      <Link 
+                        href="/dashboard/ai-safety" 
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Veiligheid
+                      </Link>
+                    </nav>
+                  </SignedIn>
+                </div>
+                <div className="flex gap-3 items-center">
+                  <ThemeSwitcher />
+                  <SignedOut>
+                    <SignInButton mode="modal">
+                      <button className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md">
+                        Inloggen
+                      </button>
+                    </SignInButton>
+                    <SignUpButton mode="modal">
+                      <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-md font-medium">
+                        Registreren
+                      </button>
+                    </SignUpButton>
+                  </SignedOut>
+                  <SignedIn>
+                    <UserButton />
+                  </SignedIn>
+                </div>
+              </div>
+            </header>
+            {children}
+          </ThemeProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

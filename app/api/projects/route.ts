@@ -1,0 +1,94 @@
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/lib/db";
+import { projectsTable } from "@/lib/db/schema";
+import { NextResponse } from "next/server";
+import { eq, desc } from "drizzle-orm";
+
+export async function POST(req: Request) {
+  try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Niet geautoriseerd" },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const {
+      projectId,
+      name,
+      description,
+      projectManager,
+      organization,
+      startDate,
+      endDate,
+      budget,
+      status,
+    } = body;
+
+    // Validatie
+    if (!projectId || !name) {
+      return NextResponse.json(
+        { error: "Project ID en naam zijn verplicht" },
+        { status: 400 }
+      );
+    }
+
+    // Budget omzetten naar centen als het is ingevuld
+    const budgetInCents = budget ? Math.round(parseFloat(budget) * 100) : null;
+
+    // Project aanmaken
+    const newProject = await db.insert(projectsTable).values({
+      projectId,
+      name,
+      description: description || null,
+      projectManager: projectManager || null,
+      organization: organization || null,
+      startDate: startDate ? new Date(startDate) : null,
+      plannedEndDate: endDate ? new Date(endDate) : null,
+      budget: budgetInCents,
+      status: status || "active",
+      ownerId: userId,
+    }).returning();
+
+    return NextResponse.json(newProject[0], { status: 201 });
+  } catch (error) {
+    console.error("Error creating project:", error);
+    return NextResponse.json(
+      { error: "Er is een fout opgetreden bij het aanmaken van het project" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(req: Request) {
+  try {
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Niet geautoriseerd" },
+        { status: 401 }
+      );
+    }
+
+    // DEMO MODE: Haal alle projecten op (inclusief testdata)
+    // Voor productie: uncomment de where clause hieronder
+    const projects = await db
+      .select()
+      .from(projectsTable)
+      // .where(eq(projectsTable.ownerId, userId))
+      .orderBy(desc(projectsTable.createdAt));
+
+    return NextResponse.json(projects);
+  } catch (error) {
+    console.error("Error fetching projects:", error);
+    return NextResponse.json(
+      { error: "Er is een fout opgetreden bij het ophalen van projecten" },
+      { status: 500 }
+    );
+  }
+}
+
