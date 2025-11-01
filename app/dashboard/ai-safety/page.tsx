@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface SafetyIncident {
   id: number;
@@ -33,10 +33,9 @@ interface Project {
   name: string;
 }
 
-function AISafetyContent() {
+export default function AISafetyPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const projectIdFilter = searchParams.get("projectId");
+  const [projectIdFilter, setProjectIdFilter] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -65,6 +64,15 @@ function AISafetyContent() {
     tags: "",
     externalReference: "",
   });
+
+  // Lees projectId uit URL query parameters
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const projectId = params.get('projectId');
+      setProjectIdFilter(projectId);
+    }
+  }, []);
 
   useEffect(() => {
     fetchIncidents();
@@ -788,23 +796,5 @@ function AISafetyContent() {
         </div>
       </div>
     </div>
-  );
-}
-
-export default function AISafetyPage() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-[calc(100vh-73px)] bg-background">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center py-12 text-muted-foreground">
-              Laden...
-            </div>
-          </div>
-        </div>
-      </div>
-    }>
-      <AISafetyContent />
-    </Suspense>
   );
 }
