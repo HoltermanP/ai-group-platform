@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 interface SafetyIncident {
@@ -33,7 +33,7 @@ interface Project {
   name: string;
 }
 
-export default function AISafetyPage() {
+function AISafetyContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const projectIdFilter = searchParams.get("projectId");
@@ -791,3 +791,20 @@ export default function AISafetyPage() {
   );
 }
 
+export default function AISafetyPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-[calc(100vh-73px)] bg-background">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center py-12 text-muted-foreground">
+              Laden...
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <AISafetyContent />
+    </Suspense>
+  );
+}
