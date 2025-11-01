@@ -135,11 +135,14 @@ export async function GET(req: Request) {
           .reduce((acc, incident) => {
             const date = new Date(incident.reportedDate);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const status = incident.status || 'open';
             
             if (!acc[monthKey]) {
               acc[monthKey] = { month: monthKey, open: 0, investigating: 0, resolved: 0, closed: 0 };
             }
-            acc[monthKey][incident.status]++;
+            if (status === 'open' || status === 'investigating' || status === 'resolved' || status === 'closed') {
+              acc[monthKey][status]++;
+            }
             return acc;
           }, {} as Record<string, any>);
       })(),

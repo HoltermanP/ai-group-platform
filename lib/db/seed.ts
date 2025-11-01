@@ -3,7 +3,7 @@ import { db } from "./index";
 import { projectsTable, safetyIncidentsTable } from "./schema";
 
 // Helper functies voor realistische data
-function getRandomItem<T>(array: T[]): T {
+function getRandomItem<T>(array: readonly T[]): T {
   return array[Math.floor(Math.random() * array.length)];
 }
 
