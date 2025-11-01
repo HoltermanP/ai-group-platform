@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface SafetyIncident {
   id: number;
@@ -35,6 +35,8 @@ interface Project {
 
 export default function AISafetyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const projectIdFilter = searchParams.get("projectId");
   const [isCreating, setIsCreating] = useState(false);
   const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -68,6 +70,16 @@ export default function AISafetyPage() {
     fetchIncidents();
     fetchProjects();
   }, []);
+
+  // Stel het project in als er een filter is
+  useEffect(() => {
+    if (projectIdFilter) {
+      setFormData((prev) => ({
+        ...prev,
+        projectId: projectIdFilter,
+      }));
+    }
+  }, [projectIdFilter]);
 
   const fetchIncidents = async () => {
     try {
@@ -229,6 +241,16 @@ export default function AISafetyPage() {
     };
     return colors[status] || "bg-muted text-muted-foreground";
   };
+
+  // Filter incidents op basis van projectId als die is opgegeven
+  const filteredIncidents = projectIdFilter
+    ? incidents.filter((incident) => incident.projectId === parseInt(projectIdFilter))
+    : incidents;
+
+  // Vind het project dat wordt gefilterd
+  const filteredProject = projectIdFilter
+    ? projects.find((p) => p.id === parseInt(projectIdFilter))
+    : null;
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
@@ -617,12 +639,51 @@ export default function AISafetyPage() {
             </div>
           )}
 
+          {/* Filter Indicator */}
+          {filteredProject && (
+            <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-foreground">
+                  <span className="font-medium">Gefilterd op project:</span>{" "}
+                  <span className="text-primary font-semibold">
+                    {filteredProject.projectId} - {filteredProject.name}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push("/dashboard/ai-safety")}
+                className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              >
+                Filter verwijderen ✕
+              </button>
+            </div>
+          )}
+
           {/* Incidents Table */}
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-foreground">Veiligheidsmeldingen</h2>
+            <h2 className="text-2xl font-semibold mb-4 text-foreground">
+              Veiligheidsmeldingen
+              {filteredProject && (
+                <span className="text-base font-normal text-muted-foreground ml-2">
+                  ({filteredIncidents.length} {filteredIncidents.length === 1 ? 'melding' : 'meldingen'})
+                </span>
+              )}
+            </h2>
             {isLoading ? (
               <div className="text-center py-12 text-muted-foreground">
                 Laden...
+              </div>
+            ) : filteredIncidents.length === 0 && projectIdFilter ? (
+              <div className="text-center py-12 bg-card border border-border rounded-lg">
+                <p className="text-muted-foreground mb-4">
+                  Geen veiligheidsmeldingen gevonden voor dit project
+                </p>
+                <button
+                  onClick={() => router.push("/dashboard/ai-safety")}
+                  className="text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  Bekijk alle meldingen →
+                </button>
               </div>
             ) : incidents.length === 0 ? (
               <div className="text-center py-12 bg-card border border-border rounded-lg">
@@ -664,7 +725,7 @@ export default function AISafetyPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {incidents.map((incident) => (
+                      {filteredIncidents.map((incident) => (
                         <tr
                           key={incident.id}
                           onClick={() => router.push(`/dashboard/ai-safety/${incident.id}`)}

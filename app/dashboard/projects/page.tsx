@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { ShieldAlert } from "lucide-react";
 
 interface Project {
   id: number;
@@ -15,6 +16,7 @@ interface Project {
   plannedEndDate: string | null;
   budget: number | null;
   createdAt: string;
+  safetyIncidentCount: number;
 }
 
 export default function ProjectsPage() {
@@ -335,32 +337,35 @@ export default function ProjectsPage() {
             ) : (
               <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="w-full">
+                  <table className="w-full" style={{ minWidth: '1200px' }}>
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Project ID
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Naam
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Organisatie
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Manager
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Startdatum
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Einddatum
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Budget
                         </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Status
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                          Meldingen
                         </th>
                       </tr>
                     </thead>
@@ -371,12 +376,12 @@ export default function ProjectsPage() {
                           onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                           className="hover:bg-muted/30 transition-colors cursor-pointer"
                         >
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <div className="text-sm font-medium text-foreground">
                               {project.projectId}
                             </div>
                           </td>
-                          <td className="px-6 py-4">
+                          <td className="px-4 py-4">
                             <div className="text-sm font-medium text-foreground">
                               {project.name}
                             </div>
@@ -386,37 +391,63 @@ export default function ProjectsPage() {
                               </div>
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <div className="text-sm text-foreground">
                               {project.organization || "-"}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <div className="text-sm text-foreground">
                               {project.projectManager || "-"}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <div className="text-sm text-foreground">
                               {formatDate(project.startDate)}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <div className="text-sm text-foreground">
                               {formatDate(project.plannedEndDate)}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <div className="text-sm text-foreground font-medium">
                               {formatBudget(project.budget)}
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
+                          <td className="px-4 py-4 whitespace-nowrap">
                             <span
                               className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(project.status)}`}
                             >
                               {getStatusLabel(project.status)}
                             </span>
+                          </td>
+                          <td 
+                            className="px-4 py-4 whitespace-nowrap"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/ai-safety?projectId=${project.id}`);
+                            }}
+                          >
+                            <div className="flex items-center justify-center gap-2 hover:opacity-70 transition-opacity">
+                              <ShieldAlert 
+                                className={`h-4 w-4 ${
+                                  project.safetyIncidentCount > 0 
+                                    ? "text-destructive" 
+                                    : "text-muted-foreground"
+                                }`} 
+                              />
+                              <span 
+                                className={`text-sm font-medium ${
+                                  project.safetyIncidentCount > 0 
+                                    ? "text-destructive" 
+                                    : "text-muted-foreground"
+                                }`}
+                              >
+                                {project.safetyIncidentCount}
+                              </span>
+                            </div>
                           </td>
                         </tr>
                       ))}

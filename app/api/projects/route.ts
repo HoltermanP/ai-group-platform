@@ -1,8 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { projectsTable } from "@/lib/db/schema";
+import { projectsTable, safetyIncidentsTable } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, sql } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -74,12 +74,32 @@ export async function GET(req: Request) {
       );
     }
 
-    // DEMO MODE: Haal alle projecten op (inclusief testdata)
+    // DEMO MODE: Haal alle projecten op (inclusief testdata) met aantal veiligheidsmeldingen
     // Voor productie: uncomment de where clause hieronder
     const projects = await db
-      .select()
+      .select({
+        id: projectsTable.id,
+        projectId: projectsTable.projectId,
+        name: projectsTable.name,
+        description: projectsTable.description,
+        status: projectsTable.status,
+        projectManager: projectsTable.projectManager,
+        projectManagerId: projectsTable.projectManagerId,
+        organization: projectsTable.organization,
+        startDate: projectsTable.startDate,
+        endDate: projectsTable.endDate,
+        plannedEndDate: projectsTable.plannedEndDate,
+        budget: projectsTable.budget,
+        currency: projectsTable.currency,
+        ownerId: projectsTable.ownerId,
+        createdAt: projectsTable.createdAt,
+        updatedAt: projectsTable.updatedAt,
+        safetyIncidentCount: sql<number>`cast(count(${safetyIncidentsTable.id}) as integer)`,
+      })
       .from(projectsTable)
+      .leftJoin(safetyIncidentsTable, eq(projectsTable.id, safetyIncidentsTable.projectId))
       // .where(eq(projectsTable.ownerId, userId))
+      .groupBy(projectsTable.id)
       .orderBy(desc(projectsTable.createdAt));
 
     return NextResponse.json(projects);
