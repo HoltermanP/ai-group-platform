@@ -59,6 +59,7 @@ interface AIAnalysisResult {
   preventiveMeasures: string[];
   analysisId?: string | null;
   incidentIds?: number[];
+  tokensUsed?: number | null;
 }
 
 interface SavedAnalysis {
