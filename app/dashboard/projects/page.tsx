@@ -30,6 +30,7 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [plaatsFilter, setPlaatsFilter] = useState<string>("all");
+  const [managerFilter, setManagerFilter] = useState<string>("all");
   const [formData, setFormData] = useState({
     projectId: "",
     name: "",
@@ -160,6 +161,11 @@ export default function ProjectsPage() {
       return false;
     }
 
+    // Manager filter
+    if (managerFilter !== "all" && project.projectManager !== managerFilter) {
+      return false;
+    }
+
     return true;
   });
 
@@ -172,13 +178,23 @@ export default function ProjectsPage() {
     )
   ).sort();
 
+  // Get unique managers for filter
+  const uniqueManagers = Array.from(
+    new Set(
+      projects
+        .map(p => p.projectManager)
+        .filter((manager): manager is string => manager !== null && manager !== undefined)
+    )
+  ).sort();
+
   const clearFilters = () => {
     setSearchQuery("");
     setStatusFilter("all");
     setPlaatsFilter("all");
+    setManagerFilter("all");
   };
 
-  const hasActiveFilters = searchQuery || statusFilter !== "all" || plaatsFilter !== "all";
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || plaatsFilter !== "all" || managerFilter !== "all";
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
@@ -417,6 +433,20 @@ export default function ProjectsPage() {
                     ))}
                   </select>
 
+                  {/* Manager Filter */}
+                  <select
+                    value={managerFilter}
+                    onChange={(e) => setManagerFilter(e.target.value)}
+                    className="px-4 py-2 border border-input bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+                  >
+                    <option value="all">Alle managers</option>
+                    {uniqueManagers.map((manager) => (
+                      <option key={manager} value={manager}>
+                        {manager}
+                      </option>
+                    ))}
+                  </select>
+
                   {/* Clear Filters */}
                   {hasActiveFilters && (
                     <button
@@ -458,6 +488,17 @@ export default function ProjectsPage() {
                         Plaats: {plaatsFilter}
                         <button
                           onClick={() => setPlaatsFilter("all")}
+                          className="hover:bg-primary/20 rounded-full p-0.5"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                    {managerFilter !== "all" && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                        Manager: {managerFilter}
+                        <button
+                          onClick={() => setManagerFilter("all")}
                           className="hover:bg-primary/20 rounded-full p-0.5"
                         >
                           ✕
