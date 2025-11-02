@@ -3,6 +3,7 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { AdminNav } from "@/components/admin-nav";
 import Link from "next/link";
 import {
   ClerkProvider,
@@ -163,6 +164,7 @@ export default function RootLayout({
                     </SignUpButton>
                   </SignedOut>
                   <SignedIn>
+                    <AdminNav />
                     <UserButton />
                   </SignedIn>
                 </div>

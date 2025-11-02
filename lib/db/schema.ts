@@ -1,5 +1,52 @@
 import { integer, pgTable, varchar, text, timestamp, boolean } from "drizzle-orm/pg-core";
 
+// ============================================
+// ORGANIZATIONS & USER MANAGEMENT
+// ============================================
+
+// Organizations - bedrijven/organisaties binnen het platform
+export const organizationsTable = pgTable("organizations", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar({ length: 255 }).notNull(),
+  slug: varchar({ length: 255 }).notNull().unique(), // URL-friendly identifier
+  description: text(),
+  logo: text(), // URL naar logo
+  website: varchar({ length: 255 }),
+  contactEmail: varchar({ length: 255 }),
+  contactPhone: varchar({ length: 50 }),
+  address: text(),
+  status: varchar({ length: 50 }).default('active'), // active, suspended, inactive
+  createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID van creator
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+
+// User Roles - globale systeemrollen (platform-breed)
+export const userRolesTable = pgTable("user_roles", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  clerkUserId: varchar({ length: 255 }).notNull().unique(),
+  role: varchar({ length: 50 }).notNull().default('user'), // 'super_admin', 'admin', 'user'
+  assignedBy: varchar({ length: 255 }), // Clerk User ID van assigner
+  assignedAt: timestamp().defaultNow().notNull(),
+  notes: text(), // Notities over waarom deze rol is toegewezen
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+
+// Organization Members - gebruikers binnen organisaties met organisatie-specifieke rollen
+export const organizationMembersTable = pgTable("organization_members", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  organizationId: integer().notNull().references(() => organizationsTable.id, { onDelete: "cascade" }),
+  clerkUserId: varchar({ length: 255 }).notNull(),
+  role: varchar({ length: 50 }).notNull().default('member'), // 'owner', 'admin', 'manager', 'member', 'viewer'
+  permissions: text(), // JSON array van specifieke permissies
+  invitedBy: varchar({ length: 255 }), // Clerk User ID van uitnodiger
+  joinedAt: timestamp().defaultNow().notNull(),
+  status: varchar({ length: 50 }).default('active'), // active, suspended, invited
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+
 // User Preferences - applicatie specifieke instellingen per gebruiker
 // Gebruik Clerk User ID direct als foreign key
 export const userPreferencesTable = pgTable("user_preferences", {
@@ -8,9 +55,14 @@ export const userPreferencesTable = pgTable("user_preferences", {
   theme: varchar({ length: 50 }).default('theme-slate'),
   language: varchar({ length: 10 }).default('nl'),
   emailNotifications: boolean().default(true),
+  defaultOrganizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }), // Standaard organisatie
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });
+
+// ============================================
+// PROJECTS & SAFETY
+// ============================================
 
 // Projects - uitgebreid schema voor projectbeheer
 export const projectsTable = pgTable("projects", {
@@ -20,10 +72,16 @@ export const projectsTable = pgTable("projects", {
   description: text(),
   status: varchar({ length: 50 }).default('active'), // active, on-hold, completed, cancelled
   
+  // Organisatie koppeling
+  organizationId: integer().references(() => organizationsTable.id, { onDelete: "cascade" }),
+  
+  // Project categorie en type
+  category: varchar({ length: 50 }), // sanering, reconstructie, nieuwe-aanleg
+  infrastructureType: varchar({ length: 50 }), // elektra, gas, water, media
+  
   // Project details
   projectManager: varchar({ length: 255 }), // Naam van de projectmanager
   projectManagerId: varchar({ length: 255 }), // Clerk User ID van de projectmanager
-  organization: varchar({ length: 255 }), // Organisatie/bedrijfsnaam
   
   // Datum informatie
   startDate: timestamp(),
@@ -63,6 +121,9 @@ export const safetyIncidentsTable = pgTable("safety_incidents", {
   severity: varchar({ length: 50 }).notNull(), // low, medium, high, critical
   status: varchar({ length: 50 }).default('open'), // open, investigating, resolved, closed
   priority: varchar({ length: 50 }).default('medium'), // low, medium, high, urgent
+  
+  // Organisatie koppeling
+  organizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }),
   
   // Infrastructuur specifiek
   infrastructureType: varchar({ length: 100 }), // riool, water, gas, elektra, telecom, metro, tunnel, etc.

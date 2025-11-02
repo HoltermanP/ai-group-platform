@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { projectsTable, safetyIncidentsTable } from "@/lib/db/schema";
+import { projectsTable, safetyIncidentsTable, organizationsTable } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
 import { eq, desc, sql } from "drizzle-orm";
 
@@ -21,7 +21,9 @@ export async function POST(req: Request) {
       name,
       description,
       projectManager,
-      organization,
+      organizationId,
+      category,
+      infrastructureType,
       startDate,
       endDate,
       budget,
@@ -45,7 +47,9 @@ export async function POST(req: Request) {
       name,
       description: description || null,
       projectManager: projectManager || null,
-      organization: organization || null,
+      organizationId: organizationId || null,
+      category: category || null,
+      infrastructureType: infrastructureType || null,
       startDate: startDate ? new Date(startDate) : null,
       plannedEndDate: endDate ? new Date(endDate) : null,
       budget: budgetInCents,
@@ -83,9 +87,12 @@ export async function GET(req: Request) {
         name: projectsTable.name,
         description: projectsTable.description,
         status: projectsTable.status,
+        category: projectsTable.category,
+        infrastructureType: projectsTable.infrastructureType,
         projectManager: projectsTable.projectManager,
         projectManagerId: projectsTable.projectManagerId,
-        organization: projectsTable.organization,
+        organizationId: projectsTable.organizationId,
+        organization: organizationsTable.name,
         startDate: projectsTable.startDate,
         endDate: projectsTable.endDate,
         plannedEndDate: projectsTable.plannedEndDate,
@@ -97,9 +104,10 @@ export async function GET(req: Request) {
         safetyIncidentCount: sql<number>`cast(count(${safetyIncidentsTable.id}) as integer)`,
       })
       .from(projectsTable)
+      .leftJoin(organizationsTable, eq(projectsTable.organizationId, organizationsTable.id))
       .leftJoin(safetyIncidentsTable, eq(projectsTable.id, safetyIncidentsTable.projectId))
       // .where(eq(projectsTable.ownerId, userId))
-      .groupBy(projectsTable.id)
+      .groupBy(projectsTable.id, organizationsTable.name)
       .orderBy(desc(projectsTable.createdAt));
 
     return NextResponse.json(projects);
