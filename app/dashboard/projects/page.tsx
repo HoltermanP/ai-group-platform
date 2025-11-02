@@ -27,6 +27,9 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [plaatsFilter, setPlaatsFilter] = useState<string>("all");
   const [formData, setFormData] = useState({
     projectId: "",
     name: "",
@@ -130,6 +133,46 @@ export default function ProjectsPage() {
     };
     return colors[status] || "bg-muted text-muted-foreground";
   };
+
+  // Filtering logic
+  const filteredProjects = projects.filter((project) => {
+    // Search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        project.projectId.toLowerCase().includes(query) ||
+        project.name.toLowerCase().includes(query) ||
+        (project.description && project.description.toLowerCase().includes(query)) ||
+        (project.projectManager && project.projectManager.toLowerCase().includes(query)) ||
+        (project.plaats && project.plaats.toLowerCase().includes(query)) ||
+        (project.gemeente && project.gemeente.toLowerCase().includes(query));
+      
+      if (!matchesSearch) return false;
+    }
+
+    // Status filter
+    if (statusFilter !== "all" && project.status !== statusFilter) {
+      return false;
+    }
+
+    // Plaats filter
+    if (plaatsFilter !== "all" && project.plaats !== plaatsFilter) {
+      return false;
+    }
+
+    return true;
+  });
+
+  // Get unique places for filter
+  const uniquePlaces = Array.from(new Set(projects.map(p => p.plaats).filter(Boolean))).sort();
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setStatusFilter("all");
+    setPlaatsFilter("all");
+  };
+
+  const hasActiveFilters = searchQuery || statusFilter !== "all" || plaatsFilter !== "all";
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
@@ -303,7 +346,123 @@ export default function ProjectsPage() {
 
           {/* Projects Table */}
           <div>
-            <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-foreground">Mijn Projecten</h2>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground">Mijn Projecten</h2>
+              {!isLoading && projects.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  {filteredProjects.length} van {projects.length} projecten
+                </div>
+              )}
+            </div>
+
+            {/* Search and Filters */}
+            {!isLoading && projects.length > 0 && (
+              <div className="mb-6 space-y-4">
+                {/* Search Bar */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Zoek op project ID, naam, plaats, gemeente, manager..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-3 pl-10 border border-input bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+                  />
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {/* Status Filter */}
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-4 py-2 border border-input bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+                  >
+                    <option value="all">Alle statussen</option>
+                    <option value="active">Actief</option>
+                    <option value="on-hold">On Hold</option>
+                    <option value="completed">Afgerond</option>
+                    <option value="cancelled">Geannuleerd</option>
+                  </select>
+
+                  {/* Plaats Filter */}
+                  <select
+                    value={plaatsFilter}
+                    onChange={(e) => setPlaatsFilter(e.target.value)}
+                    className="px-4 py-2 border border-input bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+                  >
+                    <option value="all">Alle plaatsen</option>
+                    {uniquePlaces.map((plaats) => (
+                      <option key={plaats} value={plaats}>
+                        {plaats}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Clear Filters */}
+                  {hasActiveFilters && (
+                    <button
+                      onClick={clearFilters}
+                      className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted/50 transition-colors whitespace-nowrap"
+                    >
+                      ✕ Reset filters
+                    </button>
+                  )}
+                </div>
+
+                {/* Active filters info */}
+                {hasActiveFilters && (
+                  <div className="flex flex-wrap gap-2">
+                    {searchQuery && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                        Zoeken: "{searchQuery}"
+                        <button
+                          onClick={() => setSearchQuery("")}
+                          className="hover:bg-primary/20 rounded-full p-0.5"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                    {statusFilter !== "all" && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                        Status: {getStatusLabel(statusFilter)}
+                        <button
+                          onClick={() => setStatusFilter("all")}
+                          className="hover:bg-primary/20 rounded-full p-0.5"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                    {plaatsFilter !== "all" && (
+                      <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
+                        Plaats: {plaatsFilter}
+                        <button
+                          onClick={() => setPlaatsFilter("all")}
+                          className="hover:bg-primary/20 rounded-full p-0.5"
+                        >
+                          ✕
+                        </button>
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {isLoading ? (
               <div className="text-center py-12 text-muted-foreground">
                 Laden...
@@ -316,6 +475,16 @@ export default function ProjectsPage() {
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
                 >
                   Maak je eerste project aan →
+                </button>
+              </div>
+            ) : filteredProjects.length === 0 ? (
+              <div className="text-center py-12 bg-card border border-border rounded-lg">
+                <p className="text-muted-foreground mb-4">Geen projecten gevonden met de huidige filters</p>
+                <button
+                  onClick={clearFilters}
+                  className="text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  ✕ Reset alle filters
                 </button>
               </div>
             ) : (
@@ -354,7 +523,7 @@ export default function ProjectsPage() {
                           </tr>
                         </thead>
                       <tbody className="divide-y divide-border">
-                        {projects.map((project) => (
+                        {filteredProjects.map((project) => (
                           <tr 
                             key={project.id}
                             onClick={() => router.push(`/dashboard/projects/${project.id}`)}
@@ -450,7 +619,7 @@ export default function ProjectsPage() {
 
                 {/* Mobile Card View - Hidden on desktop */}
                 <div className="md:hidden space-y-4">
-                  {projects.map((project) => (
+                  {filteredProjects.map((project) => (
                     <div
                       key={project.id}
                       onClick={() => router.push(`/dashboard/projects/${project.id}`)}
