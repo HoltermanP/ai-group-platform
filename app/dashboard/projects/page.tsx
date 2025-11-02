@@ -30,7 +30,6 @@ export default function ProjectsPage() {
     name: "",
     description: "",
     projectManager: "",
-    organization: "",
     startDate: "",
     endDate: "",
     budget: "",
@@ -73,7 +72,6 @@ export default function ProjectsPage() {
           name: "",
           description: "",
           projectManager: "",
-          organization: "",
           startDate: "",
           endDate: "",
           budget: "",
@@ -188,22 +186,6 @@ export default function ProjectsPage() {
                       onChange={handleChange}
                       required
                       placeholder="Website Redesign"
-                      className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
-                    />
-                  </div>
-
-                  {/* Organisatie */}
-                  <div>
-                    <label htmlFor="organization" className="block text-sm font-medium mb-2 text-foreground">
-                      Organisatie
-                    </label>
-                    <input
-                      type="text"
-                      id="organization"
-                      name="organization"
-                      value={formData.organization}
-                      onChange={handleChange}
-                      placeholder="AI Group BV"
                       className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
                     />
                   </div>
