@@ -162,8 +162,63 @@ export const safetyIncidentsTable = pgTable("safety_incidents", {
   tags: text(), // Comma-separated tags
   externalReference: varchar({ length: 255 }), // Link naar externe documentatie/KLIC melding
   photos: text(), // JSON array met foto URLs
+  toolboxPresentations: text(), // JSON array met toolbox PPT file paths
   
   // Metadata
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+
+// ============================================
+// AI & TOOLBOXES
+// ============================================
+
+// AI Analyses - analyses van veiligheidsmeldingen door AI
+export const aiAnalysesTable = pgTable("ai_analyses", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  analysisId: varchar({ length: 50 }).notNull().unique(),
+  
+  // Koppeling naar incident(en)
+  incidentIds: text().notNull(), // JSON array van incident IDs
+  
+  // AI output
+  summary: text().notNull(), // Samenvatting van de analyse
+  recommendations: text().notNull(), // JSON array van aanbevelingen
+  suggestedToolboxTopics: text().notNull(), // JSON array van voorgestelde toolbox onderwerpen
+  riskAssessment: text(), // Uitgebreide risico inschatting
+  preventiveMeasures: text(), // JSON array van voorkomende maatregelen
+  
+  // Metadata
+  model: varchar({ length: 50 }).default('gpt-4'), // Welk AI model gebruikt
+  tokensUsed: integer(), // Aantal tokens gebruikt
+  
+  createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID
+  createdAt: timestamp().defaultNow().notNull(),
+});
+
+// Toolboxes - toolboxen voor verschillende onderwerpen
+export const toolboxesTable = pgTable("toolboxes", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  toolboxId: varchar({ length: 50 }).notNull().unique(),
+  title: varchar({ length: 255 }).notNull(),
+  description: text(),
+  category: varchar({ length: 100 }).notNull(), // Bijv. "veiligheid", "onderhoud", etc.
+  topic: varchar({ length: 255 }), // Het onderwerp waar deze toolbox voor is
+  
+  // Organisatie en project koppeling
+  organizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }),
+  projectId: integer().references(() => projectsTable.id, { onDelete: "set null" }),
+  
+  // AI generatie info
+  aiGenerated: boolean().default(false), // Of deze toolbox door AI is gegenereerd
+  sourceIncidentIds: text(), // JSON array van incident IDs waarop dit gebaseerd is
+  aiAdvice: text(), // Het AI advies dat heeft geleid tot deze toolbox
+  
+  // Toolbox inhoud
+  items: text().notNull(), // JSON array van toolbox items
+  
+  // Eigenaar
+  createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });

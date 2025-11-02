@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface SafetyIncident {
   id: number;
@@ -55,6 +56,11 @@ function AISafetyPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
+  const [selectedIncidents, setSelectedIncidents] = useState<number[]>([]);
+  const [showAIAnalysis, setShowAIAnalysis] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<any>(null);
+  const [isCreatingToolbox, setIsCreatingToolbox] = useState(false);
   const [formData, setFormData] = useState({
     incidentId: "",
     title: "",
@@ -439,6 +445,93 @@ function AISafetyPageContent() {
     router.push("/dashboard/ai-safety");
   };
 
+  // Toggle selectie van incident
+  const toggleIncidentSelection = (incidentId: number) => {
+    setSelectedIncidents((prev) => 
+      prev.includes(incidentId)
+        ? prev.filter(id => id !== incidentId)
+        : [...prev, incidentId]
+    );
+  };
+
+  // Selecteer alle of geen incidents
+  const toggleSelectAll = () => {
+    if (selectedIncidents.length === filteredIncidents.length) {
+      setSelectedIncidents([]);
+    } else {
+      setSelectedIncidents(filteredIncidents.map(inc => inc.id));
+    }
+  };
+
+  // Start AI analyse
+  const handleAIAnalysis = async () => {
+    if (selectedIncidents.length === 0) {
+      alert("Selecteer minimaal één melding om te analyseren");
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch("/api/ai/analyze-safety", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          incidentIds: selectedIncidents,
+          save: true // Direct opslaan op overzichtspagina
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Fout bij AI analyse");
+      }
+
+      const result = await response.json();
+      setAiAnalysisResult(result);
+      setShowAIAnalysis(true);
+    } catch (error) {
+      console.error("Error analyzing incidents:", error);
+      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij de AI analyse");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  // Maak toolbox vanuit AI advies
+  const handleCreateToolbox = async (toolboxTopic: any) => {
+    setIsCreatingToolbox(true);
+    try {
+      const response = await fetch("/api/toolboxes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: `Toolbox: ${toolboxTopic.topic}`,
+          topic: toolboxTopic.topic,
+          description: toolboxTopic.description,
+          category: "veiligheid",
+          generateWithAI: true,
+          aiGenerated: true,
+          sourceIncidentIds: selectedIncidents,
+          aiAdvice: JSON.stringify(toolboxTopic),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Fout bij het maken van toolbox");
+      }
+
+      alert("Toolbox succesvol aangemaakt!");
+      setShowAIAnalysis(false);
+      setSelectedIncidents([]);
+    } catch (error) {
+      console.error("Error creating toolbox:", error);
+      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij het maken van de toolbox");
+    } finally {
+      setIsCreatingToolbox(false);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -450,7 +543,28 @@ function AISafetyPageContent() {
                 Beheer veiligheidsmeldingen voor ondergrondse infrastructuur
               </p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
+              {selectedIncidents.length > 0 && (
+                <button
+                  onClick={handleAIAnalysis}
+                  disabled={isAnalyzing}
+                  className="px-6 py-3 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium shadow-sm flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Analyseert...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      AI Analyse ({selectedIncidents.length})
+                    </>
+                  )}
+                </button>
+              )}
               <a
                 href="/dashboard/ai-safety/analytics"
                 className="px-6 py-3 rounded-md border border-border hover:bg-accent transition-colors font-medium text-foreground shadow-sm flex items-center gap-2"
@@ -1050,6 +1164,15 @@ function AISafetyPageContent() {
                       <table className="w-full min-w-[900px]">
                         <thead className="bg-muted/50 border-b border-border">
                           <tr>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap w-12">
+                              <input
+                                type="checkbox"
+                                checked={selectedIncidents.length === filteredIncidents.length && filteredIncidents.length > 0}
+                                onChange={toggleSelectAll}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+                              />
+                            </th>
                             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                               Melding
                             </th>
@@ -1077,6 +1200,15 @@ function AISafetyPageContent() {
                               onClick={() => router.push(`/dashboard/ai-safety/${incident.id}`)}
                               className="hover:bg-muted/30 transition-colors cursor-pointer"
                             >
+                              {/* Checkbox */}
+                              <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedIncidents.includes(incident.id)}
+                                  onChange={() => toggleIncidentSelection(incident.id)}
+                                  className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary"
+                                />
+                              </td>
                               {/* ID + Titel */}
                               <td className="px-3 py-3">
                                 <div className="text-xs text-muted-foreground mb-0.5">
@@ -1152,6 +1284,15 @@ function AISafetyPageContent() {
                     >
                       {/* Header */}
                       <div className="flex items-start justify-between mb-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIncidents.includes(incident.id)}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleIncidentSelection(incident.id);
+                          }}
+                          className="w-4 h-4 rounded border-border text-primary focus:ring-2 focus:ring-primary mt-1 mr-2"
+                        />
                         <div className="flex-1">
                           <div className="text-xs text-muted-foreground mb-1">
                             {incident.incidentId}
@@ -1219,6 +1360,109 @@ function AISafetyPageContent() {
           </div>
         </div>
       </div>
+
+      {/* AI Analyse Dialog */}
+      <Dialog open={showAIAnalysis} onOpenChange={setShowAIAnalysis}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>AI Analyse Resultaten</DialogTitle>
+            <DialogDescription>
+              Analyse van {selectedIncidents.length} geselecteerde veiligheidsmelding(en)
+            </DialogDescription>
+          </DialogHeader>
+
+          {aiAnalysisResult && (
+            <div className="space-y-6 mt-4">
+              {/* Samenvatting */}
+              <div className="bg-muted/30 rounded-lg p-4">
+                <h3 className="font-semibold text-lg mb-2 text-foreground">Samenvatting</h3>
+                <p className="text-foreground whitespace-pre-wrap">{aiAnalysisResult.summary}</p>
+              </div>
+
+              {/* Aanbevelingen */}
+              <div>
+                <h3 className="font-semibold text-lg mb-2 text-foreground">Aanbevelingen</h3>
+                <ul className="list-disc list-inside space-y-2 text-foreground">
+                  {Array.isArray(aiAnalysisResult.recommendations) ? 
+                    aiAnalysisResult.recommendations.map((rec: string, idx: number) => (
+                      <li key={idx}>{rec}</li>
+                    )) :
+                    <li>{aiAnalysisResult.recommendations}</li>
+                  }
+                </ul>
+              </div>
+
+              {/* Risico Inschatting */}
+              {aiAnalysisResult.riskAssessment && (
+                <div className="bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <h3 className="font-semibold text-lg mb-2 text-foreground">Risico Inschatting</h3>
+                  <p className="text-foreground whitespace-pre-wrap">{aiAnalysisResult.riskAssessment}</p>
+                </div>
+              )}
+
+              {/* Voorkomende Maatregelen */}
+              {aiAnalysisResult.preventiveMeasures && (
+                <div>
+                  <h3 className="font-semibold text-lg mb-2 text-foreground">Voorkomende Maatregelen</h3>
+                  <ul className="list-disc list-inside space-y-2 text-foreground">
+                    {Array.isArray(aiAnalysisResult.preventiveMeasures) ?
+                      aiAnalysisResult.preventiveMeasures.map((measure: string, idx: number) => (
+                        <li key={idx}>{measure}</li>
+                      )) :
+                      <li>{aiAnalysisResult.preventiveMeasures}</li>
+                    }
+                  </ul>
+                </div>
+              )}
+
+              {/* Voorgestelde Toolbox Onderwerpen */}
+              {aiAnalysisResult.suggestedToolboxTopics && (
+                <div>
+                  <h3 className="font-semibold text-lg mb-4 text-foreground">Voorgestelde Toolbox Onderwerpen</h3>
+                  <div className="space-y-4">
+                    {Array.isArray(aiAnalysisResult.suggestedToolboxTopics) &&
+                      aiAnalysisResult.suggestedToolboxTopics.map((topic: any, idx: number) => (
+                        <div key={idx} className="bg-card border border-border rounded-lg p-4">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h4 className="font-semibold text-foreground">{topic.topic}</h4>
+                              <span className={`inline-flex px-2 py-1 rounded text-xs font-medium mt-1 ${
+                                topic.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
+                                topic.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' :
+                                'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                              }`}>
+                                Prioriteit: {topic.priority === 'high' ? 'Hoog' : topic.priority === 'medium' ? 'Gemiddeld' : 'Laag'}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => handleCreateToolbox(topic)}
+                              disabled={isCreatingToolbox}
+                              className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium disabled:opacity-50"
+                            >
+                              {isCreatingToolbox ? 'Aanmaken...' : 'Maak Toolbox'}
+                            </button>
+                          </div>
+                          <p className="text-muted-foreground text-sm mb-2">{topic.description}</p>
+                          {topic.suggestedItems && Array.isArray(topic.suggestedItems) && topic.suggestedItems.length > 0 && (
+                            <div className="mt-2">
+                              <p className="text-xs font-medium text-muted-foreground mb-1">Voorgestelde items:</p>
+                              <ul className="list-disc list-inside text-xs text-muted-foreground space-y-1">
+                                {topic.suggestedItems.slice(0, 5).map((item: string, itemIdx: number) => (
+                                  <li key={itemIdx}>{item}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
