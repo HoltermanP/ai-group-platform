@@ -353,18 +353,12 @@ export default function SafetyAnalyticsPage() {
                     <Bar 
                       dataKey="count" 
                       fill={COLORS.chart3} 
-                      name="Aantal" 
-                      className="cursor-pointer"
-                      onClick={(data: { originalCategory?: string }) => {
-                        if (data && data.originalCategory) {
-                          handleFilterClick('category', data.originalCategory);
-                        }
-                      }}
+                      name="Aantal"
                     />
                   </BarChart>
                 </ResponsiveContainer>
                 <p className="text-sm text-muted-foreground mt-4">
-                  💡 Focus preventie op meest voorkomende categorieën. <strong>Klik op een balk om die categorie te filteren.</strong>
+                  💡 Focus preventie op meest voorkomende categorieën.
                 </p>
               </div>
 
@@ -450,17 +444,11 @@ export default function SafetyAnalyticsPage() {
                     dataKey="count" 
                     fill={COLORS.chart2} 
                     name="Aantal incidents"
-                    className="cursor-pointer"
-                    onClick={(data: { originalType?: string }) => {
-                      if (data && data.originalType) {
-                        handleFilterClick('infrastructureType', data.originalType);
-                      }
-                    }}
                   />
                 </BarChart>
               </ResponsiveContainer>
               <p className="text-sm text-muted-foreground mt-4">
-                💡 <strong>Actie:</strong> Verhoog inspectiefrequentie bij hoogrisico infrastructuur. <strong>Klik op een balk om dat type te filteren.</strong>
+                💡 <strong>Actie:</strong> Verhoog inspectiefrequentie bij hoogrisico infrastructuur.
               </p>
             </div>
 
@@ -500,17 +488,11 @@ export default function SafetyAnalyticsPage() {
                       dataKey="avgDays" 
                       fill={COLORS.chart4} 
                       name="Gemiddeld aantal dagen"
-                      className="cursor-pointer"
-                      onClick={(data: { originalCategory?: string }) => {
-                        if (data && data.originalCategory) {
-                          handleFilterClick('category', data.originalCategory);
-                        }
-                      }}
                     />
                   </BarChart>
                 </ResponsiveContainer>
                 <p className="text-sm text-muted-foreground mt-4">
-                  💡 Langere oplostijden vereisen mogelijk extra resources of training. <strong>Klik op een balk om die categorie te filteren.</strong>
+                  💡 Langere oplostijden vereisen mogelijk extra resources of training.
                 </p>
               </div>
             )}
