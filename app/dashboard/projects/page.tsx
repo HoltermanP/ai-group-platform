@@ -135,16 +135,16 @@ export default function ProjectsPage() {
     <div className="min-h-[calc(100vh-73px)] bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8 flex justify-between items-start">
+          <div className="mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div>
-              <h1 className="text-4xl font-bold mb-2 text-foreground">Projecten</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-3xl sm:text-4xl font-bold mb-2 text-foreground">Projecten</h1>
+              <p className="text-muted-foreground text-sm sm:text-base">
                 Beheer en maak nieuwe projecten aan
               </p>
             </div>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm"
+              className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm shrink-0 w-full sm:w-auto"
             >
               {showForm ? "Annuleren" : "+ Nieuw Project"}
             </button>
@@ -303,7 +303,7 @@ export default function ProjectsPage() {
 
           {/* Projects Table */}
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-foreground">Mijn Projecten</h2>
+            <h2 className="text-xl sm:text-2xl font-semibold mb-4 text-foreground">Mijn Projecten</h2>
             {isLoading ? (
               <div className="text-center py-12 text-muted-foreground">
                 Laden...
@@ -319,142 +319,257 @@ export default function ProjectsPage() {
                 </button>
               </div>
             ) : (
-              <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full" style={{ minWidth: '1400px' }}>
-                    <thead className="bg-muted/50 border-b border-border">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Project ID
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Naam
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Plaats
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Gemeente
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Organisatie
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Manager
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Startdatum
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Einddatum
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Budget
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Status
-                        </th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                          Meldingen
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {projects.map((project) => (
-                        <tr 
-                          key={project.id}
-                          onClick={() => router.push(`/dashboard/projects/${project.id}`)}
-                          className="hover:bg-muted/30 transition-colors cursor-pointer"
-                        >
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-foreground">
-                              {project.projectId}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4">
-                            <div className="text-sm font-medium text-foreground">
-                              {project.name}
-                            </div>
-                            {project.description && (
-                              <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                {project.description}
+              <>
+                {/* Desktop Table View - Hidden on mobile */}
+                <div className="hidden lg:block bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-muted/50 border-b border-border">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Project ID
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Naam
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Locatie
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Manager
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Data
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Budget
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Meldingen
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {projects.map((project) => (
+                          <tr 
+                            key={project.id}
+                            onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                            className="hover:bg-muted/30 transition-colors cursor-pointer"
+                          >
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-foreground">
+                                {project.projectId}
                               </div>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
+                            </td>
+                            <td className="px-4 py-4">
+                              <div className="text-sm font-medium text-foreground">
+                                {project.name}
+                              </div>
+                              {project.description && (
+                                <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+                                  {project.description}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-foreground">
+                                {project.plaats || "-"}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {project.gemeente || ""}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-foreground">
+                                {project.projectManager || "-"}
+                              </div>
+                              {project.organization && (
+                                <div className="text-xs text-muted-foreground">
+                                  {project.organization}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-foreground">
+                                {formatDate(project.startDate)}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                → {formatDate(project.plannedEndDate)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <div className="text-sm text-foreground font-medium">
+                                {formatBudget(project.budget)}
+                              </div>
+                            </td>
+                            <td className="px-4 py-4 whitespace-nowrap">
+                              <span
+                                className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(project.status)}`}
+                              >
+                                {getStatusLabel(project.status)}
+                              </span>
+                            </td>
+                            <td 
+                              className="px-4 py-4 whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/ai-safety?projectId=${project.id}`);
+                              }}
+                            >
+                              <div className="flex items-center justify-center gap-2 hover:opacity-70 transition-opacity">
+                                <ShieldAlert 
+                                  className={`h-4 w-4 ${
+                                    project.safetyIncidentCount > 0 
+                                      ? "text-destructive" 
+                                      : "text-muted-foreground"
+                                  }`} 
+                                />
+                                <span 
+                                  className={`text-sm font-medium ${
+                                    project.safetyIncidentCount > 0 
+                                      ? "text-destructive" 
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {project.safetyIncidentCount}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Mobile Card View - Hidden on desktop */}
+                <div className="lg:hidden space-y-4">
+                  {projects.map((project) => (
+                    <div
+                      key={project.id}
+                      onClick={() => router.push(`/dashboard/projects/${project.id}`)}
+                      className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {project.projectId}
+                          </div>
+                          <h3 className="text-base font-semibold text-foreground">
+                            {project.name}
+                          </h3>
+                          {project.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {project.description}
+                            </p>
+                          )}
+                        </div>
+                        <span
+                          className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(project.status)} ml-2 shrink-0`}
+                        >
+                          {getStatusLabel(project.status)}
+                        </span>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {/* Locatie */}
+                        {(project.plaats || project.gemeente) && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Locatie</div>
+                            <div className="text-foreground font-medium">
                               {project.plaats || "-"}
                             </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-muted-foreground">
-                              {project.gemeente || "-"}
+                            {project.gemeente && (
+                              <div className="text-xs text-muted-foreground">
+                                {project.gemeente}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Manager */}
+                        {project.projectManager && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Manager</div>
+                            <div className="text-foreground font-medium">
+                              {project.projectManager}
                             </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
-                              {project.organization || "-"}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
-                              {project.projectManager || "-"}
-                            </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
+                            {project.organization && (
+                              <div className="text-xs text-muted-foreground">
+                                {project.organization}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Startdatum */}
+                        {project.startDate && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Start</div>
+                            <div className="text-foreground">
                               {formatDate(project.startDate)}
                             </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
+                          </div>
+                        )}
+
+                        {/* Einddatum */}
+                        {project.plannedEndDate && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Eind</div>
+                            <div className="text-foreground">
                               {formatDate(project.plannedEndDate)}
                             </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground font-medium">
+                          </div>
+                        )}
+
+                        {/* Budget */}
+                        {project.budget && (
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Budget</div>
+                            <div className="text-foreground font-semibold">
                               {formatBudget(project.budget)}
                             </div>
-                          </td>
-                          <td className="px-4 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(project.status)}`}
-                            >
-                              {getStatusLabel(project.status)}
-                            </span>
-                          </td>
-                          <td 
-                            className="px-4 py-4 whitespace-nowrap"
+                          </div>
+                        )}
+
+                        {/* Meldingen */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Veiligheidsmeldingen</div>
+                          <div 
+                            className="flex items-center gap-2"
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/dashboard/ai-safety?projectId=${project.id}`);
                             }}
                           >
-                            <div className="flex items-center justify-center gap-2 hover:opacity-70 transition-opacity">
-                              <ShieldAlert 
-                                className={`h-4 w-4 ${
-                                  project.safetyIncidentCount > 0 
-                                    ? "text-destructive" 
-                                    : "text-muted-foreground"
-                                }`} 
-                              />
-                              <span 
-                                className={`text-sm font-medium ${
-                                  project.safetyIncidentCount > 0 
-                                    ? "text-destructive" 
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                {project.safetyIncidentCount}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                            <ShieldAlert 
+                              className={`h-4 w-4 ${
+                                project.safetyIncidentCount > 0 
+                                  ? "text-destructive" 
+                                  : "text-muted-foreground"
+                              }`} 
+                            />
+                            <span 
+                              className={`font-semibold ${
+                                project.safetyIncidentCount > 0 
+                                  ? "text-destructive" 
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {project.safetyIncidentCount}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              </>
             )}
           </div>
         </div>
