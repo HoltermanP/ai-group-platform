@@ -164,7 +164,13 @@ export default function ProjectsPage() {
   });
 
   // Get unique places for filter
-  const uniquePlaces = Array.from(new Set(projects.map(p => p.plaats).filter(Boolean))).sort();
+  const uniquePlaces = Array.from(
+    new Set(
+      projects
+        .map(p => p.plaats)
+        .filter((plaats): plaats is string => plaats !== null && plaats !== undefined)
+    )
+  ).sort();
 
   const clearFilters = () => {
     setSearchQuery("");
