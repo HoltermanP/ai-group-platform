@@ -81,9 +81,9 @@ export async function POST(
 
           savedAnalysis = {
             summary: latestAnalysis.summary,
-            recommendations: JSON.parse(latestAnalysis.recommendations),
+            recommendations: latestAnalysis.recommendations ? JSON.parse(latestAnalysis.recommendations) : [],
             riskAssessment: latestAnalysis.riskAssessment,
-            preventiveMeasures: JSON.parse(latestAnalysis.preventiveMeasures),
+            preventiveMeasures: latestAnalysis.preventiveMeasures ? JSON.parse(latestAnalysis.preventiveMeasures) : [],
           };
         }
       } catch (error) {
