@@ -265,7 +265,6 @@ export default function SafetyAnalyticsPage() {
             <div className="bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
               <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
                 📈 Trend Veiligheidsmeldingen over Tijd
-                <span className="text-xs text-muted-foreground font-normal">(klik op een punt voor details)</span>
               </h2>
               <div>
                 <ResponsiveContainer width="100%" height={300}>
@@ -294,9 +293,6 @@ export default function SafetyAnalyticsPage() {
                               <p className="text-sm text-muted-foreground mt-1">
                                 {payload[0].value} meldingen
                               </p>
-                              <p className="text-xs text-primary mt-2">
-                                Klik om te filteren →
-                              </p>
                             </div>
                           );
                         }
@@ -310,18 +306,7 @@ export default function SafetyAnalyticsPage() {
                       strokeWidth={3}
                       name="Aantal meldingen"
                       dot={{ r: 5, fill: COLORS.primary, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
-                      activeDot={{ 
-                        r: 8, 
-                        fill: COLORS.primary, 
-                        strokeWidth: 2, 
-                        stroke: 'hsl(var(--background))', 
-                        cursor: 'pointer',
-                        onClick: (_: unknown, payload: { payload: { month: string } }) => {
-                          if (payload && payload.payload && payload.payload.month) {
-                            router.push(`/dashboard/ai-safety?month=${payload.payload.month}`);
-                          }
-                        }
-                      }}
+                      activeDot={{ r: 8, fill: COLORS.primary, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
