@@ -31,6 +31,7 @@ interface SafetyIncident {
   resolvedDate: string | null;
   tags: string | null;
   externalReference: string | null;
+  photos: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,6 +42,8 @@ export default function SafetyIncidentDetailPage() {
   const [incident, setIncident] = useState<SafetyIncident | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [photoInput, setPhotoInput] = useState<File[]>([]);
 
   useEffect(() => {
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -156,6 +159,49 @@ export default function SafetyIncidentDetailPage() {
       closed: "bg-muted text-muted-foreground border-border",
     };
     return colors[status] || "bg-muted text-muted-foreground";
+  };
+
+  const parsePhotos = (photosString: string | null): string[] => {
+    if (!photosString) return [];
+    try {
+      return JSON.parse(photosString);
+    } catch {
+      return [];
+    }
+  };
+
+  const handlePhotoUpload = async () => {
+    if (photoInput.length === 0 || !params.id) return;
+    
+    setUploadingPhotos(true);
+    const formData = new FormData();
+    photoInput.forEach((file) => {
+      formData.append("photos", file);
+    });
+
+    try {
+      const id = Array.isArray(params.id) ? params.id[0] : params.id;
+      const response = await fetch(`/api/safety-incidents/${id}/photos`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setIncident({ ...incident!, photos: JSON.stringify(data.photos) });
+        setPhotoInput([]);
+        // Refresh de incident data
+        fetchIncident(id);
+      } else {
+        const error = await response.json();
+        alert(error.error || "Fout bij het uploaden van foto's");
+      }
+    } catch (error) {
+      console.error("Error uploading photos:", error);
+      alert("Er is een fout opgetreden");
+    } finally {
+      setUploadingPhotos(false);
+    }
   };
 
   if (isLoading) {
@@ -444,11 +490,96 @@ export default function SafetyIncidentDetailPage() {
 
           {/* Affected Systems */}
           {incident.affectedSystems && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
               <h2 className="text-xl font-semibold mb-4 text-card-foreground">Getroffen Infrastructuur</h2>
               <p className="text-foreground whitespace-pre-wrap">{incident.affectedSystems}</p>
             </div>
           )}
+
+          {/* Foto's Toevoegen */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
+            <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Foto's
+            </h2>
+            <div className="space-y-4">
+              {/* Upload Input */}
+              <div className="flex flex-col gap-4">
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files) {
+                      setPhotoInput(Array.from(e.target.files));
+                    }
+                  }}
+                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-foreground"
+                />
+                {photoInput.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {photoInput.map((file, index) => (
+                      <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-sm">
+                        <span className="text-foreground">{file.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPhotoInput(photoInput.filter((_, i) => i !== index))}
+                          className="text-destructive hover:text-destructive/80 font-bold"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {photoInput.length > 0 && (
+                  <button
+                    onClick={handlePhotoUpload}
+                    disabled={uploadingPhotos}
+                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  >
+                    {uploadingPhotos ? "Uploaden..." : "Foto's Uploaden"}
+                  </button>
+                )}
+              </div>
+
+              {/* Foto Gallery */}
+              {(() => {
+                const photos = parsePhotos(incident.photos);
+                if (photos.length > 0) {
+                  return (
+                    <div className="mt-6">
+                      <h3 className="text-lg font-medium mb-4 text-foreground">Geüploade Foto's</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {photos.map((photoUrl, index) => (
+                          <div key={index} className="relative group">
+                            <img
+                              src={photoUrl}
+                              alt={`Foto ${index + 1} van incident ${incident.incidentId}`}
+                              className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => window.open(photoUrl, "_blank")}
+                            />
+                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="bg-black/50 text-white px-2 py-1 rounded text-xs">
+                                Klik om te vergroten
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <p className="text-muted-foreground text-sm">
+                    Nog geen foto's toegevoegd. Upload foto's hierboven.
+                  </p>
+                );
+              })()}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -25,6 +25,7 @@ interface SafetyIncident {
   resolvedDate: string | null;
   tags: string | null;
   externalReference: string | null;
+  photos: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,6 +54,7 @@ function AISafetyPageContent() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
   const [formData, setFormData] = useState({
     incidentId: "",
     title: "",
@@ -154,6 +156,27 @@ function AISafetyPageContent() {
       });
 
       if (response.ok) {
+        const newIncident = await response.json();
+
+        // Als er foto's zijn, upload deze
+        if (selectedPhotos.length > 0) {
+          const photoFormData = new FormData();
+          selectedPhotos.forEach((photo) => {
+            photoFormData.append("photos", photo);
+          });
+
+          try {
+            await fetch(`/api/safety-incidents/${newIncident.id}/photos`, {
+              method: "POST",
+              body: photoFormData,
+            });
+          } catch (photoError) {
+            console.error("Error uploading photos:", photoError);
+            // Laat de gebruiker weten dat het incident is aangemaakt maar foto's niet zijn geüpload
+            alert("Incident aangemaakt, maar er was een probleem bij het uploaden van foto's.");
+          }
+        }
+
         // Reset form
         setFormData({
           incidentId: "",
@@ -178,6 +201,7 @@ function AISafetyPageContent() {
           tags: "",
           externalReference: "",
         });
+        setSelectedPhotos([]);
         setShowForm(false);
         fetchIncidents();
       }
@@ -195,6 +219,17 @@ function AISafetyPageContent() {
       ...prev,
       [e.target.name]: e.target.value,
     }));
+  };
+
+  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setSelectedPhotos([...selectedPhotos, ...files]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setSelectedPhotos(selectedPhotos.filter((_, i) => i !== index));
   };
 
   const formatDate = (dateString: string | null) => {
@@ -696,6 +731,41 @@ function AISafetyPageContent() {
                       placeholder="KLIC-2024-001234"
                       className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
                     />
+                  </div>
+
+                  {/* Foto's */}
+                  <div className="md:col-span-2">
+                    <label htmlFor="photos" className="block text-sm font-medium mb-2 text-foreground">
+                      Foto's
+                    </label>
+                    <input
+                      type="file"
+                      id="photos"
+                      name="photos"
+                      multiple
+                      accept="image/*"
+                      onChange={handlePhotoChange}
+                      className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
+                    />
+                    {selectedPhotos.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {selectedPhotos.map((file, index) => (
+                          <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-sm">
+                            <span className="text-foreground">{file.name}</span>
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(index)}
+                              className="text-destructive hover:text-destructive/80 font-bold"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Selecteer een of meerdere foto's (max 5MB per foto)
+                    </p>
                   </div>
                 </div>
 
