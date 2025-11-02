@@ -198,7 +198,6 @@ async function seed() {
         description: `Infrastructuurproject voor ${projectNames[i].toLowerCase()}. Dit project omvat werkzaamheden aan de ondergrondse infrastructuur met focus op veiligheid en kwaliteit.`,
         status: getRandomItem(['active', 'active', 'active', 'on-hold', 'completed']), // Meer actieve projecten
         projectManager: getRandomItem(projectManagers),
-        organization: getRandomItem(organizations),
         startDate: startDate,
         plannedEndDate: endDate,
         budget: budget,
