@@ -14,7 +14,7 @@ const MapView = dynamic(() => import("@/components/MapView"), {
   ),
 });
 
-interface Project {
+interface ProjectFromAPI {
   id: number;
   projectId: string;
   name: string;
@@ -22,11 +22,14 @@ interface Project {
   gemeente: string;
   status: string;
   coordinates?: string;
-  latitude?: number;
-  longitude?: number;
 }
 
-interface Incident {
+interface Project extends ProjectFromAPI {
+  latitude: number;
+  longitude: number;
+}
+
+interface IncidentFromAPI {
   id: number;
   incidentId: string;
   title: string;
@@ -35,8 +38,11 @@ interface Incident {
   status: string;
   location: string;
   coordinates: string;
-  latitude?: number;
-  longitude?: number;
+}
+
+interface Incident extends IncidentFromAPI {
+  latitude: number;
+  longitude: number;
 }
 
 export default function KaartPage() {
@@ -59,11 +65,11 @@ export default function KaartPage() {
       // Fetch projecten
       const projectsResponse = await fetch("/api/projects");
       if (projectsResponse.ok) {
-        const projectsData = await projectsResponse.json();
+        const projectsData: ProjectFromAPI[] = await projectsResponse.json();
         // Parse coordinates from string "lat, lng"
-        const projectsWithCoords = projectsData
-          .filter((p: Project) => p.coordinates)
-          .map((p: Project) => {
+        const projectsWithCoords: Project[] = projectsData
+          .filter((p) => p.coordinates)
+          .map((p) => {
             const [lat, lng] = p.coordinates!.split(",").map((s) => parseFloat(s.trim()));
             return {
               ...p,
@@ -71,22 +77,22 @@ export default function KaartPage() {
               longitude: lng,
             };
           })
-          .filter((p: Project) => {
+          .filter((p) => {
             const lat = p.latitude;
             const lng = p.longitude;
-            return lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng);
-          });
+            return !isNaN(lat) && !isNaN(lng);
+          }) as Project[];
         setProjects(projectsWithCoords);
       }
 
       // Fetch incidents
       const incidentsResponse = await fetch("/api/safety-incidents");
       if (incidentsResponse.ok) {
-        const incidentsData = await incidentsResponse.json();
+        const incidentsData: IncidentFromAPI[] = await incidentsResponse.json();
         // Parse coordinates from string "lat, lng"
-        const incidentsWithCoords = incidentsData
-          .filter((i: Incident) => i.coordinates)
-          .map((i: Incident) => {
+        const incidentsWithCoords: Incident[] = incidentsData
+          .filter((i) => i.coordinates)
+          .map((i) => {
             const [lat, lng] = i.coordinates.split(",").map((s) => parseFloat(s.trim()));
             return {
               ...i,
@@ -94,11 +100,11 @@ export default function KaartPage() {
               longitude: lng,
             };
           })
-          .filter((i: Incident) => {
+          .filter((i) => {
             const lat = i.latitude;
             const lng = i.longitude;
-            return lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng);
-          });
+            return !isNaN(lat) && !isNaN(lng);
+          }) as Incident[];
         setIncidents(incidentsWithCoords);
       }
     } catch (error) {
