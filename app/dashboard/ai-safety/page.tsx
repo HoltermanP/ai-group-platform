@@ -39,6 +39,7 @@ function AISafetyPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [projectIdFilter, setProjectIdFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const [filters, setFilters] = useState<{
     severity?: string;
     status?: string;
@@ -275,6 +276,22 @@ function AISafetyPageContent() {
 
   // Filter incidents op basis van alle actieve filters
   const filteredIncidents = incidents.filter((incident) => {
+    // Search query filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        incident.incidentId.toLowerCase().includes(query) ||
+        incident.title.toLowerCase().includes(query) ||
+        incident.description.toLowerCase().includes(query) ||
+        incident.category.toLowerCase().includes(query) ||
+        incident.severity.toLowerCase().includes(query) ||
+        incident.status.toLowerCase().includes(query) ||
+        (incident.location && incident.location.toLowerCase().includes(query)) ||
+        (incident.infrastructureType && incident.infrastructureType.toLowerCase().includes(query));
+      
+      if (!matchesSearch) return false;
+    }
+
     // Project filter
     if (projectIdFilter && incident.projectId !== parseInt(projectIdFilter)) {
       return false;
@@ -377,10 +394,11 @@ function AISafetyPageContent() {
     : null;
     
   // Check of er filters actief zijn
-  const hasActiveFilters = projectIdFilter || Object.values(filters).some(v => v !== undefined);
+  const hasActiveFilters = searchQuery || projectIdFilter || Object.values(filters).some(v => v !== undefined);
   
   // Functie om alle filters te verwijderen
   const clearAllFilters = () => {
+    setSearchQuery("");
     setProjectIdFilter(null);
     setFilters({});
     router.push("/dashboard/ai-safety");
@@ -786,6 +804,18 @@ function AISafetyPageContent() {
                 </button>
               </div>
               <div className="flex flex-wrap gap-2">
+                {searchQuery && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Zoeken:</span>
+                    <span className="text-primary">"{searchQuery}"</span>
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="text-primary hover:text-primary/80"
+                    >
+                      ✕
+                    </button>
+                  </span>
+                )}
                 {filteredProject && (
                   <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
                     <span className="font-medium">Project:</span>
@@ -834,14 +864,52 @@ function AISafetyPageContent() {
 
           {/* Incidents Table */}
           <div>
-            <h2 className="text-2xl font-semibold mb-4 text-foreground">
-              Veiligheidsmeldingen
-              {hasActiveFilters && (
-                <span className="text-base font-normal text-muted-foreground ml-2">
-                  ({filteredIncidents.length} van {incidents.length} {filteredIncidents.length === 1 ? 'melding' : 'meldingen'})
-                </span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+              <h2 className="text-xl sm:text-2xl font-semibold text-foreground">
+                Veiligheidsmeldingen
+              </h2>
+              {!isLoading && incidents.length > 0 && (
+                <div className="text-sm text-muted-foreground">
+                  {filteredIncidents.length} van {incidents.length} {filteredIncidents.length === 1 ? 'melding' : 'meldingen'}
+                </div>
               )}
-            </h2>
+            </div>
+
+            {/* Search Bar */}
+            {!isLoading && incidents.length > 0 && (
+              <div className="mb-6">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Zoek op incident ID, titel, beschrijving, categorie, ernst, status, locatie..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-3 pl-10 border border-input bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-ring text-foreground placeholder:text-muted-foreground"
+                  />
+                  <svg
+                    className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             
             {/* Debug info - tijdelijk */}
             {filters.month && (
