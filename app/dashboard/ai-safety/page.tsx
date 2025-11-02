@@ -901,93 +901,182 @@ function AISafetyPageContent() {
                 </button>
               </div>
             ) : (
-              <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-muted/50 border-b border-border">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Incident ID
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Titel
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Categorie
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Ernst
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Project
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Gemeld op
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {filteredIncidents.map((incident) => (
-                        <tr
-                          key={incident.id}
-                          onClick={() => router.push(`/dashboard/ai-safety/${incident.id}`)}
-                          className="hover:bg-muted/30 transition-colors cursor-pointer"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-foreground">
-                              {incident.incidentId}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm font-medium text-foreground">
-                              {incident.title}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                              {incident.description}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
-                              {getCategoryLabel(incident.category)}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getSeverityColor(incident.severity)}`}
+              <>
+                {/* Desktop Table View - Hidden on mobile */}
+                <div className="hidden md:block">
+                  <p className="text-xs text-muted-foreground mb-2 text-right">
+                    💡 Scroll horizontaal voor meer details
+                  </p>
+                  <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto scrollbar-thin">
+                      <table className="w-full min-w-[900px]">
+                        <thead className="bg-muted/50 border-b border-border">
+                          <tr>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Melding
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Categorie
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Ernst
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Status
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Project
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Datum
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {filteredIncidents.map((incident) => (
+                            <tr
+                              key={incident.id}
+                              onClick={() => router.push(`/dashboard/ai-safety/${incident.id}`)}
+                              className="hover:bg-muted/30 transition-colors cursor-pointer"
                             >
-                              {getSeverityLabel(incident.severity)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span
-                              className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(incident.status)}`}
-                            >
-                              {getStatusLabel(incident.status)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
-                              {incident.projectId ? (
-                                <span className="text-primary">Project #{incident.projectId}</span>
-                              ) : (
-                                <span className="text-muted-foreground">Algemeen</span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-foreground">
-                              {formatDate(incident.reportedDate)}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                              {/* ID + Titel */}
+                              <td className="px-3 py-3">
+                                <div className="text-xs text-muted-foreground mb-0.5">
+                                  {incident.incidentId}
+                                </div>
+                                <div className="text-sm font-medium text-foreground">
+                                  {incident.title}
+                                </div>
+                                {incident.description && (
+                                  <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                    {incident.description}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Categorie */}
+                              <td className="px-3 py-3 whitespace-nowrap">
+                                <div className="text-sm text-foreground">
+                                  {getCategoryLabel(incident.category)}
+                                </div>
+                              </td>
+
+                              {/* Ernst */}
+                              <td className="px-3 py-3 whitespace-nowrap">
+                                <span
+                                  className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getSeverityColor(incident.severity)}`}
+                                >
+                                  {getSeverityLabel(incident.severity)}
+                                </span>
+                              </td>
+
+                              {/* Status */}
+                              <td className="px-3 py-3 whitespace-nowrap">
+                                <span
+                                  className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(incident.status)}`}
+                                >
+                                  {getStatusLabel(incident.status)}
+                                </span>
+                              </td>
+
+                              {/* Project */}
+                              <td className="px-3 py-3 whitespace-nowrap">
+                                <div className="text-sm text-foreground">
+                                  {incident.projectId ? (
+                                    <span className="text-primary">#{incident.projectId}</span>
+                                  ) : (
+                                    <span className="text-muted-foreground">-</span>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Datum */}
+                              <td className="px-3 py-3 whitespace-nowrap">
+                                <div className="text-sm text-foreground">
+                                  {formatDate(incident.reportedDate)}
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                {/* Mobile Card View - Hidden on desktop */}
+                <div className="md:hidden space-y-4">
+                  {filteredIncidents.map((incident) => (
+                    <div
+                      key={incident.id}
+                      onClick={() => router.push(`/dashboard/ai-safety/${incident.id}`)}
+                      className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {incident.incidentId}
+                          </div>
+                          <h3 className="text-base font-semibold text-foreground">
+                            {incident.title}
+                          </h3>
+                          {incident.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {incident.description}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Badges */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span
+                          className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getSeverityColor(incident.severity)}`}
+                        >
+                          {getSeverityLabel(incident.severity)}
+                        </span>
+                        <span
+                          className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(incident.status)}`}
+                        >
+                          {getStatusLabel(incident.status)}
+                        </span>
+                      </div>
+
+                      {/* Details Grid */}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {/* Categorie */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Categorie</div>
+                          <div className="text-foreground font-medium">
+                            {getCategoryLabel(incident.category)}
+                          </div>
+                        </div>
+
+                        {/* Project */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Project</div>
+                          <div className="text-foreground font-medium">
+                            {incident.projectId ? (
+                              <span className="text-primary">Project #{incident.projectId}</span>
+                            ) : (
+                              <span className="text-muted-foreground">Algemeen</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Gemeld op */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">Gemeld op</div>
+                          <div className="text-foreground">
+                            {formatDate(incident.reportedDate)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         </div>
