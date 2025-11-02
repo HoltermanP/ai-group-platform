@@ -71,7 +71,11 @@ export default function KaartPage() {
               longitude: lng,
             };
           })
-          .filter((p: Project) => !isNaN(p.latitude!) && !isNaN(p.longitude!));
+          .filter((p: Project) => {
+            const lat = p.latitude;
+            const lng = p.longitude;
+            return lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng);
+          });
         setProjects(projectsWithCoords);
       }
 
@@ -90,7 +94,11 @@ export default function KaartPage() {
               longitude: lng,
             };
           })
-          .filter((i: Incident) => !isNaN(i.latitude) && !isNaN(i.longitude));
+          .filter((i: Incident) => {
+            const lat = i.latitude;
+            const lng = i.longitude;
+            return lat !== undefined && lng !== undefined && !isNaN(lat) && !isNaN(lng);
+          });
         setIncidents(incidentsWithCoords);
       }
     } catch (error) {
