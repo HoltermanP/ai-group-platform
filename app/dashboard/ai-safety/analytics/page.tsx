@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   BarChart,
   Bar,
@@ -17,6 +18,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+import { Button } from "@/components/ui/button";
 
 interface Analytics {
   totals: {
@@ -63,8 +65,13 @@ const SEVERITY_COLORS = {
 };
 
 export default function SafetyAnalyticsPage() {
+  const router = useRouter();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState<{
+    type: string | null;
+    value: string | null;
+  }>({ type: null, value: null });
 
   useEffect(() => {
     fetchAnalytics();
@@ -125,6 +132,22 @@ export default function SafetyAnalyticsPage() {
     return labels[type] || type;
   };
 
+  const handleFilterClick = (filterType: string, filterValue: string) => {
+    setSelectedFilter({ type: filterType, value: filterValue });
+    // Navigate to main page with filters
+    const params = new URLSearchParams();
+    params.set(filterType, filterValue);
+    router.push(`/dashboard/ai-safety?${params.toString()}`);
+  };
+
+  const handleKPIClick = (status?: string) => {
+    if (status) {
+      router.push(`/dashboard/ai-safety?status=${status}`);
+    } else {
+      router.push(`/dashboard/ai-safety`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-[calc(100vh-73px)] bg-background">
@@ -177,7 +200,10 @@ export default function SafetyAnalyticsPage() {
 
           {/* KPI Cards */}
           <div className="grid gap-6 md:grid-cols-4 mb-8">
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div 
+              onClick={() => handleKPIClick()}
+              className="bg-card border border-border rounded-lg p-6 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/50 transition-all"
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Totaal Meldingen</span>
                 <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,9 +211,13 @@ export default function SafetyAnalyticsPage() {
                 </svg>
               </div>
               <p className="text-3xl font-bold text-foreground">{analytics.totals.total}</p>
+              <p className="text-xs text-muted-foreground mt-2">Klik om alle meldingen te zien</p>
             </div>
 
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div 
+              onClick={() => handleFilterClick('severity', 'critical')}
+              className="bg-card border border-border rounded-lg p-6 shadow-sm cursor-pointer hover:shadow-lg hover:border-destructive/50 transition-all"
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Kritieke Meldingen</span>
                 <svg className="w-5 h-5 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,9 +225,13 @@ export default function SafetyAnalyticsPage() {
                 </svg>
               </div>
               <p className="text-3xl font-bold text-destructive">{analytics.totals.critical}</p>
+              <p className="text-xs text-muted-foreground mt-2">Klik om kritieke meldingen te zien</p>
             </div>
 
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div 
+              onClick={() => handleKPIClick('open')}
+              className="bg-card border border-border rounded-lg p-6 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/50 transition-all"
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Open Meldingen</span>
                 <svg className="w-5 h-5 text-chart-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -205,9 +239,13 @@ export default function SafetyAnalyticsPage() {
                 </svg>
               </div>
               <p className="text-3xl font-bold text-foreground">{analytics.totals.open}</p>
+              <p className="text-xs text-muted-foreground mt-2">Klik om open meldingen te zien</p>
             </div>
 
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <div 
+              onClick={() => handleKPIClick('resolved')}
+              className="bg-card border border-border rounded-lg p-6 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary/50 transition-all"
+            >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Gem. Oplostijd</span>
                 <svg className="w-5 h-5 text-chart-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -217,41 +255,74 @@ export default function SafetyAnalyticsPage() {
               <p className="text-3xl font-bold text-foreground">
                 {analytics.avgResolutionTime ? `${analytics.avgResolutionTime}d` : 'N/A'}
               </p>
+              <p className="text-xs text-muted-foreground mt-2">Klik om opgeloste meldingen te zien</p>
             </div>
           </div>
 
           {/* Charts Grid */}
           <div className="grid gap-6 mb-6">
             {/* Maandelijkse Trend */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground">
+            <div className="bg-card border border-border rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
+              <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
                 📈 Trend Veiligheidsmeldingen over Tijd
+                <span className="text-xs text-muted-foreground font-normal">(klik op een punt voor details)</span>
               </h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={analytics.monthlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis 
-                    dataKey="month" 
-                    stroke="hsl(var(--muted-foreground))"
-                    style={{ fontSize: '12px' }}
-                  />
-                  <YAxis stroke="hsl(var(--muted-foreground))" />
-                  <Tooltip 
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--card))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px',
+              <div className="cursor-pointer">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart 
+                    data={analytics.monthlyTrend}
+                    onClick={(data) => {
+                      if (data && data.activePayload && data.activePayload[0]) {
+                        const month = data.activePayload[0].payload.month;
+                        router.push(`/dashboard/ai-safety?month=${month}`);
+                      }
                     }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="count" 
-                    stroke={COLORS.primary}
-                    strokeWidth={2}
-                    name="Aantal meldingen"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="month" 
+                      stroke="hsl(var(--muted-foreground))"
+                      style={{ fontSize: '12px' }}
+                    />
+                    <YAxis stroke="hsl(var(--muted-foreground))" />
+                    <Tooltip 
+                      contentStyle={{
+                        backgroundColor: 'hsl(var(--card))',
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px',
+                      }}
+                      cursor={{ stroke: COLORS.primary, strokeWidth: 2, strokeDasharray: '5 5' }}
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
+                              <p className="text-sm font-medium text-foreground">
+                                {payload[0].payload.month}
+                              </p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {payload[0].value} meldingen
+                              </p>
+                              <p className="text-xs text-primary mt-2">
+                                Klik om te filteren →
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="count" 
+                      stroke={COLORS.primary}
+                      strokeWidth={3}
+                      name="Aantal meldingen"
+                      dot={{ r: 5, fill: COLORS.primary, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+                      activeDot={{ r: 8, fill: COLORS.primary, strokeWidth: 2, stroke: 'hsl(var(--background))', cursor: 'pointer' }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
               <p className="text-sm text-muted-foreground mt-4">
                 💡 <strong>Inzicht:</strong> Monitor stijgingen in meldingen om proactief beleid aan te passen. 
                 Seizoenspatronen kunnen duiden op specifieke risicofactoren.
@@ -266,10 +337,19 @@ export default function SafetyAnalyticsPage() {
                   📊 Meldingen per Categorie
                 </h2>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.byCategory.map(item => ({
-                    ...item,
-                    category: getCategoryLabel(item.category)
-                  }))}>
+                  <BarChart 
+                    data={analytics.byCategory.map(item => ({
+                      ...item,
+                      category: getCategoryLabel(item.category),
+                      originalCategory: item.category
+                    }))}
+                    onClick={(data) => {
+                      if (data && data.activePayload && data.activePayload[0]) {
+                        const category = data.activePayload[0].payload.originalCategory;
+                        handleFilterClick('category', category);
+                      }
+                    }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="category" 
@@ -286,12 +366,18 @@ export default function SafetyAnalyticsPage() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
+                      cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
                     />
-                    <Bar dataKey="count" fill={COLORS.chart3} name="Aantal" />
+                    <Bar 
+                      dataKey="count" 
+                      fill={COLORS.chart3} 
+                      name="Aantal" 
+                      className="cursor-pointer"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
                 <p className="text-sm text-muted-foreground mt-4">
-                  💡 Focus preventie op meest voorkomende categorieën
+                  💡 Focus preventie op meest voorkomende categorieën. <strong>Klik op een balk om die categorie te filteren.</strong>
                 </p>
               </div>
 
@@ -305,7 +391,8 @@ export default function SafetyAnalyticsPage() {
                     <Pie
                       data={analytics.bySeverity.map(item => ({
                         ...item,
-                        severity: getSeverityLabel(item.severity)
+                        severity: getSeverityLabel(item.severity),
+                        originalSeverity: item.severity
                       }))}
                       cx="50%"
                       cy="50%"
@@ -314,11 +401,18 @@ export default function SafetyAnalyticsPage() {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="count"
+                      onClick={(entry) => {
+                        if (entry && entry.originalSeverity) {
+                          handleFilterClick('severity', entry.originalSeverity);
+                        }
+                      }}
+                      className="cursor-pointer"
                     >
                       {analytics.bySeverity.map((entry, index) => (
                         <Cell 
                           key={`cell-${index}`} 
-                          fill={SEVERITY_COLORS[entry.severity as keyof typeof SEVERITY_COLORS] || COLORS.chart1} 
+                          fill={SEVERITY_COLORS[entry.severity as keyof typeof SEVERITY_COLORS] || COLORS.chart1}
+                          className="cursor-pointer hover:opacity-80 transition-opacity"
                         />
                       ))}
                     </Pie>
@@ -332,7 +426,7 @@ export default function SafetyAnalyticsPage() {
                   </PieChart>
                 </ResponsiveContainer>
                 <p className="text-sm text-muted-foreground mt-4">
-                  💡 Hoog percentage kritiek? Verhoog veiligheidsprotocollen
+                  💡 Hoog percentage kritiek? Verhoog veiligheidsprotocollen. <strong>Klik op een segment om dat niveau te filteren.</strong>
                 </p>
               </div>
             </div>
@@ -343,10 +437,19 @@ export default function SafetyAnalyticsPage() {
                 🏗️ Risico per Infrastructuurtype
               </h2>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={analytics.byInfrastructure.map(item => ({
-                  ...item,
-                  type: getInfraLabel(item.type)
-                }))}>
+                <BarChart 
+                  data={analytics.byInfrastructure.map(item => ({
+                    ...item,
+                    type: getInfraLabel(item.type),
+                    originalType: item.type
+                  }))}
+                  onClick={(data) => {
+                    if (data && data.activePayload && data.activePayload[0]) {
+                      const infraType = data.activePayload[0].payload.originalType;
+                      handleFilterClick('infrastructureType', infraType);
+                    }
+                  }}
+                >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="type" 
@@ -360,12 +463,18 @@ export default function SafetyAnalyticsPage() {
                       border: '1px solid hsl(var(--border))',
                       borderRadius: '8px',
                     }}
+                    cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
                   />
-                  <Bar dataKey="count" fill={COLORS.chart2} name="Aantal incidents" />
+                  <Bar 
+                    dataKey="count" 
+                    fill={COLORS.chart2} 
+                    name="Aantal incidents"
+                    className="cursor-pointer"
+                  />
                 </BarChart>
               </ResponsiveContainer>
               <p className="text-sm text-muted-foreground mt-4">
-                💡 <strong>Actie:</strong> Verhoog inspectiefrequentie bij hoogrisico infrastructuur
+                💡 <strong>Actie:</strong> Verhoog inspectiefrequentie bij hoogrisico infrastructuur. <strong>Klik op een balk om dat type te filteren.</strong>
               </p>
             </div>
 
@@ -376,10 +485,19 @@ export default function SafetyAnalyticsPage() {
                   ⏱️ Gemiddelde Oplostijd per Categorie
                 </h2>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={analytics.resolutionTimeByCategory.map(item => ({
-                    ...item,
-                    category: getCategoryLabel(item.category)
-                  }))}>
+                  <BarChart 
+                    data={analytics.resolutionTimeByCategory.map(item => ({
+                      ...item,
+                      category: getCategoryLabel(item.category),
+                      originalCategory: item.category
+                    }))}
+                    onClick={(data) => {
+                      if (data && data.activePayload && data.activePayload[0]) {
+                        const category = data.activePayload[0].payload.originalCategory;
+                        handleFilterClick('category', category);
+                      }
+                    }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="category" 
@@ -396,12 +514,18 @@ export default function SafetyAnalyticsPage() {
                         border: '1px solid hsl(var(--border))',
                         borderRadius: '8px',
                       }}
+                      cursor={{ fill: 'hsl(var(--primary) / 0.1)' }}
                     />
-                    <Bar dataKey="avgDays" fill={COLORS.chart4} name="Gemiddeld aantal dagen" />
+                    <Bar 
+                      dataKey="avgDays" 
+                      fill={COLORS.chart4} 
+                      name="Gemiddeld aantal dagen"
+                      className="cursor-pointer"
+                    />
                   </BarChart>
                 </ResponsiveContainer>
                 <p className="text-sm text-muted-foreground mt-4">
-                  💡 Langere oplostijden vereisen mogelijk extra resources of training
+                  💡 Langere oplostijden vereisen mogelijk extra resources of training. <strong>Klik op een balk om die categorie te filteren.</strong>
                 </p>
               </div>
             )}
@@ -416,14 +540,18 @@ export default function SafetyAnalyticsPage() {
                   </h2>
                   <div className="space-y-2">
                     {analytics.topLocations.map((location, index) => (
-                      <div key={index} className="flex justify-between items-center border-b border-border pb-2">
+                      <div 
+                        key={index} 
+                        onClick={() => handleFilterClick('location', location.location)}
+                        className="flex justify-between items-center border-b border-border pb-2 cursor-pointer hover:bg-primary/5 px-2 py-1 rounded transition-colors"
+                      >
                         <span className="text-sm text-foreground">{location.location}</span>
                         <span className="text-sm font-medium text-primary">{location.count} meldingen</span>
                       </div>
                     ))}
                   </div>
                   <p className="text-sm text-muted-foreground mt-4">
-                    💡 Hotspots vereisen preventieve maatregelen en extra toezicht
+                    💡 Hotspots vereisen preventieve maatregelen en extra toezicht. <strong>Klik op een locatie om die te filteren.</strong>
                   </p>
                 </div>
               )}
@@ -441,7 +569,11 @@ export default function SafetyAnalyticsPage() {
                 ) : (
                   <div className="space-y-2 max-h-80 overflow-y-auto">
                     {analytics.criticalIncidents.map((incident) => (
-                      <div key={incident.id} className="border border-destructive/20 rounded-lg p-3 bg-destructive/5">
+                      <Link
+                        key={incident.id}
+                        href={`/dashboard/ai-safety/${incident.id}`}
+                        className="block border border-destructive/20 rounded-lg p-3 bg-destructive/5 hover:bg-destructive/10 transition-colors cursor-pointer"
+                      >
                         <div className="flex justify-between items-start mb-1">
                           <span className="text-sm font-medium text-foreground">{incident.title}</span>
                           <span className="text-xs text-destructive font-medium">{incident.incidentId}</span>
@@ -449,12 +581,12 @@ export default function SafetyAnalyticsPage() {
                         <p className="text-xs text-muted-foreground">
                           {incident.location || 'Locatie onbekend'}
                         </p>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 )}
                 <p className="text-sm text-muted-foreground mt-4">
-                  💡 <strong>Prioriteit:</strong> Kritieke meldingen vereisen directe actie
+                  💡 <strong>Prioriteit:</strong> Kritieke meldingen vereisen directe actie. <strong>Klik op een melding om details te zien.</strong>
                 </p>
               </div>
             </div>

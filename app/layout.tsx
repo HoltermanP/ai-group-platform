@@ -141,6 +141,12 @@ export default function RootLayout({
                         Projecten
                       </Link>
                       <Link 
+                        href="/dashboard/kaart" 
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Kaart
+                      </Link>
+                      <Link 
                         href="/dashboard/ai-safety" 
                         className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                       >

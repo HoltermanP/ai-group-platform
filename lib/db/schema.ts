@@ -79,6 +79,11 @@ export const projectsTable = pgTable("projects", {
   category: varchar({ length: 50 }), // sanering, reconstructie, nieuwe-aanleg
   infrastructureType: varchar({ length: 50 }), // elektra, gas, water, media
   
+  // Locatie informatie
+  plaats: varchar({ length: 100 }), // Plaats waar het project plaatsvindt
+  gemeente: varchar({ length: 100 }), // Gemeente van het project
+  coordinates: varchar({ length: 50 }), // GPS coördinaten "lat, lng"
+  
   // Project details
   projectManager: varchar({ length: 255 }), // Naam van de projectmanager
   projectManagerId: varchar({ length: 255 }), // Clerk User ID van de projectmanager

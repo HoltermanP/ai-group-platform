@@ -79,23 +79,54 @@ const projectManagers = [
   "Anna Hendriks"
 ];
 
-const amsterdamLocations = [
-  "Kalverstraat 1, Amsterdam",
-  "Damrak 50, Amsterdam",
-  "Leidsestraat 25, Amsterdam",
-  "Nieuwezijds Voorburgwal 147, Amsterdam",
-  "Rokin 75, Amsterdam",
-  "Vijzelstraat 20, Amsterdam",
-  "Ferdinand Bolstraat 120, Amsterdam",
-  "Overtoom 145, Amsterdam",
-  "De Pijp, Amsterdam",
-  "Jordaan, Amsterdam",
-  "Oud-Zuid, Amsterdam",
-  "Amsterdam Noord",
-  "Amstelveen Centrum",
-  "Diemen Zuid",
-  "Hoofddorpplein, Amsterdam"
+// Plaats en gemeente combinaties voor Friesland, Flevoland, Gelderland en Noordoostpolder
+const locationsWithMunicipality = [
+  // Friesland
+  { plaats: "Leeuwarden", gemeente: "Leeuwarden", locatie: "Nieuwestad 50, Leeuwarden" },
+  { plaats: "Leeuwarden", gemeente: "Leeuwarden", locatie: "Wirdumerdijk 23, Leeuwarden" },
+  { plaats: "Sneek", gemeente: "Súdwest-Fryslân", locatie: "Grootzand 12, Sneek" },
+  { plaats: "Sneek", gemeente: "Súdwest-Fryslân", locatie: "Oppenhuizerweg 4, Sneek" },
+  { plaats: "Heerenveen", gemeente: "Heerenveen", locatie: "Abe Lenstra Boulevard 1, Heerenveen" },
+  { plaats: "Heerenveen", gemeente: "Heerenveen", locatie: "Skoatterwald 15, Heerenveen" },
+  { plaats: "Drachten", gemeente: "Smallingerland", locatie: "De Helling 21, Drachten" },
+  { plaats: "Drachten", gemeente: "Smallingerland", locatie: "Noorderhogeweg 56, Drachten" },
+  { plaats: "Harlingen", gemeente: "Harlingen", locatie: "Voorstraat 88, Harlingen" },
+  { plaats: "Franeker", gemeente: "Waadhoeke", locatie: "Voorstraat 2, Franeker" },
+  
+  // Flevoland
+  { plaats: "Lelystad", gemeente: "Lelystad", locatie: "Agorabaan 12, Lelystad" },
+  { plaats: "Lelystad", gemeente: "Lelystad", locatie: "Larserpoortweg 2, Lelystad" },
+  { plaats: "Almere", gemeente: "Almere", locatie: "Stationsplein 1, Almere" },
+  { plaats: "Almere", gemeente: "Almere", locatie: "Veluwezoom 50, Almere Buiten" },
+  { plaats: "Almere", gemeente: "Almere", locatie: "Grote Markt 3, Almere Haven" },
+  { plaats: "Dronten", gemeente: "Dronten", locatie: "De Rede 101, Dronten" },
+  { plaats: "Dronten", gemeente: "Dronten", locatie: "Meerpaalweg 2, Dronten" },
+  { plaats: "Zeewolde", gemeente: "Zeewolde", locatie: "Horsterweg 6, Zeewolde" },
+  
+  // Noordoostpolder (gemeente in Flevoland)
+  { plaats: "Emmeloord", gemeente: "Noordoostpolder", locatie: "De Deel 12, Emmeloord" },
+  { plaats: "Emmeloord", gemeente: "Noordoostpolder", locatie: "Espelerweg 1, Emmeloord" },
+  { plaats: "Urk", gemeente: "Urk", locatie: "Wijk 1-50, Urk" },
+  { plaats: "Urk", gemeente: "Urk", locatie: "Nagel 15, Urk" },
+  { plaats: "Ens", gemeente: "Noordoostpolder", locatie: "Kuinderweg 2, Ens" },
+  { plaats: "Kraggenburg", gemeente: "Noordoostpolder", locatie: "Marknesse 5, Kraggenburg" },
+  
+  // Gelderland
+  { plaats: "Arnhem", gemeente: "Arnhem", locatie: "Westerstraat 10, Arnhem" },
+  { plaats: "Arnhem", gemeente: "Arnhem", locatie: "Velperplein 88, Arnhem" },
+  { plaats: "Nijmegen", gemeente: "Nijmegen", locatie: "Burchtstraat 1, Nijmegen" },
+  { plaats: "Nijmegen", gemeente: "Nijmegen", locatie: "Keizer Karelplein 2, Nijmegen" },
+  { plaats: "Apeldoorn", gemeente: "Apeldoorn", locatie: "Marktplein 1, Apeldoorn" },
+  { plaats: "Apeldoorn", gemeente: "Apeldoorn", locatie: "Deventerstraat 55, Apeldoorn" },
+  { plaats: "Ede", gemeente: "Ede", locatie: "Grotestraat 110, Ede" },
+  { plaats: "Doetinchem", gemeente: "Doetinchem", locatie: "Simonsplein 2, Doetinchem" },
+  { plaats: "Harderwijk", gemeente: "Harderwijk", locatie: "Markt 1, Harderwijk" },
+  { plaats: "Zutphen", gemeente: "Zutphen", locatie: "Groenmarkt 55, Zutphen" },
+  { plaats: "Tiel", gemeente: "Tiel", locatie: "Plein 48, Tiel" },
+  { plaats: "Wageningen", gemeente: "Wageningen", locatie: "Stationsstraat 2, Wageningen" }
 ];
+
+const amsterdamLocations = locationsWithMunicipality.map(l => l.locatie);
 
 const contractors = [
   "BAM Infra",
@@ -182,6 +213,9 @@ async function seed() {
   // Dummy user ID (gebruik je eigen Clerk User ID of een test ID)
   const dummyUserId = "user_test_123456";
   
+  // Genereer unieke suffix voor dit seed run (om duplicaat errors te voorkomen)
+  const timestamp = Date.now().toString().slice(-6);
+  
   try {
     // Stap 1: Maak 30 projecten aan
     console.log("\n📊 Creating 30 projects...");
@@ -192,11 +226,16 @@ async function seed() {
       const endDate = addDays(startDate, 180 + Math.floor(Math.random() * 365));
       const budget = (50000 + Math.floor(Math.random() * 450000)) * 100; // In centen
       
+      // Kies een locatie met plaats en gemeente
+      const locationData = getRandomItem(locationsWithMunicipality);
+      
       const project = await db.insert(projectsTable).values({
-        projectId: `PROJ-2024-${String(i + 1).padStart(3, '0')}`,
+        projectId: `PROJ-${timestamp}-${String(i + 1).padStart(3, '0')}`,
         name: projectNames[i],
-        description: `Infrastructuurproject voor ${projectNames[i].toLowerCase()}. Dit project omvat werkzaamheden aan de ondergrondse infrastructuur met focus op veiligheid en kwaliteit.`,
+        description: `Infrastructuurproject voor ${projectNames[i].toLowerCase()} in ${locationData.plaats}. Dit project omvat werkzaamheden aan de ondergrondse infrastructuur met focus op veiligheid en kwaliteit.`,
         status: getRandomItem(['active', 'active', 'active', 'on-hold', 'completed']), // Meer actieve projecten
+        plaats: locationData.plaats,
+        gemeente: locationData.gemeente,
         projectManager: getRandomItem(projectManagers),
         startDate: startDate,
         plannedEndDate: endDate,
@@ -238,9 +277,40 @@ async function seed() {
           ? addDays(reportedDate, 5 + Math.floor(Math.random() * 30))
           : null;
         
-        // Genereer GPS coördinaten rond Amsterdam (52.3676° N, 4.9041° E)
-        const lat = 52.3676 + (Math.random() - 0.5) * 0.1;
-        const lng = 4.9041 + (Math.random() - 0.5) * 0.1;
+        // Selecteer locatie die matcht met project regio (voor realistische GPS coördinaten)
+        const incidentLocation = getRandomItem(locationsWithMunicipality);
+        
+        // Genereer GPS coördinaten gebaseerd op de regio
+        // Centrum coördinaten per provincie
+        const regionCoords: Record<string, { lat: number; lng: number }> = {
+          'Leeuwarden': { lat: 53.2012, lng: 5.7999 },
+          'Sneek': { lat: 53.0324, lng: 5.6579 },
+          'Heerenveen': { lat: 52.9598, lng: 5.9196 },
+          'Drachten': { lat: 53.1127, lng: 6.0989 },
+          'Harlingen': { lat: 53.1745, lng: 5.4236 },
+          'Franeker': { lat: 53.1865, lng: 5.5419 },
+          'Lelystad': { lat: 52.5083, lng: 5.4750 },
+          'Almere': { lat: 52.3508, lng: 5.2647 },
+          'Dronten': { lat: 52.5252, lng: 5.7176 },
+          'Zeewolde': { lat: 52.3299, lng: 5.5403 },
+          'Emmeloord': { lat: 52.7108, lng: 5.7501 },
+          'Urk': { lat: 52.6632, lng: 5.6013 },
+          'Ens': { lat: 52.6381, lng: 5.8267 },
+          'Kraggenburg': { lat: 52.6789, lng: 5.8967 },
+          'Arnhem': { lat: 51.9851, lng: 5.8987 },
+          'Nijmegen': { lat: 51.8426, lng: 5.8573 },
+          'Apeldoorn': { lat: 52.2110, lng: 5.9699 },
+          'Ede': { lat: 52.0408, lng: 5.6575 },
+          'Doetinchem': { lat: 51.9658, lng: 6.2886 },
+          'Harderwijk': { lat: 52.3500, lng: 5.6167 },
+          'Zutphen': { lat: 52.1393, lng: 6.1950 },
+          'Tiel': { lat: 51.8869, lng: 5.4294 },
+          'Wageningen': { lat: 51.9693, lng: 5.6659 }
+        };
+        
+        const baseCoords = regionCoords[incidentLocation.plaats] || { lat: 52.3676, lng: 4.9041 };
+        const lat = baseCoords.lat + (Math.random() - 0.5) * 0.02; // Kleine variatie
+        const lng = baseCoords.lng + (Math.random() - 0.5) * 0.02;
         
         const depth = (1 + Math.random() * 4).toFixed(1); // 1-5 meter diep
         
@@ -288,7 +358,7 @@ async function seed() {
         totalIncidents++;
         
         await db.insert(safetyIncidentsTable).values({
-          incidentId: `VM-2024-${String(totalIncidents).padStart(4, '0')}`,
+          incidentId: `VM-${timestamp}-${String(totalIncidents).padStart(4, '0')}`,
           title: title,
           description: getRandomItem(descriptions),
           category: category,
@@ -296,7 +366,7 @@ async function seed() {
           status: status,
           priority: priority,
           infrastructureType: infrastructureType,
-          location: getRandomItem(amsterdamLocations),
+          location: incidentLocation.locatie,
           coordinates: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
           depth: depth,
           projectId: project.id,

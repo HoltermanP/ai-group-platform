@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 interface SafetyIncident {
   id: number;
@@ -12,6 +12,8 @@ interface SafetyIncident {
   severity: string;
   status: string;
   priority: string;
+  infrastructureType: string | null;
+  location: string | null;
   projectId: number | null;
   impact: string | null;
   mitigation: string | null;
@@ -35,7 +37,16 @@ interface Project {
 
 export default function AISafetyPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [projectIdFilter, setProjectIdFilter] = useState<string | null>(null);
+  const [filters, setFilters] = useState<{
+    severity?: string;
+    status?: string;
+    category?: string;
+    infrastructureType?: string;
+    location?: string;
+    month?: string;
+  }>({});
   const [isCreating, setIsCreating] = useState(false);
   const [incidents, setIncidents] = useState<SafetyIncident[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -65,14 +76,26 @@ export default function AISafetyPage() {
     externalReference: "",
   });
 
-  // Lees projectId uit URL query parameters
+  // Lees filters uit URL query parameters - update when searchParams change
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const projectId = params.get('projectId');
-      setProjectIdFilter(projectId);
-    }
-  }, []);
+    const projectId = searchParams.get('projectId');
+    const severity = searchParams.get('severity');
+    const status = searchParams.get('status');
+    const category = searchParams.get('category');
+    const infrastructureType = searchParams.get('infrastructureType');
+    const location = searchParams.get('location');
+    const month = searchParams.get('month');
+    
+    setProjectIdFilter(projectId);
+    setFilters({
+      severity: severity || undefined,
+      status: status || undefined,
+      category: category || undefined,
+      infrastructureType: infrastructureType || undefined,
+      location: location || undefined,
+      month: month || undefined,
+    });
+  }, [searchParams]);
 
   useEffect(() => {
     fetchIncidents();
@@ -250,15 +273,118 @@ export default function AISafetyPage() {
     return colors[status] || "bg-muted text-muted-foreground";
   };
 
-  // Filter incidents op basis van projectId als die is opgegeven
-  const filteredIncidents = projectIdFilter
-    ? incidents.filter((incident) => incident.projectId === parseInt(projectIdFilter))
-    : incidents;
+  // Filter incidents op basis van alle actieve filters
+  const filteredIncidents = incidents.filter((incident) => {
+    // Project filter
+    if (projectIdFilter && incident.projectId !== parseInt(projectIdFilter)) {
+      return false;
+    }
+    
+    // Severity filter
+    if (filters.severity && incident.severity !== filters.severity) {
+      return false;
+    }
+    
+    // Status filter
+    if (filters.status && incident.status !== filters.status) {
+      return false;
+    }
+    
+    // Category filter
+    if (filters.category && incident.category !== filters.category) {
+      return false;
+    }
+    
+    // Infrastructure type filter
+    if (filters.infrastructureType && incident.infrastructureType !== filters.infrastructureType) {
+      return false;
+    }
+    
+    // Location filter - gebruik het juiste location veld
+    if (filters.location && incident.location !== filters.location) {
+      return false;
+    }
+    
+    // Month filter - check if reportedDate is in the specified month
+    if (filters.month && incident.reportedDate) {
+      const incidentDate = new Date(incident.reportedDate);
+      // Vergelijk jaar en maand (0-indexed)
+      const incidentYear = incidentDate.getFullYear();
+      const incidentMonth = incidentDate.getMonth();
+      
+      // Parse filter month - kan verschillende formaten hebben
+      // Format kan zijn: "2024 nov" of "nov. 2024" afhankelijk van locale
+      const filterMonth = filters.month.toLowerCase().trim();
+      
+      // Converteer Nederlandse maandnaam naar maandnummer (0-indexed)
+      const monthMap: Record<string, number> = {
+        'jan': 0, 'januari': 0,
+        'feb': 1, 'februari': 1,
+        'mrt': 2, 'maart': 2, 'mar': 2,
+        'apr': 3, 'april': 3,
+        'mei': 4,
+        'jun': 5, 'juni': 5,
+        'jul': 6, 'juli': 6,
+        'aug': 7, 'augustus': 7,
+        'sep': 8, 'september': 8,
+        'okt': 9, 'oktober': 9, 'oct': 9,
+        'nov': 10, 'november': 10,
+        'dec': 11, 'december': 11
+      };
+      
+      // Probeer verschillende formaten te parsen
+      let filterYear: number | null = null;
+      let filterMonthNum: number | null = null;
+      
+      // Format: "2024 nov" of "nov 2024"
+      const parts = filterMonth.split(/[\s.]+/);
+      for (const part of parts) {
+        const yearMatch = parseInt(part);
+        if (yearMatch > 2000 && yearMatch < 2100) {
+          filterYear = yearMatch;
+        } else if (monthMap[part] !== undefined) {
+          filterMonthNum = monthMap[part];
+        }
+      }
+      
+      // Debug log
+      console.log('Month filter debug:', {
+        filterMonth,
+        parts,
+        filterYear,
+        filterMonthNum,
+        incidentYear,
+        incidentMonth,
+        match: filterYear === incidentYear && filterMonthNum === incidentMonth
+      });
+      
+      if (filterYear === null || filterMonthNum === null) {
+        console.warn('Could not parse month filter:', filters.month);
+        return true; // Als we niet kunnen parsen, laat door
+      }
+      
+      if (incidentYear !== filterYear || incidentMonth !== filterMonthNum) {
+        return false;
+      }
+    }
+    
+    return true;
+  });
 
   // Vind het project dat wordt gefilterd
   const filteredProject = projectIdFilter
     ? projects.find((p) => p.id === parseInt(projectIdFilter))
     : null;
+    
+  // Check of er filters actief zijn
+  const hasActiveFilters = projectIdFilter || Object.values(filters).some(v => v !== undefined);
+  
+  // Functie om alle filters te verwijderen
+  const clearAllFilters = () => {
+    setProjectIdFilter(null);
+    setFilters({});
+    router.push("/dashboard/ai-safety");
+  };
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
@@ -647,23 +773,62 @@ export default function AISafetyPage() {
             </div>
           )}
 
-          {/* Filter Indicator */}
-          {filteredProject && (
-            <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="text-sm text-foreground">
-                  <span className="font-medium">Gefilterd op project:</span>{" "}
-                  <span className="text-primary font-semibold">
-                    {filteredProject.projectId} - {filteredProject.name}
-                  </span>
-                </div>
+          {/* Filter Indicators */}
+          {hasActiveFilters && (
+            <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <div className="text-sm font-medium text-foreground">Actieve Filters:</div>
+                <button
+                  onClick={clearAllFilters}
+                  className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  Alle filters verwijderen ✕
+                </button>
               </div>
-              <button
-                onClick={() => router.push("/dashboard/ai-safety")}
-                className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
-              >
-                Filter verwijderen ✕
-              </button>
+              <div className="flex flex-wrap gap-2">
+                {filteredProject && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Project:</span>
+                    <span className="text-primary">{filteredProject.projectId} - {filteredProject.name}</span>
+                  </span>
+                )}
+                {filters.severity && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Ernst:</span>
+                    <span className="text-primary">{getSeverityLabel(filters.severity)}</span>
+                  </span>
+                )}
+                {filters.status && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Status:</span>
+                    <span className="text-primary">{getStatusLabel(filters.status)}</span>
+                  </span>
+                )}
+                {filters.category && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Categorie:</span>
+                    <span className="text-primary">{getCategoryLabel(filters.category)}</span>
+                  </span>
+                )}
+                {filters.infrastructureType && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Infrastructuur:</span>
+                    <span className="text-primary">{getInfrastructureLabel(filters.infrastructureType)}</span>
+                  </span>
+                )}
+                {filters.location && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Locatie:</span>
+                    <span className="text-primary">{filters.location}</span>
+                  </span>
+                )}
+                {filters.month && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
+                    <span className="font-medium">Maand:</span>
+                    <span className="text-primary capitalize">{filters.month}</span>
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
@@ -671,26 +836,58 @@ export default function AISafetyPage() {
           <div>
             <h2 className="text-2xl font-semibold mb-4 text-foreground">
               Veiligheidsmeldingen
-              {filteredProject && (
+              {hasActiveFilters && (
                 <span className="text-base font-normal text-muted-foreground ml-2">
-                  ({filteredIncidents.length} {filteredIncidents.length === 1 ? 'melding' : 'meldingen'})
+                  ({filteredIncidents.length} van {incidents.length} {filteredIncidents.length === 1 ? 'melding' : 'meldingen'})
                 </span>
               )}
             </h2>
+            
+            {/* Debug info - tijdelijk */}
+            {filters.month && (
+              <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded text-sm space-y-2">
+                <div><strong>Debug Maandfilter:</strong></div>
+                <div>• Filter waarde: "{filters.month}"</div>
+                <div>• Totaal incidents in database: {incidents.length}</div>
+                <div>• Na filtering: {filteredIncidents.length}</div>
+                {incidents.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-blue-300 dark:border-blue-700">
+                    <div className="font-semibold mb-1">Eerste 5 incident datums:</div>
+                    {incidents.slice(0, 5).map((inc, idx) => {
+                      const date = new Date(inc.reportedDate);
+                      const formatted = date.toLocaleDateString('nl-NL', { year: 'numeric', month: 'short', day: 'numeric' });
+                      return (
+                        <div key={idx} className="text-xs">
+                          {idx + 1}. {inc.incidentId}: {formatted} (maand: {date.getMonth()}, jaar: {date.getFullYear()})
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Algemene debug wanneer geen filters */}
+            {!hasActiveFilters && incidents.length === 0 && !isLoading && (
+              <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-950 border border-yellow-200 dark:border-yellow-800 rounded text-sm">
+                <strong>⚠️ Geen incidents in database:</strong> Er zijn nog geen veiligheidsmeldingen aangemaakt. 
+                Maak eerst enkele meldingen aan om de filtering te testen.
+              </div>
+            )}
             {isLoading ? (
               <div className="text-center py-12 text-muted-foreground">
                 Laden...
               </div>
-            ) : filteredIncidents.length === 0 && projectIdFilter ? (
+            ) : filteredIncidents.length === 0 && hasActiveFilters ? (
               <div className="text-center py-12 bg-card border border-border rounded-lg">
                 <p className="text-muted-foreground mb-4">
-                  Geen veiligheidsmeldingen gevonden voor dit project
+                  Geen veiligheidsmeldingen gevonden met de geselecteerde filters
                 </p>
                 <button
-                  onClick={() => router.push("/dashboard/ai-safety")}
+                  onClick={clearAllFilters}
                   className="text-primary hover:text-primary/80 transition-colors font-medium"
                 >
-                  Bekijk alle meldingen →
+                  Verwijder filters en bekijk alle meldingen →
                 </button>
               </div>
             ) : incidents.length === 0 ? (

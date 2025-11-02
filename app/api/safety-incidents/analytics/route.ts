@@ -60,13 +60,16 @@ export async function GET(req: Request) {
       monthlyTrend: Object.entries(
         incidents.reduce((acc, incident) => {
           const date = new Date(incident.reportedDate);
-          const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-          acc[monthKey] = (acc[monthKey] || 0) + 1;
+          // Gebruik YYYY-MM formaat voor consistente sortering
+          const sortKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const displayKey = date.toLocaleDateString('nl-NL', { year: 'numeric', month: 'short' });
+          acc[sortKey] = { sortKey, displayKey, count: (acc[sortKey]?.count || 0) + 1 };
           return acc;
-        }, {} as Record<string, number>)
+        }, {} as Record<string, { sortKey: string; displayKey: string; count: number }>)
       )
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, count]) => ({ month, count })),
+      .map(([, data]) => data)
+      .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
+      .map(({ displayKey, count }) => ({ month: displayKey, count })),
 
       // Ernst per categorie
       severityByCategory: incidents.reduce((acc, incident) => {

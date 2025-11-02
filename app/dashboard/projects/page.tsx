@@ -10,6 +10,8 @@ interface Project {
   name: string;
   description: string | null;
   status: string;
+  plaats: string | null;
+  gemeente: string | null;
   projectManager: string | null;
   organization: string | null;
   startDate: string | null;
@@ -319,7 +321,7 @@ export default function ProjectsPage() {
             ) : (
               <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
-                  <table className="w-full" style={{ minWidth: '1200px' }}>
+                  <table className="w-full" style={{ minWidth: '1400px' }}>
                     <thead className="bg-muted/50 border-b border-border">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
@@ -327,6 +329,12 @@ export default function ProjectsPage() {
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Naam
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                          Plaats
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                          Gemeente
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                           Organisatie
@@ -372,6 +380,16 @@ export default function ProjectsPage() {
                                 {project.description}
                               </div>
                             )}
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm text-foreground">
+                              {project.plaats || "-"}
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 whitespace-nowrap">
+                            <div className="text-sm text-muted-foreground">
+                              {project.gemeente || "-"}
+                            </div>
                           </td>
                           <td className="px-4 py-4 whitespace-nowrap">
                             <div className="text-sm text-foreground">
