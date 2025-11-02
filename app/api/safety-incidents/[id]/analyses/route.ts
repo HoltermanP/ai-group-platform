@@ -44,18 +44,25 @@ export async function GET(
     });
 
     // Parse JSON velden en format voor frontend
-    const formattedAnalyses = incidentAnalyses.map(analysis => ({
-      id: analysis.id,
-      analysisId: analysis.analysisId,
-      summary: analysis.summary,
-      recommendations: JSON.parse(analysis.recommendations),
-      suggestedToolboxTopics: JSON.parse(analysis.suggestedToolboxTopics),
-      riskAssessment: analysis.riskAssessment,
-      preventiveMeasures: JSON.parse(analysis.preventiveMeasures),
-      model: analysis.model,
-      tokensUsed: analysis.tokensUsed,
-      createdAt: analysis.createdAt,
-    }));
+    const formattedAnalyses = incidentAnalyses.map(analysis => {
+      try {
+        return {
+          id: analysis.id,
+          analysisId: analysis.analysisId,
+          summary: analysis.summary,
+          recommendations: analysis.recommendations ? JSON.parse(analysis.recommendations) : [],
+          suggestedToolboxTopics: analysis.suggestedToolboxTopics ? JSON.parse(analysis.suggestedToolboxTopics) : [],
+          riskAssessment: analysis.riskAssessment,
+          preventiveMeasures: analysis.preventiveMeasures ? JSON.parse(analysis.preventiveMeasures) : [],
+          model: analysis.model,
+          tokensUsed: analysis.tokensUsed,
+          createdAt: analysis.createdAt,
+        };
+      } catch (error) {
+        console.error('Error parsing analysis:', error);
+        return null;
+      }
+    }).filter((analysis): analysis is NonNullable<typeof analysis> => analysis !== null);
 
     // Sorteer op datum (nieuwste eerst)
     formattedAnalyses.sort((a, b) => 
