@@ -267,17 +267,9 @@ export default function SafetyAnalyticsPage() {
                 📈 Trend Veiligheidsmeldingen over Tijd
                 <span className="text-xs text-muted-foreground font-normal">(klik op een punt voor details)</span>
               </h2>
-              <div className="cursor-pointer">
+              <div>
                 <ResponsiveContainer width="100%" height={300}>
-                  <LineChart 
-                    data={analytics.monthlyTrend}
-                    onClick={(data) => {
-                      if (data && data.activePayload && data.activePayload[0]) {
-                        const month = data.activePayload[0].payload.month;
-                        router.push(`/dashboard/ai-safety?month=${month}`);
-                      }
-                    }}
-                  >
+                  <LineChart data={analytics.monthlyTrend}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="month" 
@@ -318,7 +310,18 @@ export default function SafetyAnalyticsPage() {
                       strokeWidth={3}
                       name="Aantal meldingen"
                       dot={{ r: 5, fill: COLORS.primary, strokeWidth: 2, stroke: 'hsl(var(--background))' }}
-                      activeDot={{ r: 8, fill: COLORS.primary, strokeWidth: 2, stroke: 'hsl(var(--background))', cursor: 'pointer' }}
+                      activeDot={{ 
+                        r: 8, 
+                        fill: COLORS.primary, 
+                        strokeWidth: 2, 
+                        stroke: 'hsl(var(--background))', 
+                        cursor: 'pointer',
+                        onClick: (_: unknown, payload: { payload: { month: string } }) => {
+                          if (payload && payload.payload && payload.payload.month) {
+                            router.push(`/dashboard/ai-safety?month=${payload.payload.month}`);
+                          }
+                        }
+                      }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -343,12 +346,6 @@ export default function SafetyAnalyticsPage() {
                       category: getCategoryLabel(item.category),
                       originalCategory: item.category
                     }))}
-                    onClick={(data) => {
-                      if (data && data.activePayload && data.activePayload[0]) {
-                        const category = data.activePayload[0].payload.originalCategory;
-                        handleFilterClick('category', category);
-                      }
-                    }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
@@ -373,6 +370,11 @@ export default function SafetyAnalyticsPage() {
                       fill={COLORS.chart3} 
                       name="Aantal" 
                       className="cursor-pointer"
+                      onClick={(data: { originalCategory?: string }) => {
+                        if (data && data.originalCategory) {
+                          handleFilterClick('category', data.originalCategory);
+                        }
+                      }}
                     />
                   </BarChart>
                 </ResponsiveContainer>
@@ -443,12 +445,6 @@ export default function SafetyAnalyticsPage() {
                     type: getInfraLabel(item.type),
                     originalType: item.type
                   }))}
-                  onClick={(data) => {
-                    if (data && data.activePayload && data.activePayload[0]) {
-                      const infraType = data.activePayload[0].payload.originalType;
-                      handleFilterClick('infrastructureType', infraType);
-                    }
-                  }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
@@ -470,6 +466,11 @@ export default function SafetyAnalyticsPage() {
                     fill={COLORS.chart2} 
                     name="Aantal incidents"
                     className="cursor-pointer"
+                    onClick={(data: { originalType?: string }) => {
+                      if (data && data.originalType) {
+                        handleFilterClick('infrastructureType', data.originalType);
+                      }
+                    }}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -491,12 +492,6 @@ export default function SafetyAnalyticsPage() {
                       category: getCategoryLabel(item.category),
                       originalCategory: item.category
                     }))}
-                    onClick={(data) => {
-                      if (data && data.activePayload && data.activePayload[0]) {
-                        const category = data.activePayload[0].payload.originalCategory;
-                        handleFilterClick('category', category);
-                      }
-                    }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
@@ -521,6 +516,11 @@ export default function SafetyAnalyticsPage() {
                       fill={COLORS.chart4} 
                       name="Gemiddeld aantal dagen"
                       className="cursor-pointer"
+                      onClick={(data: { originalCategory?: string }) => {
+                        if (data && data.originalCategory) {
+                          handleFilterClick('category', data.originalCategory);
+                        }
+                      }}
                     />
                   </BarChart>
                 </ResponsiveContainer>
