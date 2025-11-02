@@ -321,37 +321,38 @@ export default function ProjectsPage() {
             ) : (
               <>
                 {/* Desktop Table View - Hidden on mobile */}
-                <div className="hidden lg:block bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-muted/50 border-b border-border">
-                        <tr>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Project ID
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Naam
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Locatie
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Manager
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Data
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Budget
-                          </th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Meldingen
-                          </th>
-                        </tr>
-                      </thead>
+                <div className="hidden md:block">
+                  <p className="text-xs text-muted-foreground mb-2 text-right">
+                    💡 Scroll horizontaal voor meer details
+                  </p>
+                  <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto scrollbar-thin">
+                      <table className="w-full min-w-[900px]">
+                        <thead className="bg-muted/50 border-b border-border">
+                          <tr>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Project
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Locatie
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Manager
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Planning
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Budget
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Status
+                            </th>
+                            <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              <ShieldAlert className="h-4 w-4 mx-auto" />
+                            </th>
+                          </tr>
+                        </thead>
                       <tbody className="divide-y divide-border">
                         {projects.map((project) => (
                           <tr 
@@ -359,30 +360,30 @@ export default function ProjectsPage() {
                             onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                             className="hover:bg-muted/30 transition-colors cursor-pointer"
                           >
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-foreground">
+                            {/* Project ID + Naam */}
+                            <td className="px-3 py-3">
+                              <div className="text-xs text-muted-foreground mb-0.5">
                                 {project.projectId}
                               </div>
-                            </td>
-                            <td className="px-4 py-4">
                               <div className="text-sm font-medium text-foreground">
                                 {project.name}
                               </div>
-                              {project.description && (
-                                <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                                  {project.description}
-                                </div>
-                              )}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
+                            
+                            {/* Locatie */}
+                            <td className="px-3 py-3 whitespace-nowrap">
                               <div className="text-sm text-foreground">
                                 {project.plaats || "-"}
                               </div>
-                              <div className="text-xs text-muted-foreground">
-                                {project.gemeente || ""}
-                              </div>
+                              {project.gemeente && (
+                                <div className="text-xs text-muted-foreground">
+                                  {project.gemeente}
+                                </div>
+                              )}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
+                            
+                            {/* Manager */}
+                            <td className="px-3 py-3 whitespace-nowrap">
                               <div className="text-sm text-foreground">
                                 {project.projectManager || "-"}
                               </div>
@@ -392,7 +393,9 @@ export default function ProjectsPage() {
                                 </div>
                               )}
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
+                            
+                            {/* Planning */}
+                            <td className="px-3 py-3 whitespace-nowrap">
                               <div className="text-sm text-foreground">
                                 {formatDate(project.startDate)}
                               </div>
@@ -400,35 +403,34 @@ export default function ProjectsPage() {
                                 → {formatDate(project.plannedEndDate)}
                               </div>
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
+                            
+                            {/* Budget */}
+                            <td className="px-3 py-3 whitespace-nowrap">
                               <div className="text-sm text-foreground font-medium">
                                 {formatBudget(project.budget)}
                               </div>
                             </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
+                            
+                            {/* Status */}
+                            <td className="px-3 py-3 whitespace-nowrap">
                               <span
                                 className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(project.status)}`}
                               >
                                 {getStatusLabel(project.status)}
                               </span>
                             </td>
+                            
+                            {/* Meldingen */}
                             <td 
-                              className="px-4 py-4 whitespace-nowrap"
+                              className="px-3 py-3 whitespace-nowrap"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 router.push(`/dashboard/ai-safety?projectId=${project.id}`);
                               }}
                             >
-                              <div className="flex items-center justify-center gap-2 hover:opacity-70 transition-opacity">
-                                <ShieldAlert 
-                                  className={`h-4 w-4 ${
-                                    project.safetyIncidentCount > 0 
-                                      ? "text-destructive" 
-                                      : "text-muted-foreground"
-                                  }`} 
-                                />
+                              <div className="flex items-center justify-center">
                                 <span 
-                                  className={`text-sm font-medium ${
+                                  className={`text-sm font-semibold ${
                                     project.safetyIncidentCount > 0 
                                       ? "text-destructive" 
                                       : "text-muted-foreground"
@@ -442,11 +444,12 @@ export default function ProjectsPage() {
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 </div>
 
                 {/* Mobile Card View - Hidden on desktop */}
-                <div className="lg:hidden space-y-4">
+                <div className="md:hidden space-y-4">
                   {projects.map((project) => (
                     <div
                       key={project.id}
