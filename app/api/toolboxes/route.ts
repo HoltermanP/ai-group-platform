@@ -2,8 +2,9 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { toolboxesTable } from "@/lib/db/schema";
+import { getUserOrganizationIds } from "@/lib/clerk-admin";
 import { generateToolboxContent } from "@/lib/services/openai";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, or, isNull, inArray, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
 export async function POST(req: Request) {
@@ -103,6 +104,9 @@ export async function GET(req: Request) {
       );
     }
 
+    // Haal organisatie IDs op voor filtering (leeg voor admins)
+    const userOrgIds = await getUserOrganizationIds(userId);
+
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get("projectId");
     const organizationId = searchParams.get("organizationId");
@@ -110,22 +114,61 @@ export async function GET(req: Request) {
     let toolboxes;
 
     if (projectId) {
-      toolboxes = await db
-        .select()
-        .from(toolboxesTable)
-        .where(eq(toolboxesTable.projectId, parseInt(projectId)))
-        .orderBy(desc(toolboxesTable.createdAt));
+      // Filter op project, maar check ook organisatie toegang
+      if (userOrgIds.length > 0) {
+        toolboxes = await db
+          .select()
+          .from(toolboxesTable)
+          .where(
+            and(
+              eq(toolboxesTable.projectId, parseInt(projectId)),
+              or(
+                inArray(toolboxesTable.organizationId, userOrgIds),
+                isNull(toolboxesTable.organizationId)
+              )
+            )
+          )
+          .orderBy(desc(toolboxesTable.createdAt));
+      } else {
+        toolboxes = await db
+          .select()
+          .from(toolboxesTable)
+          .where(eq(toolboxesTable.projectId, parseInt(projectId)))
+          .orderBy(desc(toolboxesTable.createdAt));
+      }
     } else if (organizationId) {
+      // Filter op specifieke organisatie - check toegang
+      const orgId = parseInt(organizationId);
+      if (userOrgIds.length > 0 && !userOrgIds.includes(orgId)) {
+        // Gebruiker heeft geen toegang tot deze organisatie
+        return NextResponse.json([], { status: 200 });
+      }
+      
       toolboxes = await db
         .select()
         .from(toolboxesTable)
-        .where(eq(toolboxesTable.organizationId, parseInt(organizationId)))
+        .where(eq(toolboxesTable.organizationId, orgId))
         .orderBy(desc(toolboxesTable.createdAt));
     } else {
-      toolboxes = await db
-        .select()
-        .from(toolboxesTable)
-        .orderBy(desc(toolboxesTable.createdAt));
+      // Haal alle toolboxes op met organisatie filtering
+      if (userOrgIds.length > 0) {
+        toolboxes = await db
+          .select()
+          .from(toolboxesTable)
+          .where(
+            or(
+              inArray(toolboxesTable.organizationId, userOrgIds),
+              isNull(toolboxesTable.organizationId)
+            )
+          )
+          .orderBy(desc(toolboxesTable.createdAt));
+      } else {
+        // Admin: toon alles
+        toolboxes = await db
+          .select()
+          .from(toolboxesTable)
+          .orderBy(desc(toolboxesTable.createdAt));
+      }
     }
 
     return NextResponse.json(toolboxes);

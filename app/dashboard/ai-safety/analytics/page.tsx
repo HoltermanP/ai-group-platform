@@ -32,7 +32,7 @@ interface Analytics {
   };
   byCategory: Array<{ category: string; count: number }>;
   bySeverity: Array<{ severity: string; count: number }>;
-  byInfrastructure: Array<{ type: string; count: number }>;
+  byDiscipline: Array<{ type: string; count: number }>;
   monthlyTrend: Array<{ month: string; count: number }>;
   avgResolutionTime: number | null;
   resolutionTimeByCategory: Array<{ category: string; avgDays: number }>;
@@ -117,16 +117,12 @@ export default function SafetyAnalyticsPage() {
     return labels[severity] || severity;
   };
 
-  const getInfraLabel = (type: string) => {
+  const getDisciplineLabel = (type: string) => {
     const labels: Record<string, string> = {
-      riool: "Riool",
-      water: "Water",
-      gas: "Gas",
-      elektra: "Elektra",
-      telecom: "Telecom",
-      warmte: "Warmte",
-      metro: "Metro",
-      tunnel: "Tunnel",
+      Elektra: "Elektra",
+      Gas: "Gas",
+      Water: "Water",
+      Media: "Media",
       onbekend: "Onbekend",
     };
     return labels[type] || type;
@@ -412,16 +408,16 @@ export default function SafetyAnalyticsPage() {
               </div>
             </div>
 
-            {/* Infrastructuurtype */}
+            {/* Discipline */}
             <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
               <h2 className="text-xl font-semibold mb-4 text-card-foreground">
-                🏗️ Risico per Infrastructuurtype
+                🏗️ Risico per Discipline
               </h2>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart 
-                  data={analytics.byInfrastructure.map(item => ({
+                  data={analytics.byDiscipline.map(item => ({
                     ...item,
-                    type: getInfraLabel(item.type),
+                    type: getDisciplineLabel(item.type),
                     originalType: item.type
                   }))}
                 >
@@ -448,7 +444,7 @@ export default function SafetyAnalyticsPage() {
                 </BarChart>
               </ResponsiveContainer>
               <p className="text-sm text-muted-foreground mt-4">
-                💡 <strong>Actie:</strong> Verhoog inspectiefrequentie bij hoogrisico infrastructuur.
+                💡 <strong>Actie:</strong> Verhoog inspectiefrequentie bij hoogrisico disciplines.
               </p>
             </div>
 

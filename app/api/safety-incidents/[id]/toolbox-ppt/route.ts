@@ -104,7 +104,7 @@ export async function POST(
         description: incident.description,
         category: incident.category,
         severity: incident.severity,
-        infrastructureType: incident.infrastructureType,
+        discipline: incident.discipline,
         location: incident.location,
         impact: incident.impact,
         mitigation: incident.mitigation,

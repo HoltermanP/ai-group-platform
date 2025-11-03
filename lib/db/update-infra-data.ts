@@ -13,7 +13,7 @@ const infrastructureProjects = [
     projectId: "EL-2024-001",
     name: "Sanering 10kV Kabelnet Centrum",
     category: "sanering",
-    infrastructureType: "elektra",
+    discipline: "Elektra",
     organizationId: 1,
     description: "Sanering van verouderd 10kV middenspanningsnet in het centrum. Vervanging van oude papier-olie kabels door XLPE kabels.",
     projectManager: "Ing. J. van der Berg",
@@ -23,7 +23,7 @@ const infrastructureProjects = [
     projectId: "EL-2024-002",
     name: "Reconstructie Laagspanningsnet Noord",
     category: "reconstructie",
-    infrastructureType: "elektra",
+    discipline: "Elektra",
     organizationId: 1,
     description: "Vernieuwing van het laagspanningsnet inclusief nieuwe transformatorstations en kabelinfrastructuur.",
     projectManager: "Ing. M. Jansen",
@@ -35,7 +35,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-001",
     name: "Sanering Gietijzeren Gasleidingen Zuid",
     category: "sanering",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 2,
     description: "Verwijdering van oude gietijzeren gasleidingen en vervanging door PE leidingen conform NEN 3650.",
     projectManager: "Ir. P. de Vries",
@@ -45,7 +45,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-002",
     name: "Nieuwe Aanleg Gastracé Bedrijventerrein",
     category: "nieuwe-aanleg",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 2,
     description: "Aanleg nieuw middendruk gastransportnet voor nieuw bedrijventerrein inclusief drukregelinstallaties.",
     projectManager: "Ing. E. Bakker",
@@ -55,7 +55,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-003",
     name: "Reconstructie Gasnet Woonwijk Oost",
     category: "reconstructie",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 2,
     description: "Vernieuwing van het gehele gasnetwerk in bestaande woonwijk, inclusief huisaansluitingen.",
     projectManager: "Ir. T. Visser",
@@ -67,7 +67,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-001",
     name: "Sanering Asbestcement Waterleiding",
     category: "sanering",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 3,
     description: "Verwijdering en vervanging van asbestcement waterleidingen door gietijzer met PE coating.",
     projectManager: "Ir. S. Smit",
@@ -77,7 +77,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-002",
     name: "Nieuwe Aanleg Transportleiding DN600",
     category: "nieuwe-aanleg",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 3,
     description: "Aanleg nieuwe hoofdtransportleiding DN600 over 8km voor verbinding tussen pompstations.",
     projectManager: "Ir. L. de Jong",
@@ -87,7 +87,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-003",
     name: "Reconstructie Drinkwaternet Centrum",
     category: "reconstructie",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 3,
     description: "Vernieuwing drinkwaterdistributienet inclusief vervanging afsluiterkasten en brandkranen.",
     projectManager: "Ing. A. Hendriks",
@@ -99,7 +99,7 @@ const infrastructureProjects = [
     projectId: "MED-2024-001",
     name: "Nieuwe Aanleg Glasvezelnetwerk",
     category: "nieuwe-aanleg",
-    infrastructureType: "media",
+    discipline: "Media",
     organizationId: 4,
     description: "Aanleg Fiber-to-the-Home netwerk in 4 wijken, inclusief buisleidingen en coax vervanging.",
     projectManager: "Ing. M. Vermeulen",
@@ -109,7 +109,7 @@ const infrastructureProjects = [
     projectId: "MED-2024-002",
     name: "Reconstructie Telecomkabelnet",
     category: "reconstructie",
-    infrastructureType: "media",
+    discipline: "Media",
     organizationId: 4,
     description: "Vernieuwing van verouderd koperen telecomnetwerk naar fiber infrastructuur.",
     projectManager: "Ir. L. Dijkstra",
@@ -121,7 +121,7 @@ const infrastructureProjects = [
     projectId: "EL-2024-003",
     name: "Nieuwe Aanleg HS Station 150kV",
     category: "nieuwe-aanleg",
-    infrastructureType: "elektra",
+    discipline: "Elektra",
     organizationId: 2,
     description: "Realisatie nieuw hoogspanningsstation 150/10kV inclusief kabelverbindingen en grondkabels.",
     projectManager: "Ir. J. Bakker",
@@ -131,7 +131,7 @@ const infrastructureProjects = [
     projectId: "EL-2024-004",
     name: "Sanering Ondergrondse Kabelgoten",
     category: "sanering",
-    infrastructureType: "elektra",
+    discipline: "Elektra",
     organizationId: 2,
     description: "Verwijdering van oude asbestcementbuizen en vervanging door kunststof kabelgoten.",
     projectManager: "Ing. R. Peters",
@@ -143,7 +143,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-004",
     name: "Reconstructie Gasdrukregelstation",
     category: "reconstructie",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 3,
     description: "Modernisering van 3 gasdrukregelstations inclusief nieuwe meet- en regelapparatuur.",
     projectManager: "Ir. K. Visser",
@@ -153,7 +153,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-005",
     name: "Nieuwe Aanleg Gastracé Ringweg",
     category: "nieuwe-aanleg",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 3,
     description: "Aanleg nieuwe gasleiding DN400 langs nieuwe ringweg ter ontlasting bestaand net.",
     projectManager: "Ing. F. de Boer",
@@ -165,7 +165,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-004",
     name: "Sanering Loden Leidingen Binnenstad",
     category: "sanering",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 4,
     description: "Verwijdering laatste loden waterleidingen in historische binnenstad, relining waar mogelijk.",
     projectManager: "Ir. D. Mulder",
@@ -175,7 +175,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-005",
     name: "Reconstructie Pompstation Zuid",
     category: "reconstructie",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 4,
     description: "Complete vernieuwing pompstation inclusief nieuwe pompen, aandrijvingen en besturing.",
     projectManager: "Ing. N. Bos",
@@ -187,7 +187,7 @@ const infrastructureProjects = [
     projectId: "MED-2024-003",
     name: "Sanering Verouderd Coax Netwerk",
     category: "sanering",
-    infrastructureType: "media",
+    discipline: "Media",
     organizationId: 1,
     description: "Verwijdering oud coaxnetwerk uit jaren '80 en vervanging door fiber infrastructuur.",
     projectManager: "Ir. C. van Dam",
@@ -197,7 +197,7 @@ const infrastructureProjects = [
     projectId: "MED-2024-004",
     name: "Nieuwe Aanleg Data Center Backbone",
     category: "nieuwe-aanleg",
-    infrastructureType: "media",
+    discipline: "Media",
     organizationId: 1,
     description: "Aanleg redundante fiber verbindingen tussen 4 datacenters met 400Gbit capaciteit.",
     projectManager: "Ir. H. Smits",
@@ -209,7 +209,7 @@ const infrastructureProjects = [
     projectId: "EL-2024-005",
     name: "Reconstructie Openbare Verlichting",
     category: "reconstructie",
-    infrastructureType: "elektra",
+    discipline: "Elektra",
     organizationId: 1,
     description: "Vervanging conventionele verlichting door LED inclusief diminstallaties en nieuwe kabels.",
     projectManager: "Ing. W. Jansen",
@@ -219,7 +219,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-006",
     name: "Sanering Oudste Gietijzer Tracés",
     category: "sanering",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 2,
     description: "Verwijdering gietijzeren gasleidingen uit 1920-1950 in historische wijken.",
     projectManager: "Ir. B. Koster",
@@ -229,7 +229,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-006",
     name: "Nieuwe Aanleg Grondwaterinfiltratiesysteem",
     category: "nieuwe-aanleg",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 3,
     description: "Realisatie nieuwe infiltratievijvers en leidingwerk voor grondwateraanvulling.",
     projectManager: "Ir. G. Prins",
@@ -239,7 +239,7 @@ const infrastructureProjects = [
     projectId: "MED-2024-005",
     name: "Reconstructie 5G Antenne Backbone",
     category: "reconstructie",
-    infrastructureType: "media",
+    discipline: "Media",
     organizationId: 4,
     description: "Aanpassing bestaande fiber infrastructuur voor 5G antenne-sites, 200+ locaties.",
     projectManager: "Ing. Y. Vermeer",
@@ -249,7 +249,7 @@ const infrastructureProjects = [
     projectId: "EL-2024-006",
     name: "Nieuwe Aanleg Laadinfrastructuur",
     category: "nieuwe-aanleg",
-    infrastructureType: "elektra",
+    discipline: "Elektra",
     organizationId: 2,
     description: "Aanleg nieuw kabelnetwerk voor 500 publieke laadpalen elektrische voertuigen.",
     projectManager: "Ir. Q. de Wit",
@@ -259,7 +259,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-007",
     name: "Reconstructie Transportleiding DN300",
     category: "reconstructie",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 3,
     description: "Vernieuwing 12km gastransportleiding inclusief nieuwe beschermingsbuizen en coating.",
     projectManager: "Ing. U. Meijer",
@@ -269,7 +269,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-007",
     name: "Sanering PVC Rioolpersleiding",
     category: "sanering",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 1,
     description: "Vervanging oude PVC rioolpersleidingen door PE leidingen met betere duurzaamheid.",
     projectManager: "Ir. I. Koning",
@@ -279,7 +279,7 @@ const infrastructureProjects = [
     projectId: "MED-2024-006",
     name: "Nieuwe Aanleg Smart City Netwerk",
     category: "nieuwe-aanleg",
-    infrastructureType: "media",
+    discipline: "Media",
     organizationId: 1,
     description: "Realisatie IoT sensor netwerk inclusief fiber verbindingen en LoRaWAN gateways.",
     projectManager: "Ir. O. Berg",
@@ -289,7 +289,7 @@ const infrastructureProjects = [
     projectId: "EL-2024-007",
     name: "Sanering Bovengrondse Lijnvoering",
     category: "sanering",
-    infrastructureType: "elektra",
+    discipline: "Elektra",
     organizationId: 3,
     description: "Ondergronds brengen van bovengrondse middenspanningsleidingen in woonwijken.",
     projectManager: "Ing. V. Dekker",
@@ -299,7 +299,7 @@ const infrastructureProjects = [
     projectId: "GAS-2024-008",
     name: "Nieuwe Aanleg Waterstof Ready Leidingen",
     category: "nieuwe-aanleg",
-    infrastructureType: "gas",
+    discipline: "Gas",
     organizationId: 4,
     description: "Aanleg toekomstbestendig leidingennet geschikt voor waterstof transport.",
     projectManager: "Ir. Z. Scholten",
@@ -309,7 +309,7 @@ const infrastructureProjects = [
     projectId: "WAT-2024-008",
     name: "Reconstructie Rioolgemaal Stations",
     category: "reconstructie",
-    infrastructureType: "water",
+    discipline: "Water",
     organizationId: 4,
     description: "Modernisering 8 rioolgemaalstations met nieuwe pompen en telemetrie systemen.",
     projectManager: "Ing. X. Brouwer",
@@ -319,7 +319,7 @@ const infrastructureProjects = [
     projectId: "MED-2024-007",
     name: "Sanering Koperen Telefoonnet",
     category: "sanering",
-    infrastructureType: "media",
+    discipline: "Media",
     organizationId: 2,
     description: "Definitieve verwijdering oude koperen telefoonkabels en vrijmaken tracés.",
     projectManager: "Ir. A. Willems",
@@ -340,7 +340,7 @@ async function updateInfraData() {
       `);
       await db.execute(sql`
         ALTER TABLE projects 
-        ADD COLUMN IF NOT EXISTS "infrastructureType" varchar(50)
+        ADD COLUMN IF NOT EXISTS discipline varchar(50)
       `);
       console.log("   ✅ Columns added\n");
     } catch (error) {
@@ -365,7 +365,7 @@ async function updateInfraData() {
       await db.execute(sql`
         INSERT INTO projects (
           "projectId", name, description, status, "organizationId",
-          category, "infrastructureType", "projectManager",
+          category, discipline, "projectManager",
           "startDate", "plannedEndDate", budget, currency, "ownerId"
         ) VALUES (
           ${project.projectId},
@@ -374,7 +374,7 @@ async function updateInfraData() {
           ${Math.random() > 0.2 ? 'active' : Math.random() > 0.5 ? 'on-hold' : 'completed'},
           ${project.organizationId},
           ${project.category},
-          ${project.infrastructureType},
+          ${project.discipline},
           ${project.projectManager},
           ${startDate.toISOString()},
           ${endDate.toISOString()},
@@ -391,7 +391,7 @@ async function updateInfraData() {
     // Stap 4: Haal nieuwe project IDs op
     console.log("4. Generating realistic safety incidents...");
     const projects = await db.execute(sql`
-      SELECT id, "projectId", "infrastructureType", category
+      SELECT id, "projectId", discipline, category, "organizationId"
       FROM projects
       LIMIT 15
     `);
@@ -408,7 +408,7 @@ async function updateInfraData() {
         await db.execute(sql`
           INSERT INTO safety_incidents (
             "incidentId", title, description, category, severity, status, priority,
-            "infrastructureType", location, depth, "projectId", "organizationId",
+            discipline, location, depth, "projectId", "organizationId",
             impact, mitigation, "safetyMeasures", "reportedBy", contractor,
             "detectedDate", "reportedDate"
           ) VALUES (
@@ -419,7 +419,7 @@ async function updateInfraData() {
             ${incident.severity},
             ${incident.status},
             ${incident.priority},
-            ${incident.infrastructureType},
+            ${incident.discipline},
             ${incident.location},
             ${incident.depth},
             ${incident.projectId},
@@ -444,16 +444,16 @@ async function updateInfraData() {
     const summary = await db.execute(sql`
       SELECT 
         category,
-        "infrastructureType",
+        discipline,
         COUNT(*) as count
       FROM projects
-      GROUP BY category, "infrastructureType"
-      ORDER BY category, "infrastructureType"
+      GROUP BY category, discipline
+      ORDER BY category, discipline
     `);
 
     console.log("📊 Project Summary:");
     summary.rows.forEach((row: any) => {
-      console.log(`   ${row.category} - ${row.infrastructuretype}: ${row.count} projecten`);
+      console.log(`   ${row.category} - ${row.discipline}: ${row.count} projecten`);
     });
 
     console.log("\n✅ Database updated successfully!");
@@ -468,31 +468,31 @@ async function updateInfraData() {
 }
 
 function generateInfraIncident(project: any, incidentNumber: number) {
-  const infra = project.infrastructuretype || project.infrastructureType;
+  const infra = project.discipline || project.discipline;
   
   const incidentTypes: Record<string, any[]> = {
-    elektra: [
+    Elektra: [
       { title: "Kabelbreuk tijdens graafwerkzaamheden", category: "graafschade" },
       { title: "Kortsluiting in kabelverbinding", category: "elektrisch" },
       { title: "Beschadiging kabelmantel", category: "graafschade" },
       { title: "Overbelasting transformator", category: "elektrisch" },
       { title: "Defecte kabellas geconstateerd", category: "corrosie" },
     ],
-    gas: [
+    Gas: [
       { title: "Gaslekkage door graafschade", category: "lekkage" },
       { title: "Corrosie aan gietijzeren leiding", category: "corrosie" },
       { title: "Beschadiging PE gasleiding", category: "graafschade" },
       { title: "Geluidsoverlast drukregelstation", category: "structureel" },
       { title: "Gaslucht waarneming", category: "lekkage" },
     ],
-    water: [
+    Water: [
       { title: "Waterleiding lek na aanboring", category: "lekkage" },
       { title: "Rioolverstopping door bouwafval", category: "obstructie" },
       { title: "Verzakking door spoeling", category: "verzakking" },
       { title: "Asbestvezel aangetroffen", category: "verontreiniging" },
       { title: "Breuk in persleid ing", category: "structureel" },
     ],
-    media: [
+    Media: [
       { title: "Glasvezelkabel doorgekapt", category: "graafschade" },
       { title: "Beschadiging coaxkabel", category: "graafschade" },
       { title: "Water in kabelgoot", category: "lekkage" },
@@ -501,7 +501,7 @@ function generateInfraIncident(project: any, incidentNumber: number) {
     ],
   };
 
-  const types = incidentTypes[infra] || incidentTypes.elektra;
+  const types = incidentTypes[infra] || incidentTypes.Elektra;
   const incident = types[Math.floor(Math.random() * types.length)];
   
   const severities = ["low", "medium", "high", "critical"];
@@ -536,11 +536,11 @@ function generateInfraIncident(project: any, incidentNumber: number) {
     severity: severities[Math.floor(Math.random() * severities.length)],
     status: statuses[Math.floor(Math.random() * statuses.length)],
     priority: priorities[Math.floor(Math.random() * priorities.length)],
-    infrastructureType: infra,
+    discipline: infra,
     location: locations[Math.floor(Math.random() * locations.length)],
     depth: `${(1 + Math.random() * 3).toFixed(1)}m NAP`,
     projectId: project.id,
-    organizationId: null, // Wordt later gevuld via project
+    organizationId: project.organizationId || null, // Gebruik organizationId van project
     impact: "Hinder voor verkeer. Tijdelijke omleidingen ingesteld. Omwonenden geïnformeerd.",
     mitigation: "Gebied afgezet conform VCA richtlijnen. Spoedreparatie ingepland binnen 24 uur.",
     safetyMeasures: "Werkgebied afgezet, verkeersregelaars ingezet, KLIC melding gedaan, omwonenden geïnformeerd.",
@@ -559,4 +559,5 @@ updateInfraData()
     console.error("\n❌ Update failed:", error);
     process.exit(1);
   });
+
 

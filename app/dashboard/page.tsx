@@ -1,5 +1,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { db } from "@/lib/db";
+import { projectsTable, safetyIncidentsTable } from "@/lib/db/schema";
+import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
+import { eq, sql, or, isNull, inArray } from "drizzle-orm";
 
 export default async function DashboardPage() {
   const { userId } = await auth();
@@ -9,6 +14,62 @@ export default async function DashboardPage() {
   }
 
   const user = await currentUser();
+  
+  // Haal organisatie IDs op voor filtering
+  const userIsAdmin = await isAdmin();
+  const userOrgIds = await getUserOrganizationIds(userId);
+  
+  // Haal project statistieken op
+  let projectsQuery = db
+    .select({
+      total: sql<number>`cast(count(*) as integer)`,
+      active: sql<number>`cast(count(*) filter (where ${projectsTable.status} = 'active') as integer)`,
+      onHold: sql<number>`cast(count(*) filter (where ${projectsTable.status} = 'on-hold') as integer)`,
+      completed: sql<number>`cast(count(*) filter (where ${projectsTable.status} = 'completed') as integer)`,
+    })
+    .from(projectsTable);
+  
+  if (!userIsAdmin && userOrgIds.length > 0) {
+    projectsQuery = projectsQuery.where(
+      or(
+        inArray(projectsTable.organizationId, userOrgIds),
+        isNull(projectsTable.organizationId)
+      )
+    );
+  } else if (!userIsAdmin) {
+    projectsQuery = projectsQuery.where(isNull(projectsTable.organizationId));
+  }
+  
+  const projectStats = await projectsQuery;
+  const projectStatsData = projectStats[0] || { total: 0, active: 0, onHold: 0, completed: 0 };
+  
+  // Haal veiligheidsmelding statistieken op
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  
+  let incidentsQuery = db
+    .select({
+      total: sql<number>`cast(count(*) as integer)`,
+      open: sql<number>`cast(count(*) filter (where ${safetyIncidentsTable.status} = 'open') as integer)`,
+      critical: sql<number>`cast(count(*) filter (where ${safetyIncidentsTable.severity} = 'critical') as integer)`,
+      high: sql<number>`cast(count(*) filter (where ${safetyIncidentsTable.severity} = 'high') as integer)`,
+      recent: sql<number>`cast(count(*) filter (where ${safetyIncidentsTable.reportedDate} >= ${sevenDaysAgo}::timestamp) as integer)`,
+    })
+    .from(safetyIncidentsTable);
+  
+  if (!userIsAdmin && userOrgIds.length > 0) {
+    incidentsQuery = incidentsQuery.where(
+      or(
+        inArray(safetyIncidentsTable.organizationId, userOrgIds),
+        isNull(safetyIncidentsTable.organizationId)
+      )
+    );
+  } else if (!userIsAdmin) {
+    incidentsQuery = incidentsQuery.where(isNull(safetyIncidentsTable.organizationId));
+  }
+  
+  const incidentStats = await incidentsQuery;
+  const incidentStatsData = incidentStats[0] || { total: 0, open: 0, critical: 0, high: 0, recent: 0 };
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
@@ -22,7 +83,7 @@ export default async function DashboardPage() {
           </div>
 
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <div className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50">
+            <Link href="/dashboard/projects" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-chart-3/10 text-chart-3">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -31,17 +92,39 @@ export default async function DashboardPage() {
                 </div>
                 <h3 className="font-semibold text-lg text-card-foreground">Projecten</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
                 Beheer je projecten en voeg nieuwe toe
               </p>
-              <div className="mt-4 pt-4 border-t border-border">
-                <a href="/dashboard/projects" className="text-xs text-primary hover:text-primary/80 transition-colors font-medium">
-                  Bekijk alle projecten →
-                </a>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Totaal</span>
+                  <span className="text-lg font-semibold text-card-foreground">{projectStatsData.total}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Actief</span>
+                  <span className="text-sm font-medium text-chart-3">{projectStatsData.active}</span>
+                </div>
+                {projectStatsData.onHold > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Op hold</span>
+                    <span className="text-sm font-medium text-muted-foreground">{projectStatsData.onHold}</span>
+                  </div>
+                )}
+                {projectStatsData.completed > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Voltooid</span>
+                    <span className="text-sm font-medium text-muted-foreground">{projectStatsData.completed}</span>
+                  </div>
+                )}
               </div>
-            </div>
+              <div className="mt-4 pt-4 border-t border-border">
+                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
+                  Bekijk alle projecten →
+                </span>
+              </div>
+            </Link>
 
-            <div className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-destructive/50">
+            <Link href="/dashboard/ai-safety" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-destructive/50 cursor-pointer group">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,15 +133,43 @@ export default async function DashboardPage() {
                 </div>
                 <h3 className="font-semibold text-lg text-card-foreground">Veiligheidsmeldingen</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Beheer meldingen voor ondergrondse infrastructuur
+              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                Beheer veiligheidsmeldingen en analyses
               </p>
-              <div className="mt-4 pt-4 border-t border-border">
-                <a href="/dashboard/ai-safety" className="text-xs text-primary hover:text-primary/80 transition-colors font-medium">
-                  Bekijk alle meldingen →
-                </a>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Totaal</span>
+                  <span className="text-lg font-semibold text-card-foreground">{incidentStatsData.total}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Open</span>
+                  <span className="text-sm font-medium text-destructive">{incidentStatsData.open}</span>
+                </div>
+                {incidentStatsData.critical > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Kritiek</span>
+                    <span className="text-sm font-medium text-destructive">{incidentStatsData.critical}</span>
+                  </div>
+                )}
+                {incidentStatsData.high > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Hoog</span>
+                    <span className="text-sm font-medium text-orange-500">{incidentStatsData.high}</span>
+                  </div>
+                )}
+                {incidentStatsData.recent > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
+                    <span className="text-sm font-medium text-card-foreground">{incidentStatsData.recent}</span>
+                  </div>
+                )}
               </div>
-            </div>
+              <div className="mt-4 pt-4 border-t border-border">
+                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
+                  Bekijk alle meldingen →
+                </span>
+              </div>
+            </Link>
 
             <div className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50">
               <div className="flex items-center gap-3 mb-4">
@@ -100,7 +211,7 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50">
+            <Link href="/dashboard/instellingen" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-chart-3/10 text-chart-3">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,11 +225,11 @@ export default async function DashboardPage() {
                 Pas je applicatie instellingen aan
               </p>
               <div className="mt-4 pt-4 border-t border-border">
-                <button className="text-xs text-primary hover:text-primary/80 transition-colors font-medium">
+                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
                   Beheer instellingen →
-                </button>
+                </span>
               </div>
-            </div>
+            </Link>
           </div>
         </div>
       </div>

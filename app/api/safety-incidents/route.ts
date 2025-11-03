@@ -1,8 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { safetyIncidentsTable, projectsTable } from "@/lib/db/schema";
+import { getUserOrganizationIds } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
-import { eq, desc, or, isNull } from "drizzle-orm";
+import { eq, desc, or, isNull, inArray, and } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
       category,
       severity,
       priority,
-      infrastructureType,
+      discipline,
       location,
       coordinates,
       depth,
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
       severity,
       priority: priority || "medium",
       status: "open",
-      infrastructureType: infrastructureType || null,
+      discipline: discipline || null,
       location: location || null,
       coordinates: coordinates || null,
       depth: depth || null,
@@ -96,6 +97,9 @@ export async function GET(req: Request) {
       );
     }
 
+    // Haal organisatie IDs op voor filtering (leeg voor admins)
+    const userOrgIds = await getUserOrganizationIds(userId);
+
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get("projectId");
 
@@ -103,17 +107,50 @@ export async function GET(req: Request) {
 
     if (projectId) {
       // Haal incidents op voor een specifiek project
-      incidents = await db
+      let query = db
         .select()
         .from(safetyIncidentsTable)
-        .where(eq(safetyIncidentsTable.projectId, parseInt(projectId)))
-        .orderBy(desc(safetyIncidentsTable.createdAt));
+        .where(eq(safetyIncidentsTable.projectId, parseInt(projectId)));
+
+      // Filter op organisatie als gebruiker geen admin is
+      if (userOrgIds.length > 0) {
+        // Check of project bij een van de organisaties hoort
+        const project = await db
+          .select({ organizationId: projectsTable.organizationId })
+          .from(projectsTable)
+          .where(eq(projectsTable.id, parseInt(projectId)))
+          .limit(1);
+
+        if (project.length > 0 && project[0].organizationId) {
+          if (!userOrgIds.includes(project[0].organizationId)) {
+            // Gebruiker heeft geen toegang tot dit project
+            return NextResponse.json([], { status: 200 });
+          }
+        }
+      }
+
+      incidents = await query.orderBy(desc(safetyIncidentsTable.createdAt));
     } else {
-      // Haal alle incidents op (inclusief algemene meldingen)
-      incidents = await db
-        .select()
-        .from(safetyIncidentsTable)
-        .orderBy(desc(safetyIncidentsTable.createdAt));
+      // Haal alle incidents op met organisatie filtering
+      if (userOrgIds.length > 0) {
+        // Haal alleen incidents van organisaties waar gebruiker lid van is
+        incidents = await db
+          .select()
+          .from(safetyIncidentsTable)
+          .where(
+            or(
+              inArray(safetyIncidentsTable.organizationId, userOrgIds),
+              isNull(safetyIncidentsTable.organizationId) // Toon ook incidents zonder organisatie
+            )
+          )
+          .orderBy(desc(safetyIncidentsTable.createdAt));
+      } else {
+        // Admin: toon alles
+        incidents = await db
+          .select()
+          .from(safetyIncidentsTable)
+          .orderBy(desc(safetyIncidentsTable.createdAt));
+      }
     }
 
     return NextResponse.json(incidents);

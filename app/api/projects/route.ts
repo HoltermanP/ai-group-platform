@@ -1,8 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { projectsTable, safetyIncidentsTable, organizationsTable } from "@/lib/db/schema";
+import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, and, inArray, or, isNull } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
       projectManager,
       organizationId,
       category,
-      infrastructureType,
+      discipline,
       startDate,
       endDate,
       budget,
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
       projectManager: projectManager || null,
       organizationId: organizationId || null,
       category: category || null,
-      infrastructureType: infrastructureType || null,
+      discipline: discipline || null,
       startDate: startDate ? new Date(startDate) : null,
       plannedEndDate: endDate ? new Date(endDate) : null,
       budget: budgetInCents,
@@ -78,9 +79,14 @@ export async function GET(req: Request) {
       );
     }
 
-    // DEMO MODE: Haal alle projecten op (inclusief testdata) met aantal veiligheidsmeldingen
-    // Voor productie: uncomment de where clause hieronder
-    const projects = await db
+    // Check of gebruiker admin is
+    const userIsAdmin = await isAdmin();
+    
+    // Haal organisatie IDs op voor filtering (leeg voor admins)
+    const userOrgIds = await getUserOrganizationIds(userId);
+
+    // Build base query
+    const baseQuery = db
       .select({
         id: projectsTable.id,
         projectId: projectsTable.projectId,
@@ -91,7 +97,7 @@ export async function GET(req: Request) {
         gemeente: projectsTable.gemeente,
         coordinates: projectsTable.coordinates,
         category: projectsTable.category,
-        infrastructureType: projectsTable.infrastructureType,
+        discipline: projectsTable.discipline,
         projectManager: projectsTable.projectManager,
         projectManagerId: projectsTable.projectManagerId,
         organizationId: projectsTable.organizationId,
@@ -108,10 +114,34 @@ export async function GET(req: Request) {
       })
       .from(projectsTable)
       .leftJoin(organizationsTable, eq(projectsTable.organizationId, organizationsTable.id))
-      .leftJoin(safetyIncidentsTable, eq(projectsTable.id, safetyIncidentsTable.projectId))
-      // .where(eq(projectsTable.ownerId, userId))
-      .groupBy(projectsTable.id, organizationsTable.name)
-      .orderBy(desc(projectsTable.createdAt));
+      .leftJoin(safetyIncidentsTable, eq(projectsTable.id, safetyIncidentsTable.projectId));
+
+    // Filter op organisatie als gebruiker geen admin is
+    let projects;
+    
+    if (userIsAdmin) {
+      // Admin: toon alles (geen filtering)
+      projects = await baseQuery
+        .groupBy(projectsTable.id, organizationsTable.name)
+        .orderBy(desc(projectsTable.createdAt));
+    } else if (userOrgIds.length > 0) {
+      // Gebruiker heeft organisaties: filter op organisaties + items zonder organisatie
+      projects = await baseQuery
+        .where(
+          or(
+            inArray(projectsTable.organizationId, userOrgIds),
+            isNull(projectsTable.organizationId) // Toon ook projecten zonder organisatie
+          )
+        )
+        .groupBy(projectsTable.id, organizationsTable.name)
+        .orderBy(desc(projectsTable.createdAt));
+    } else {
+      // Gebruiker heeft geen organisaties en is geen admin: toon alleen items zonder organisatie
+      projects = await baseQuery
+        .where(isNull(projectsTable.organizationId))
+        .groupBy(projectsTable.id, organizationsTable.name)
+        .orderBy(desc(projectsTable.createdAt));
+    }
 
     return NextResponse.json(projects);
   } catch (error) {

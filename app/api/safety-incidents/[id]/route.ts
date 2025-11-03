@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { safetyIncidentsTable } from "@/lib/db/schema";
+import { getUserOrganizationIds } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 
@@ -42,7 +43,20 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(incidents[0]);
+    const incident = incidents[0];
+
+    // Check organisatie toegang als gebruiker geen admin is
+    if (incident.organizationId) {
+      const userOrgIds = await getUserOrganizationIds(userId);
+      if (userOrgIds.length > 0 && !userOrgIds.includes(incident.organizationId)) {
+        return NextResponse.json(
+          { error: "Geen toegang tot deze veiligheidsmelding" },
+          { status: 403 }
+        );
+      }
+    }
+
+    return NextResponse.json(incident);
   } catch (error) {
     console.error("Error fetching safety incident:", error);
     return NextResponse.json(
@@ -77,6 +91,31 @@ export async function PATCH(
     }
 
     const body = await req.json();
+    
+    // Check eerst of gebruiker toegang heeft tot dit incident
+    const existingIncident = await db
+      .select()
+      .from(safetyIncidentsTable)
+      .where(eq(safetyIncidentsTable.id, incidentId))
+      .limit(1);
+
+    if (existingIncident.length === 0) {
+      return NextResponse.json(
+        { error: "Veiligheidsmelding niet gevonden" },
+        { status: 404 }
+      );
+    }
+
+    // Check organisatie toegang als gebruiker geen admin is
+    if (existingIncident[0].organizationId) {
+      const userOrgIds = await getUserOrganizationIds(userId);
+      if (userOrgIds.length > 0 && !userOrgIds.includes(existingIncident[0].organizationId)) {
+        return NextResponse.json(
+          { error: "Geen toegang tot deze veiligheidsmelding" },
+          { status: 403 }
+        );
+      }
+    }
     
     // Update het incident
     const updatedIncident = await db

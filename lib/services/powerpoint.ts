@@ -15,7 +15,7 @@ export interface ToolboxPresentationOptions {
     description: string;
     category: string;
     severity: string;
-    infrastructureType: string | null;
+    discipline: string | null;
     location: string | null;
     impact: string | null;
     mitigation: string | null;
@@ -98,7 +98,7 @@ async function generateEnhancedToolboxContent(
 - Titel: ${options.incident.title}
 - Categorie: ${options.incident.category}
 - Ernst: ${options.incident.severity}
-- Type infrastructuur: ${options.incident.infrastructureType || 'Niet gespecificeerd'}
+- Discipline: ${options.incident.discipline || 'Niet gespecificeerd'}
 - Locatie: ${options.incident.location || 'Niet gespecificeerd'}
 - Beschrijving: ${options.incident.description}
 ${options.incident.impact ? `- Impact: ${options.incident.impact}` : ''}
@@ -259,7 +259,7 @@ export async function generateToolboxPresentation(
       { label: 'Titel', value: options.incident.title },
       { label: 'Categorie', value: options.incident.category },
       { label: 'Ernst', value: options.incident.severity },
-      { label: 'Type Infrastructuur', value: options.incident.infrastructureType || 'Niet gespecificeerd' },
+      { label: 'Discipline', value: options.incident.discipline || 'Niet gespecificeerd' },
       { label: 'Locatie', value: options.incident.location || 'Niet gespecificeerd' },
     ];
 

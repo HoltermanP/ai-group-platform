@@ -1,8 +1,9 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { safetyIncidentsTable } from "@/lib/db/schema";
+import { getUserOrganizationIds } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
-import { sql } from "drizzle-orm";
+import { sql, or, isNull, inArray } from "drizzle-orm";
 
 export async function GET(req: Request) {
   try {
@@ -15,8 +16,25 @@ export async function GET(req: Request) {
       );
     }
 
-    // Haal alle incidents op voor analyse
-    const incidents = await db.select().from(safetyIncidentsTable);
+    // Haal organisatie IDs op voor filtering (leeg voor admins)
+    const userOrgIds = await getUserOrganizationIds(userId);
+
+    // Haal incidents op met organisatie filtering
+    let incidents;
+    if (userOrgIds.length > 0) {
+      incidents = await db
+        .select()
+        .from(safetyIncidentsTable)
+        .where(
+          or(
+            inArray(safetyIncidentsTable.organizationId, userOrgIds),
+            isNull(safetyIncidentsTable.organizationId)
+          )
+        );
+    } else {
+      // Admin: toon alles
+      incidents = await db.select().from(safetyIncidentsTable);
+    }
 
     // Bereken verschillende analyses
     const analytics = {
@@ -47,10 +65,10 @@ export async function GET(req: Request) {
         }, {} as Record<string, number>)
       ).map(([severity, count]) => ({ severity, count })),
 
-      // Distributie per infrastructuurtype
-      byInfrastructure: Object.entries(
+      // Distributie per discipline
+      byDiscipline: Object.entries(
         incidents.reduce((acc, incident) => {
-          const type = incident.infrastructureType || 'onbekend';
+          const type = incident.discipline || 'onbekend';
           acc[type] = (acc[type] || 0) + 1;
           return acc;
         }, {} as Record<string, number>)

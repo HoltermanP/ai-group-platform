@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       description: inc.description,
       category: inc.category,
       severity: inc.severity,
-      infrastructureType: inc.infrastructureType,
+      discipline: inc.discipline,
       location: inc.location,
       impact: inc.impact,
       mitigation: inc.mitigation,

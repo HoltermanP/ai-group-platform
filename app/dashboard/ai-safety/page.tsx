@@ -13,7 +13,7 @@ interface SafetyIncident {
   severity: string;
   status: string;
   priority: string;
-  infrastructureType: string | null;
+  discipline: string | null;
   location: string | null;
   projectId: number | null;
   impact: string | null;
@@ -46,7 +46,7 @@ function AISafetyPageContent() {
     severity?: string;
     status?: string;
     category?: string;
-    infrastructureType?: string;
+    discipline?: string;
     location?: string;
     month?: string;
   }>({});
@@ -68,7 +68,7 @@ function AISafetyPageContent() {
     category: "graafschade",
     severity: "medium",
     priority: "medium",
-    infrastructureType: "riool",
+    discipline: "Elektra",
     location: "",
     coordinates: "",
     depth: "",
@@ -91,7 +91,7 @@ function AISafetyPageContent() {
     const severity = searchParams.get('severity');
     const status = searchParams.get('status');
     const category = searchParams.get('category');
-    const infrastructureType = searchParams.get('infrastructureType');
+    const discipline = searchParams.get('discipline');
     const location = searchParams.get('location');
     const month = searchParams.get('month');
     
@@ -100,7 +100,7 @@ function AISafetyPageContent() {
       severity: severity || undefined,
       status: status || undefined,
       category: category || undefined,
-      infrastructureType: infrastructureType || undefined,
+      discipline: discipline || undefined,
       location: location || undefined,
       month: month || undefined,
     });
@@ -191,7 +191,7 @@ function AISafetyPageContent() {
           category: "graafschade",
           severity: "medium",
           priority: "medium",
-          infrastructureType: "riool",
+          discipline: "Elektra",
           location: "",
           coordinates: "",
           depth: "",
@@ -259,18 +259,12 @@ function AISafetyPageContent() {
     return labels[category] || category;
   };
 
-  const getInfrastructureLabel = (type: string) => {
+  const getDisciplineLabel = (type: string) => {
     const labels: Record<string, string> = {
-      "riool": "Riool",
-      "water": "Waterleidingen",
-      "gas": "Gasleidingen",
-      "elektra": "Elektriciteit",
-      "telecom": "Telecom/Kabel",
-      "warmte": "Warmtenet",
-      "metro": "Metro/Spoor",
-      "tunnel": "Tunnel",
-      "parkeergarage": "Ondergrondse Parkeergarage",
-      "overig": "Overig",
+      "Elektra": "Elektra",
+      "Gas": "Gas",
+      "Water": "Water",
+      "Media": "Media",
     };
     return labels[type] || type;
   };
@@ -328,7 +322,7 @@ function AISafetyPageContent() {
         incident.severity.toLowerCase().includes(query) ||
         incident.status.toLowerCase().includes(query) ||
         (incident.location && incident.location.toLowerCase().includes(query)) ||
-        (incident.infrastructureType && incident.infrastructureType.toLowerCase().includes(query));
+        (incident.discipline && incident.discipline.toLowerCase().includes(query));
       
       if (!matchesSearch) return false;
     }
@@ -353,8 +347,8 @@ function AISafetyPageContent() {
       return false;
     }
     
-    // Infrastructure type filter
-    if (filters.infrastructureType && incident.infrastructureType !== filters.infrastructureType) {
+    // Discipline filter
+    if (filters.discipline && incident.discipline !== filters.discipline) {
       return false;
     }
     
@@ -651,28 +645,22 @@ function AISafetyPageContent() {
                     </select>
                   </div>
 
-                  {/* Type Infrastructuur */}
+                  {/* Discipline */}
                   <div>
-                    <label htmlFor="infrastructureType" className="block text-sm font-medium mb-2 text-foreground">
-                      Type Infrastructuur
+                    <label htmlFor="discipline" className="block text-sm font-medium mb-2 text-foreground">
+                      Discipline
                     </label>
                     <select
-                      id="infrastructureType"
-                      name="infrastructureType"
-                      value={formData.infrastructureType}
+                      id="discipline"
+                      name="discipline"
+                      value={formData.discipline}
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground"
                     >
-                      <option value="riool">Riool</option>
-                      <option value="water">Waterleidingen</option>
-                      <option value="gas">Gasleidingen</option>
-                      <option value="elektra">Elektriciteit</option>
-                      <option value="telecom">Telecom/Kabel</option>
-                      <option value="warmte">Warmtenet</option>
-                      <option value="metro">Metro/Spoor</option>
-                      <option value="tunnel">Tunnel</option>
-                      <option value="parkeergarage">Ondergrondse Parkeergarage</option>
-                      <option value="overig">Overig</option>
+                      <option value="Elektra">Elektra</option>
+                      <option value="Gas">Gas</option>
+                      <option value="Water">Water</option>
+                      <option value="Media">Media</option>
                     </select>
                   </div>
 
@@ -1024,10 +1012,10 @@ function AISafetyPageContent() {
                     <span className="text-primary">{getCategoryLabel(filters.category)}</span>
                   </span>
                 )}
-                {filters.infrastructureType && (
+                {filters.discipline && (
                   <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
-                    <span className="font-medium">Infrastructuur:</span>
-                    <span className="text-primary">{getInfrastructureLabel(filters.infrastructureType)}</span>
+                    <span className="font-medium">Discipline:</span>
+                    <span className="text-primary">{getDisciplineLabel(filters.discipline)}</span>
                   </span>
                 )}
                 {filters.location && (

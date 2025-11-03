@@ -1,6 +1,6 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from './db';
-import { userRolesTable, organizationMembersTable, organizationsTable } from './db/schema';
+import { userRolesTable, organizationMembersTable, organizationsTable, userPreferencesTable } from './db/schema';
 import { eq, and } from 'drizzle-orm';
 
 // ============================================
@@ -19,6 +19,7 @@ export interface UserWithRole {
   createdAt: number;
   lastSignInAt: number | null;
   globalRole: GlobalRole;
+  banned: boolean;
   organizations: Array<{
     id: number;
     name: string;
@@ -222,6 +223,7 @@ export async function getAllUsers(): Promise<UserWithRole[]> {
     createdAt: user.createdAt,
     lastSignInAt: user.lastSignInAt,
     globalRole: roleMap.get(user.id) || 'user',
+    banned: user.banned || false,
     organizations: membershipMap.get(user.id) || [],
   }));
 }
@@ -382,6 +384,63 @@ export async function removeUserFromOrganization(
     );
 }
 
+/**
+ * Blokkeer een gebruiker (ban via Clerk)
+ */
+export async function banUser(userId: string): Promise<void> {
+  const { userId: adminUserId } = await auth();
+  if (!adminUserId || !(await isAdmin())) {
+    throw new Error('Unauthorized: alleen admins kunnen gebruikers blokkeren');
+  }
+
+  // Super admins kunnen alleen door andere super admins worden geblokkeerd
+  const targetRole = await getUserGlobalRole(userId);
+  if (targetRole === 'super_admin' && !(await isSuperAdmin())) {
+    throw new Error('Unauthorized: alleen super admins kunnen super admin gebruikers blokkeren');
+  }
+
+  const client = await clerkClient();
+  await client.users.banUser(userId);
+}
+
+/**
+ * Deblokkeer een gebruiker (unban via Clerk)
+ */
+export async function unbanUser(userId: string): Promise<void> {
+  const { userId: adminUserId } = await auth();
+  if (!adminUserId || !(await isAdmin())) {
+    throw new Error('Unauthorized: alleen admins kunnen gebruikers deblokkeren');
+  }
+
+  const client = await clerkClient();
+  await client.users.unbanUser(userId);
+}
+
+/**
+ * Verwijder een gebruiker permanent (delete via Clerk)
+ */
+export async function deleteUser(userId: string): Promise<void> {
+  const { userId: adminUserId } = await auth();
+  if (!adminUserId || !(await isAdmin())) {
+    throw new Error('Unauthorized: alleen admins kunnen gebruikers verwijderen');
+  }
+
+  // Super admins kunnen alleen door andere super admins worden verwijderd
+  const targetRole = await getUserGlobalRole(userId);
+  if (targetRole === 'super_admin' && !(await isSuperAdmin())) {
+    throw new Error('Unauthorized: alleen super admins kunnen super admin gebruikers verwijderen');
+  }
+
+  // Verwijder eerst alle database records van deze gebruiker
+  await db.delete(userRolesTable).where(eq(userRolesTable.clerkUserId, userId));
+  await db.delete(organizationMembersTable).where(eq(organizationMembersTable.clerkUserId, userId));
+  await db.delete(userPreferencesTable).where(eq(userPreferencesTable.clerkUserId, userId));
+
+  // Verwijder daarna de gebruiker uit Clerk
+  const client = await clerkClient();
+  await client.users.deleteUser(userId);
+}
+
 // ============================================
 // PERMISSION HELPERS
 // ============================================
@@ -404,5 +463,36 @@ export async function canAccessOrganizationResource(
   if (!userRole) return false;
 
   return requiredRole.includes(userRole);
+}
+
+/**
+ * Haal alle organisatie IDs op waar een gebruiker lid van is
+ * Retourneert lege array als gebruiker admin/super_admin is (zij zien alles)
+ */
+export async function getUserOrganizationIds(userId: string): Promise<number[]> {
+  // Admins en super admins zien alles - retourneer lege array
+  if (await isAdmin()) {
+    return [];
+  }
+
+  const organizations = await getUserOrganizations(userId);
+  const orgIds = organizations.map(org => org.organizationId);
+  
+  // Log voor debugging (kan later verwijderd worden)
+  if (orgIds.length === 0) {
+    console.log(`[DEBUG] User ${userId} heeft geen organisaties. Alle data wordt gefilterd.`);
+  } else {
+    console.log(`[DEBUG] User ${userId} heeft toegang tot organisaties:`, orgIds);
+  }
+  
+  return orgIds;
+}
+
+/**
+ * Check of een gebruiker een admin of super_admin is
+ * Gebruik dit om te bepalen of filtering nodig is
+ */
+export async function shouldFilterByOrganization(userId: string): Promise<boolean> {
+  return !(await isAdmin());
 }
 

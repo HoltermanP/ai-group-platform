@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db } from "./index";
-import { projectsTable, safetyIncidentsTable } from "./schema";
+import { projectsTable, safetyIncidentsTable, organizationsTable } from "./schema";
 
 // Helper functies voor realistische data
 function getRandomItem<T>(array: readonly T[]): T {
@@ -205,7 +205,7 @@ const categories = Object.keys(incidentTitles) as Array<keyof typeof incidentTit
 const severities = ["low", "medium", "high", "critical"] as const;
 const statuses = ["open", "investigating", "resolved", "closed"] as const;
 const priorities = ["low", "medium", "high", "urgent"] as const;
-const infrastructureTypes = ["riool", "water", "gas", "elektra", "telecom", "warmte", "metro", "tunnel"] as const;
+const disciplines = ["Elektra", "Gas", "Water", "Media"] as const;
 
 async function seed() {
   console.log("🌱 Starting database seeding...");
@@ -217,8 +217,19 @@ async function seed() {
   const timestamp = Date.now().toString().slice(-6);
   
   try {
+    // Stap 0: Haal organisaties op (of maak ze aan als ze niet bestaan)
+    console.log("\n🏢 Fetching organizations...");
+    let organizations = await db.select().from(organizationsTable);
+    
+    if (organizations.length === 0) {
+      console.log("   ⚠️  Geen organisaties gevonden. Voer eerst 'npm run db:seed-orgs' uit, of koppel projecten later met 'npm run db:fix-orgs'");
+      console.log("   📝 Projecten worden aangemaakt zonder organizationId\n");
+    } else {
+      console.log(`   ✅ ${organizations.length} organisaties gevonden\n`);
+    }
+    
     // Stap 1: Maak 30 projecten aan
-    console.log("\n📊 Creating 30 projects...");
+    console.log("📊 Creating 30 projects...");
     const projects = [];
     
     for (let i = 0; i < 30; i++) {
@@ -228,6 +239,11 @@ async function seed() {
       
       // Kies een locatie met plaats en gemeente
       const locationData = getRandomItem(locationsWithMunicipality);
+      
+      // Kies een willekeurige organisatie als er organisaties zijn
+      const organizationId = organizations.length > 0
+        ? organizations[Math.floor(Math.random() * organizations.length)].id
+        : null;
       
       const project = await db.insert(projectsTable).values({
         projectId: `PROJ-${timestamp}-${String(i + 1).padStart(3, '0')}`,
@@ -242,6 +258,7 @@ async function seed() {
         budget: budget,
         currency: 'EUR',
         ownerId: dummyUserId,
+        organizationId: organizationId,
       }).returning();
       
       projects.push(project[0]);
@@ -268,7 +285,7 @@ async function seed() {
         const severity = getRandomItem(severities);
         const status = getRandomItem(statuses);
         const priority = getRandomItem(priorities);
-        const infrastructureType = getRandomItem(infrastructureTypes);
+        const discipline = getRandomItem(disciplines);
         
         // Zorg voor realistische datum verdeling over het afgelopen jaar
         const detectedDate = getRandomDate(new Date(2023, 6, 1), new Date());
@@ -322,7 +339,7 @@ async function seed() {
             severity === 'critical' ? 'Acute actie vereist.' : 'Situatie wordt gemonitord.'
           }`,
           `${title}. Incident gemeld door aannemer. ${
-            infrastructureType === 'gas' ? 'Gebied is afgezet.' : 'Verkeer wordt omgeleid.'
+            discipline === 'Gas' ? 'Gebied is afgezet.' : 'Verkeer wordt omgeleid.'
           }`,
           `Veiligheidsmelding: ${title.toLowerCase()}. Impact: ${
             severity === 'high' || severity === 'critical' ? 'hoog, directe actie nodig' : 'beperkt tot werkgebied'
@@ -331,7 +348,7 @@ async function seed() {
         
         const impacts = [
           `Hinder voor verkeer en omwonenden. ${severity === 'critical' ? 'Diensten tijdelijk uitgeschakeld.' : 'Beperkte overlast.'}`,
-          `${infrastructureType === 'gas' ? 'Gastoevoer afgesloten in gebied.' : 'Minimale impact op dienstverlening.'}`,
+          `${discipline === 'Gas' ? 'Gastoevoer afgesloten in gebied.' : 'Minimale impact op dienstverlening.'}`,
           `Werkzaamheden stilgelegd. ${priority === 'urgent' ? 'Spoedreparatie noodzakelijk.' : 'Herstel gepland.'}`
         ];
         
@@ -365,14 +382,15 @@ async function seed() {
           severity: severity,
           status: status,
           priority: priority,
-          infrastructureType: infrastructureType,
+          discipline: discipline,
           location: incidentLocation.locatie,
           coordinates: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
           depth: depth,
           projectId: project.id,
+          organizationId: project.organizationId || null, // Gebruik organizationId van project
           impact: getRandomItem(impacts),
           mitigation: getRandomItem(mitigations),
-          affectedSystems: `${infrastructureType} systeem in sector ${Math.floor(Math.random() * 10) + 1}`,
+          affectedSystems: `${discipline} systeem in sector ${Math.floor(Math.random() * 10) + 1}`,
           safetyMeasures: getRandomItem(safetyMeasuresOptions),
           riskAssessment: getRandomItem(riskAssessments),
           reportedBy: dummyUserId,
@@ -383,7 +401,7 @@ async function seed() {
           tags: [
             category,
             severity,
-            infrastructureType,
+            discipline,
             Math.random() > 0.5 ? 'KLIC' : null,
             Math.random() > 0.7 ? 'spoed' : null
           ].filter(Boolean).join(','),

@@ -1,6 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { projectsTable } from "@/lib/db/schema";
+import { getUserOrganizationIds, canAccessOrganizationResource } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 
@@ -28,18 +29,11 @@ export async function GET(
       );
     }
 
-    // DEMO MODE: Haal alle projecten op (inclusief testdata)
-    // Voor productie: uncomment de ownerId check in de where clause
+    // Haal project op
     const projects = await db
       .select()
       .from(projectsTable)
-      .where(
-        eq(projectsTable.id, projectId)
-        // and(
-        //   eq(projectsTable.id, projectId),
-        //   eq(projectsTable.ownerId, userId)
-        // )
-      )
+      .where(eq(projectsTable.id, projectId))
       .limit(1);
 
     if (projects.length === 0) {
@@ -49,7 +43,20 @@ export async function GET(
       );
     }
 
-    return NextResponse.json(projects[0]);
+    const project = projects[0];
+
+    // Check organisatie toegang als gebruiker geen admin is
+    if (project.organizationId) {
+      const userOrgIds = await getUserOrganizationIds(userId);
+      if (userOrgIds.length > 0 && !userOrgIds.includes(project.organizationId)) {
+        return NextResponse.json(
+          { error: "Geen toegang tot dit project" },
+          { status: 403 }
+        );
+      }
+    }
+
+    return NextResponse.json(project);
   } catch (error) {
     console.error("Error fetching project:", error);
     return NextResponse.json(

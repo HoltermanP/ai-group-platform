@@ -22,7 +22,7 @@ interface SafetyIncident {
   severity: string;
   status: string;
   priority: string;
-  infrastructureType: string | null;
+  discipline: string | null;
   location: string | null;
   coordinates: string | null;
   depth: string | null;
@@ -231,19 +231,13 @@ export default function SafetyIncidentDetailPage() {
     return labels[category] || category;
   };
 
-  const getInfrastructureLabel = (type: string | null) => {
+  const getDisciplineLabel = (type: string | null) => {
     if (!type) return "-";
     const labels: Record<string, string> = {
-      "riool": "Riool",
-      "water": "Waterleidingen",
-      "gas": "Gasleidingen",
-      "elektra": "Elektriciteit",
-      "telecom": "Telecom/Kabel",
-      "warmte": "Warmtenet",
-      "metro": "Metro/Spoor",
-      "tunnel": "Tunnel",
-      "parkeergarage": "Ondergrondse Parkeergarage",
-      "overig": "Overig",
+      "Elektra": "Elektra",
+      "Gas": "Gas",
+      "Water": "Water",
+      "Media": "Media",
     };
     return labels[type] || type;
   };
@@ -532,8 +526,8 @@ export default function SafetyIncidentDetailPage() {
                   <p className="text-foreground font-medium">{getCategoryLabel(incident.category)}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">Type Infrastructuur</p>
-                  <p className="text-foreground font-medium">{getInfrastructureLabel(incident.infrastructureType)}</p>
+                  <p className="text-sm text-muted-foreground">Discipline</p>
+                  <p className="text-foreground font-medium">{getDisciplineLabel(incident.discipline)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Ernst</p>

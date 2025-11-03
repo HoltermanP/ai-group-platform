@@ -16,7 +16,7 @@ export interface SafetyIncidentForAnalysis {
   description: string;
   category: string;
   severity: string;
-  infrastructureType: string | null;
+  discipline: string | null;
   location: string | null;
   impact: string | null;
   mitigation: string | null;
@@ -59,7 +59,7 @@ Melding ${idx + 1}:
 - Beschrijving: ${inc.description}
 - Categorie: ${inc.category}
 - Ernst: ${inc.severity}
-- Infrastructuur type: ${inc.infrastructureType || 'Onbekend'}
+- Discipline: ${inc.discipline || 'Onbekend'}
 - Locatie: ${inc.location || 'Onbekend'}
 - Impact: ${inc.impact || 'Niet gespecificeerd'}
 - Genomen maatregelen: ${inc.mitigation || 'Geen'}

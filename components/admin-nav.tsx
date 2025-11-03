@@ -23,9 +23,14 @@ export function AdminNav() {
 
   const checkAdminStatus = async () => {
     try {
-      // Probeer admin endpoint aan te roepen
-      const res = await fetch('/api/admin/users');
-      setIsAdmin(res.ok && res.status !== 403);
+      // Gebruik lichte check endpoint in plaats van alle users ophalen
+      const res = await fetch('/api/admin/check');
+      if (res.ok) {
+        const data = await res.json();
+        setIsAdmin(data.isAdmin === true);
+      } else {
+        setIsAdmin(false);
+      }
     } catch {
       setIsAdmin(false);
     } finally {

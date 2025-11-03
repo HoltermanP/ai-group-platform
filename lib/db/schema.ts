@@ -52,10 +52,46 @@ export const organizationMembersTable = pgTable("organization_members", {
 export const userPreferencesTable = pgTable("user_preferences", {
   id: integer().primaryKey().generatedAlwaysAsIdentity(),
   clerkUserId: varchar({ length: 255 }).notNull().unique(), // Clerk User ID
+  
+  // Algemene voorkeuren
   theme: varchar({ length: 50 }).default('theme-slate'),
   language: varchar({ length: 10 }).default('nl'),
+  timezone: varchar({ length: 50 }).default('Europe/Amsterdam'),
+  dateFormat: varchar({ length: 20 }).default('DD-MM-YYYY'),
+  timeFormat: varchar({ length: 10 }).default('24h'), // '24h' of '12h'
+  
+  // Dashboard voorkeuren
+  dashboardLayout: varchar({ length: 20 }).default('standard'), // 'compact', 'standard', 'detailed'
+  itemsPerPage: integer().default(25),
+  defaultDashboardSection: varchar({ length: 50 }), // 'projects', 'incidents', 'analytics'
+  
+  // Kaart voorkeuren (JSON voor flexibiliteit)
+  mapSettings: text(), // JSON: { defaultZoom: 8, center: [lat, lng], showProjects: true, showIncidents: true, mapStyle: 'osm' }
+  
+  // Notificatie voorkeuren (JSON voor granulariteit)
   emailNotifications: boolean().default(true),
+  notificationPreferences: text(), // JSON: { emailIncidents: true, emailProjects: true, emailAI: true, dailySummary: false, weeklySummary: false, criticalAlerts: true }
+  
+  // Filter voorkeuren (JSON)
+  defaultFilters: text(), // JSON: { projects: { status: 'active' }, incidents: { severity: ['high', 'critical'] } }
+  
+  // Sortering voorkeuren (JSON)
+  defaultSorting: text(), // JSON: { projects: { column: 'createdAt', direction: 'desc' }, incidents: { column: 'severity', direction: 'asc' } }
+  
+  // AI voorkeuren
+  aiAutoAnalysis: boolean().default(false),
+  defaultAIModel: varchar({ length: 50 }).default('gpt-4'),
+  showAISuggestions: boolean().default(true),
+  autoGenerateToolbox: boolean().default(false),
+  
+  // Organisatie voorkeuren
   defaultOrganizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }), // Standaard organisatie
+  
+  // Weergave voorkeuren
+  compactMode: boolean().default(false),
+  autoRefresh: boolean().default(true),
+  autoRefreshInterval: integer().default(30000), // In milliseconden (30 seconden default)
+  
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });
@@ -77,7 +113,7 @@ export const projectsTable = pgTable("projects", {
   
   // Project categorie en type
   category: varchar({ length: 50 }), // sanering, reconstructie, nieuwe-aanleg
-  infrastructureType: varchar({ length: 50 }), // elektra, gas, water, media
+  discipline: varchar({ length: 50 }), // Elektra, Gas, Water, Media
   
   // Locatie informatie
   plaats: varchar({ length: 100 }), // Plaats waar het project plaatsvindt
@@ -130,8 +166,8 @@ export const safetyIncidentsTable = pgTable("safety_incidents", {
   // Organisatie koppeling
   organizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }),
   
-  // Infrastructuur specifiek
-  infrastructureType: varchar({ length: 100 }), // riool, water, gas, elektra, telecom, metro, tunnel, etc.
+  // Discipline specifiek
+  discipline: varchar({ length: 100 }), // Elektra, Gas, Water, Media
   location: text(), // Locatie/adres van het incident
   coordinates: varchar({ length: 100 }), // GPS coördinaten
   depth: varchar({ length: 50 }), // Diepte in meters

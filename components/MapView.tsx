@@ -31,6 +31,8 @@ interface Incident {
 interface MapViewProps {
   projects: Project[];
   incidents: Incident[];
+  defaultCenter?: [number, number];
+  defaultZoom?: number;
 }
 
 // Custom icons
@@ -172,15 +174,15 @@ const getCategoryLabel = (category: string) => {
   return labels[category] || category;
 };
 
-export default function MapView({ projects, incidents }: MapViewProps) {
+export default function MapView({ projects, incidents, defaultCenter, defaultZoom }: MapViewProps) {
   // Centrum van Nederland als fallback
-  const center: L.LatLngTuple = [52.3676, 5.2];
-  const defaultZoom = 8;
+  const center: L.LatLngTuple = defaultCenter || [52.3676, 5.2];
+  const zoom = defaultZoom || 8;
 
   return (
     <MapContainer
       center={center}
-      zoom={defaultZoom}
+      zoom={zoom}
       style={{ height: "100%", width: "100%" }}
       className="z-0"
     >

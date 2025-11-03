@@ -50,15 +50,46 @@ export default function KaartPage() {
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // Filter states
+  // Filter states - initialiseer met user preferences
   const [showProjects, setShowProjects] = useState(true);
   const [showIncidents, setShowIncidents] = useState(true);
   const [selectedSeverity, setSelectedSeverity] = useState<string[]>(["low", "medium", "high", "critical"]);
   const [selectedStatus, setSelectedStatus] = useState<string[]>(["open", "investigating"]);
+  const [mapSettings, setMapSettings] = useState<{
+    defaultZoom: number;
+    center: [number, number];
+    showProjects: boolean;
+    showIncidents: boolean;
+    mapStyle: string;
+  } | null>(null);
 
   useEffect(() => {
+    loadUserPreferences();
     fetchData();
   }, []);
+
+  const loadUserPreferences = async () => {
+    try {
+      const res = await fetch('/api/users');
+      if (res.ok) {
+        const data = await res.json();
+        const prefs = data.preferences;
+        
+        if (prefs?.mapSettings) {
+          try {
+            const settings = JSON.parse(prefs.mapSettings);
+            setMapSettings(settings);
+            setShowProjects(settings.showProjects ?? true);
+            setShowIncidents(settings.showIncidents ?? true);
+          } catch (e) {
+            // Use defaults
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading preferences:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -295,6 +326,8 @@ export default function KaartPage() {
           <MapView
             projects={filteredProjects}
             incidents={filteredIncidents}
+            defaultCenter={mapSettings?.center || [52.3676, 5.2]}
+            defaultZoom={mapSettings?.defaultZoom || 8}
           />
         )}
       </div>
