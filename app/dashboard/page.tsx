@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   const userOrgIds = await getUserOrganizationIds(userId);
   
   // Haal project statistieken op
-  let projectsQuery = db
+  const projectsQuery = db
     .select({
       total: sql<number>`cast(count(*) as integer)`,
       active: sql<number>`cast(count(*) filter (where ${projectsTable.status} = 'active') as integer)`,
@@ -29,25 +29,26 @@ export default async function DashboardPage() {
     })
     .from(projectsTable);
   
+  let projectStats;
   if (!userIsAdmin && userOrgIds.length > 0) {
-    projectsQuery = projectsQuery.where(
+    projectStats = await projectsQuery.where(
       or(
         inArray(projectsTable.organizationId, userOrgIds),
         isNull(projectsTable.organizationId)
       )
     );
   } else if (!userIsAdmin) {
-    projectsQuery = projectsQuery.where(isNull(projectsTable.organizationId));
+    projectStats = await projectsQuery.where(isNull(projectsTable.organizationId));
+  } else {
+    projectStats = await projectsQuery;
   }
-  
-  const projectStats = await projectsQuery;
   const projectStatsData = projectStats[0] || { total: 0, active: 0, onHold: 0, completed: 0 };
   
   // Haal veiligheidsmelding statistieken op
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   
-  let incidentsQuery = db
+  const incidentsQuery = db
     .select({
       total: sql<number>`cast(count(*) as integer)`,
       open: sql<number>`cast(count(*) filter (where ${safetyIncidentsTable.status} = 'open') as integer)`,
@@ -57,18 +58,19 @@ export default async function DashboardPage() {
     })
     .from(safetyIncidentsTable);
   
+  let incidentStats;
   if (!userIsAdmin && userOrgIds.length > 0) {
-    incidentsQuery = incidentsQuery.where(
+    incidentStats = await incidentsQuery.where(
       or(
         inArray(safetyIncidentsTable.organizationId, userOrgIds),
         isNull(safetyIncidentsTable.organizationId)
       )
     );
   } else if (!userIsAdmin) {
-    incidentsQuery = incidentsQuery.where(isNull(safetyIncidentsTable.organizationId));
+    incidentStats = await incidentsQuery.where(isNull(safetyIncidentsTable.organizationId));
+  } else {
+    incidentStats = await incidentsQuery;
   }
-  
-  const incidentStats = await incidentsQuery;
   const incidentStatsData = incidentStats[0] || { total: 0, open: 0, critical: 0, high: 0, recent: 0 };
 
   return (
