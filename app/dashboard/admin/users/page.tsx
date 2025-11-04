@@ -44,7 +44,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, MoreVertical, Ban, Trash2, ShieldCheck } from 'lucide-react';
+import { Plus, MoreVertical, Ban, Trash2, ShieldCheck, Building2, X } from 'lucide-react';
+import Link from 'next/link';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -93,6 +94,14 @@ export default function UsersManagementPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [banDialogOpen, setBanDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  
+  // Organization management dialog
+  const [orgDialogOpen, setOrgDialogOpen] = useState(false);
+  const [addingOrg, setAddingOrg] = useState(false);
+  const [orgFormData, setOrgFormData] = useState({
+    organizationId: '',
+    role: 'member',
+  });
   
   // Form state
   const [formData, setFormData] = useState({
@@ -259,6 +268,90 @@ export default function UsersManagementPage() {
     } catch (err) {
       console.error('Error deleting user:', err);
       alert('Fout bij verwijderen gebruiker');
+    }
+  };
+
+  const handleAddUserToOrganization = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+
+    setAddingOrg(true);
+    try {
+      const res = await fetch(`/api/admin/organizations/${orgFormData.organizationId}/members`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: selectedUser.id,
+          role: orgFormData.role,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || 'Fout bij toevoegen aan organisatie');
+        return;
+      }
+
+      // Reset form
+      setOrgFormData({ organizationId: '', role: 'member' });
+      
+      // Refresh users list
+      await fetchUsers();
+      
+      alert('Gebruiker succesvol toegevoegd aan organisatie');
+    } catch (err) {
+      console.error('Error adding user to organization:', err);
+      alert('Fout bij toevoegen aan organisatie');
+    } finally {
+      setAddingOrg(false);
+    }
+  };
+
+  const handleRemoveUserFromOrganization = async (userId: string, orgId: number) => {
+    if (!confirm('Weet je zeker dat je deze gebruiker uit deze organisatie wilt verwijderen?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/organizations/${orgId}/members?userId=${userId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Fout bij verwijderen uit organisatie');
+        return;
+      }
+
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error removing user from organization:', err);
+      alert('Fout bij verwijderen uit organisatie');
+    }
+  };
+
+  const handleUpdateOrganizationRole = async (userId: string, orgId: number, newRole: string) => {
+    try {
+      const res = await fetch(`/api/admin/organizations/${orgId}/members`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          role: newRole,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Fout bij updaten rol');
+        return;
+      }
+
+      await fetchUsers();
+    } catch (err) {
+      console.error('Error updating organization role:', err);
+      alert('Fout bij updaten rol');
     }
   };
 
@@ -513,16 +606,17 @@ export default function UsersManagementPage() {
                   <TableCell>
                     {user.organizations.length > 0 ? (
                       <div className="flex flex-wrap gap-1">
-                        {user.organizations.slice(0, 2).map((org) => (
-                          <Badge key={org.id} variant="outline" className="text-xs">
-                            {org.name}
-                          </Badge>
+                        {user.organizations.map((org) => (
+                          <Link
+                            key={org.id}
+                            href={`/dashboard/admin/organizations/${org.id}`}
+                            className="inline-block"
+                          >
+                            <Badge variant="outline" className="text-xs hover:bg-accent cursor-pointer">
+                              {org.name} ({org.role})
+                            </Badge>
+                          </Link>
                         ))}
-                        {user.organizations.length > 2 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{user.organizations.length - 2}
-                          </Badge>
-                        )}
                       </div>
                     ) : (
                       <span className="text-sm text-muted-foreground">
@@ -559,6 +653,23 @@ export default function UsersManagementPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setOrgDialogOpen(true);
+                              setOrgFormData({ organizationId: '', role: 'member' });
+                            }}
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setSelectedUser(user);
+                              setOrgDialogOpen(true);
+                              setOrgFormData({ organizationId: '', role: 'member' });
+                            }}
+                          >
+                            <Building2 className="mr-2 h-4 w-4" />
+                            Organisaties beheren
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => {
                               setSelectedUser(user);
@@ -637,6 +748,144 @@ export default function UsersManagementPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Organization Management Dialog */}
+      <Dialog open={orgDialogOpen} onOpenChange={setOrgDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Organisaties beheren voor {selectedUser?.email}
+            </DialogTitle>
+            <DialogDescription>
+              Voeg deze gebruiker toe aan organisaties of beheer bestaande lidmaatschappen
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Current Organizations */}
+            <div>
+              <h3 className="text-sm font-semibold mb-3">Huidige Organisaties</h3>
+              {selectedUser?.organizations && selectedUser.organizations.length > 0 ? (
+                <div className="space-y-2">
+                  {selectedUser.organizations.map((org) => (
+                    <div
+                      key={org.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Building2 className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <div className="font-medium">{org.name}</div>
+                          <div className="text-sm text-muted-foreground">Rol: {org.role}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Select
+                          value={org.role}
+                          onValueChange={(value) =>
+                            selectedUser && handleUpdateOrganizationRole(selectedUser.id, org.id, value)
+                          }
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="viewer">Viewer</SelectItem>
+                            <SelectItem value="member">Member</SelectItem>
+                            <SelectItem value="manager">Manager</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="owner">Owner</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => selectedUser && handleRemoveUserFromOrganization(selectedUser.id, org.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Deze gebruiker is nog niet gekoppeld aan organisaties
+                </p>
+              )}
+            </div>
+
+            {/* Add to Organization Form */}
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Toevoegen aan Organisatie</h3>
+              <form onSubmit={handleAddUserToOrganization}>
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="orgSelect">Organisatie</Label>
+                    <Select
+                      value={orgFormData.organizationId}
+                      onValueChange={(value) =>
+                        setOrgFormData({ ...orgFormData, organizationId: value })
+                      }
+                    >
+                      <SelectTrigger id="orgSelect">
+                        <SelectValue placeholder="Selecteer een organisatie" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {organizations
+                          .filter(
+                            (org) =>
+                              !selectedUser?.organizations.some((userOrg) => userOrg.id === org.id)
+                          )
+                          .map((org) => (
+                            <SelectItem key={org.id} value={org.id.toString()}>
+                              {org.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {orgFormData.organizationId && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="orgRole">Rol in Organisatie</Label>
+                      <Select
+                        value={orgFormData.role}
+                        onValueChange={(value) =>
+                          setOrgFormData({ ...orgFormData, role: value })
+                        }
+                      >
+                        <SelectTrigger id="orgRole">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="viewer">Viewer</SelectItem>
+                          <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                          <SelectItem value="owner">Owner</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <Button
+                    type="submit"
+                    disabled={addingOrg || !orgFormData.organizationId}
+                  >
+                    {addingOrg ? 'Toevoegen...' : 'Toevoegen aan Organisatie'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOrgDialogOpen(false)}>
+              Sluiten
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
