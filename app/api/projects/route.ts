@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { projectsTable, safetyIncidentsTable, organizationsTable } from "@/lib/db/schema";
+import { projectsTable, safetyIncidentsTable, organizationsTable, inspectionsTable, supervisionsTable } from "@/lib/db/schema";
 import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
 import { eq, desc, sql, and, inArray, or, isNull } from "drizzle-orm";
@@ -85,7 +85,7 @@ export async function GET(req: Request) {
     // Haal organisatie IDs op voor filtering (leeg voor admins)
     const userOrgIds = await getUserOrganizationIds(userId);
 
-    // Build base query
+    // Build base query with subqueries for counts
     const baseQuery = db
       .select({
         id: projectsTable.id,
@@ -110,11 +110,24 @@ export async function GET(req: Request) {
         ownerId: projectsTable.ownerId,
         createdAt: projectsTable.createdAt,
         updatedAt: projectsTable.updatedAt,
-        safetyIncidentCount: sql<number>`cast(count(${safetyIncidentsTable.id}) as integer)`,
+        safetyIncidentCount: sql<number>`(
+          SELECT cast(count(*) as integer)
+          FROM ${safetyIncidentsTable}
+          WHERE ${safetyIncidentsTable.projectId} = ${projectsTable.id}
+        )`,
+        inspectionCount: sql<number>`(
+          SELECT cast(count(*) as integer)
+          FROM ${inspectionsTable}
+          WHERE ${inspectionsTable.projectId} = ${projectsTable.id}
+        )`,
+        supervisionCount: sql<number>`(
+          SELECT cast(count(*) as integer)
+          FROM ${supervisionsTable}
+          WHERE ${supervisionsTable.projectId} = ${projectsTable.id}
+        )`,
       })
       .from(projectsTable)
-      .leftJoin(organizationsTable, eq(projectsTable.organizationId, organizationsTable.id))
-      .leftJoin(safetyIncidentsTable, eq(projectsTable.id, safetyIncidentsTable.projectId));
+      .leftJoin(organizationsTable, eq(projectsTable.organizationId, organizationsTable.id));
 
     // Filter op organisatie als gebruiker geen admin is
     let projects;
@@ -122,7 +135,6 @@ export async function GET(req: Request) {
     if (userIsAdmin) {
       // Admin: toon alles (geen filtering)
       projects = await baseQuery
-        .groupBy(projectsTable.id, organizationsTable.name)
         .orderBy(desc(projectsTable.createdAt));
     } else if (userOrgIds.length > 0) {
       // Gebruiker heeft organisaties: filter op organisaties + items zonder organisatie
@@ -133,13 +145,11 @@ export async function GET(req: Request) {
             isNull(projectsTable.organizationId) // Toon ook projecten zonder organisatie
           )
         )
-        .groupBy(projectsTable.id, organizationsTable.name)
         .orderBy(desc(projectsTable.createdAt));
     } else {
       // Gebruiker heeft geen organisaties en is geen admin: toon alleen items zonder organisatie
       projects = await baseQuery
         .where(isNull(projectsTable.organizationId))
-        .groupBy(projectsTable.id, organizationsTable.name)
         .orderBy(desc(projectsTable.createdAt));
     }
 

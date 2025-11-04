@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Search, Eye } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Project {
   id: number;
@@ -19,6 +25,8 @@ interface Project {
   budget: number | null;
   createdAt: string;
   safetyIncidentCount: number;
+  inspectionCount: number;
+  supervisionCount: number;
 }
 
 export default function ProjectsPage() {
@@ -543,7 +551,7 @@ export default function ProjectsPage() {
                   </p>
                   <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
                     <div className="overflow-x-auto scrollbar-thin">
-                      <table className="w-full min-w-[900px]">
+                      <table className="w-full min-w-[1100px]">
                         <thead className="bg-muted/50 border-b border-border">
                           <tr>
                             <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
@@ -566,6 +574,12 @@ export default function ProjectsPage() {
                             </th>
                             <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
                               <ShieldAlert className="h-4 w-4 mx-auto" />
+                            </th>
+                            <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              <Search className="h-4 w-4 mx-auto" />
+                            </th>
+                            <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              <Eye className="h-4 w-4 mx-auto" />
                             </th>
                           </tr>
                         </thead>
@@ -644,17 +658,86 @@ export default function ProjectsPage() {
                                 router.push(`/dashboard/ai-safety?projectId=${project.id}`);
                               }}
                             >
-                              <div className="flex items-center justify-center">
-                                <span 
-                                  className={`text-sm font-semibold ${
-                                    project.safetyIncidentCount > 0 
-                                      ? "text-destructive" 
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {project.safetyIncidentCount}
-                                </span>
-                              </div>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center justify-center cursor-pointer">
+                                      <span 
+                                        className={`text-sm font-semibold ${
+                                          project.safetyIncidentCount > 0 
+                                            ? "text-destructive" 
+                                            : "text-muted-foreground"
+                                        }`}
+                                      >
+                                        {project.safetyIncidentCount}
+                                      </span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Veiligheidsmeldingen</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </td>
+                            
+                            {/* Schouwen */}
+                            <td 
+                              className="px-3 py-3 whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/ai-schouw?projectId=${project.id}`);
+                              }}
+                            >
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center justify-center cursor-pointer">
+                                      <span 
+                                        className={`text-sm font-semibold ${
+                                          project.inspectionCount > 0 
+                                            ? "text-primary" 
+                                            : "text-muted-foreground"
+                                        }`}
+                                      >
+                                        {project.inspectionCount}
+                                      </span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>AI Schouwen</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </td>
+                            
+                            {/* Toezicht */}
+                            <td 
+                              className="px-3 py-3 whitespace-nowrap"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dashboard/ai-toezicht?projectId=${project.id}`);
+                              }}
+                            >
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center justify-center cursor-pointer">
+                                      <span 
+                                        className={`text-sm font-semibold ${
+                                          project.supervisionCount > 0 
+                                            ? "text-primary" 
+                                            : "text-muted-foreground"
+                                        }`}
+                                      >
+                                        {project.supervisionCount}
+                                      </span>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>AI Toezicht</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             </td>
                           </tr>
                         ))}
@@ -781,6 +864,64 @@ export default function ProjectsPage() {
                               }`}
                             >
                               {project.safetyIncidentCount}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Schouwen */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">AI Schouwen</div>
+                          <div 
+                            className="flex items-center gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/ai-schouw?projectId=${project.id}`);
+                            }}
+                          >
+                            <Search 
+                              className={`h-4 w-4 ${
+                                project.inspectionCount > 0 
+                                  ? "text-primary" 
+                                  : "text-muted-foreground"
+                              }`} 
+                            />
+                            <span 
+                              className={`font-semibold ${
+                                project.inspectionCount > 0 
+                                  ? "text-primary" 
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {project.inspectionCount}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Toezicht */}
+                        <div>
+                          <div className="text-xs text-muted-foreground mb-1">AI Toezicht</div>
+                          <div 
+                            className="flex items-center gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/dashboard/ai-toezicht?projectId=${project.id}`);
+                            }}
+                          >
+                            <Eye 
+                              className={`h-4 w-4 ${
+                                project.supervisionCount > 0 
+                                  ? "text-primary" 
+                                  : "text-muted-foreground"
+                              }`} 
+                            />
+                            <span 
+                              className={`font-semibold ${
+                                project.supervisionCount > 0 
+                                  ? "text-primary" 
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {project.supervisionCount}
                             </span>
                           </div>
                         </div>
