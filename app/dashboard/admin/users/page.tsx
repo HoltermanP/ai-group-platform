@@ -35,6 +35,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +45,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, MoreVertical, Ban, Trash2, ShieldCheck, Building2, X } from 'lucide-react';
+import { Plus, MoreVertical, Ban, Trash2, ShieldCheck, Building2, X, Key } from 'lucide-react';
 import Link from 'next/link';
 import {
   AlertDialog,
@@ -76,6 +77,12 @@ interface User {
   lastSignInAt: number | null;
 }
 
+interface ModulePermissions {
+  'ai-safety': boolean;
+  'ai-schouw': boolean;
+  'ai-toezicht': boolean;
+}
+
 interface OrganizationOption {
   id: number;
   name: string;
@@ -101,6 +108,15 @@ export default function UsersManagementPage() {
   const [orgFormData, setOrgFormData] = useState({
     organizationId: '',
     role: 'member',
+  });
+  
+  // Module permissions management dialog
+  const [modulePermissionsDialogOpen, setModulePermissionsDialogOpen] = useState(false);
+  const [updatingPermissions, setUpdatingPermissions] = useState(false);
+  const [modulePermissions, setModulePermissions] = useState<ModulePermissions>({
+    'ai-safety': false,
+    'ai-schouw': false,
+    'ai-toezicht': false,
   });
   
   // Form state
@@ -175,6 +191,59 @@ export default function UsersManagementPage() {
     } catch (err) {
       console.error('Error updating role:', err);
       alert('Fout bij updaten rol');
+    }
+  };
+
+  const openModulePermissionsDialog = async (user: User) => {
+    setSelectedUser(user);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}/module-permissions`);
+      if (res.ok) {
+        const data = await res.json();
+        setModulePermissions(data.permissions);
+      } else {
+        // Default permissions als er een fout is
+        setModulePermissions({
+          'ai-safety': false,
+          'ai-schouw': false,
+          'ai-toezicht': false,
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching module permissions:', error);
+      setModulePermissions({
+        'ai-safety': false,
+        'ai-schouw': false,
+        'ai-toezicht': false,
+      });
+    }
+    setModulePermissionsDialogOpen(true);
+  };
+
+  const updateModulePermission = async (module: keyof ModulePermissions, granted: boolean) => {
+    if (!selectedUser) return;
+
+    setUpdatingPermissions(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/module-permissions`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module, granted }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Fout bij updaten module rechten');
+        return;
+      }
+
+      const data = await res.json();
+      setModulePermissions(data.permissions);
+    } catch (err) {
+      console.error('Error updating module permission:', err);
+      alert('Fout bij updaten module rechten');
+    } finally {
+      setUpdatingPermissions(false);
     }
   };
 
@@ -562,6 +631,7 @@ export default function UsersManagementPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Globale Rol</TableHead>
                 <TableHead>Organisaties</TableHead>
+                <TableHead>Module Rechten</TableHead>
                 <TableHead>Laatste Login</TableHead>
                 <TableHead>Acties</TableHead>
               </TableRow>
@@ -625,6 +695,17 @@ export default function UsersManagementPage() {
                     )}
                   </TableCell>
                   <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openModulePermissionsDialog(user)}
+                      className="text-xs"
+                    >
+                      <Key className="mr-2 h-3 w-3" />
+                      Beheer
+                    </Button>
+                  </TableCell>
+                  <TableCell>
                     <div className="text-sm text-muted-foreground">
                       {user.lastSignInAt
                         ? new Date(user.lastSignInAt).toLocaleDateString('nl-NL')
@@ -668,6 +749,12 @@ export default function UsersManagementPage() {
                           >
                             <Building2 className="mr-2 h-4 w-4" />
                             Organisaties beheren
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openModulePermissionsDialog(user)}
+                          >
+                            <Key className="mr-2 h-4 w-4" />
+                            Module rechten
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -881,6 +968,81 @@ export default function UsersManagementPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOrgDialogOpen(false)}>
+              Sluiten
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Module Permissions Dialog */}
+      <Dialog open={modulePermissionsDialogOpen} onOpenChange={setModulePermissionsDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Module Rechten Beheren</DialogTitle>
+            <DialogDescription>
+              Beheer module toegang voor {selectedUser?.email}
+              {selectedUser?.globalRole === 'admin' || selectedUser?.globalRole === 'super_admin' ? (
+                <span className="block mt-2 text-xs text-muted-foreground">
+                  Admins hebben standaard toegang tot alle modules.
+                </span>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="ai-safety" className="text-base font-medium">
+                  AI-Veiligheid
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Toegang tot veiligheidsmeldingen module
+                </p>
+              </div>
+              <Switch
+                id="ai-safety"
+                checked={modulePermissions['ai-safety']}
+                onCheckedChange={(checked) => updateModulePermission('ai-safety', checked)}
+                disabled={updatingPermissions || selectedUser?.globalRole === 'admin' || selectedUser?.globalRole === 'super_admin'}
+              />
+            </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="ai-schouw" className="text-base font-medium">
+                  AI-Schouw
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Toegang tot schouwen module
+                </p>
+              </div>
+              <Switch
+                id="ai-schouw"
+                checked={modulePermissions['ai-schouw']}
+                onCheckedChange={(checked) => updateModulePermission('ai-schouw', checked)}
+                disabled={updatingPermissions || selectedUser?.globalRole === 'admin' || selectedUser?.globalRole === 'super_admin'}
+              />
+            </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="space-y-0.5">
+                <Label htmlFor="ai-toezicht" className="text-base font-medium">
+                  AI-Toezicht
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Toegang tot toezicht module
+                </p>
+              </div>
+              <Switch
+                id="ai-toezicht"
+                checked={modulePermissions['ai-toezicht']}
+                onCheckedChange={(checked) => updateModulePermission('ai-toezicht', checked)}
+                disabled={updatingPermissions || selectedUser?.globalRole === 'admin' || selectedUser?.globalRole === 'super_admin'}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setModulePermissionsDialogOpen(false)}
+            >
               Sluiten
             </Button>
           </DialogFooter>

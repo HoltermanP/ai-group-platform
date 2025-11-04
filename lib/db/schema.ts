@@ -1,4 +1,4 @@
-import { integer, pgTable, varchar, text, timestamp, boolean } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, text, timestamp, boolean, unique } from "drizzle-orm/pg-core";
 
 // ============================================
 // ORGANIZATIONS & USER MANAGEMENT
@@ -95,6 +95,22 @@ export const userPreferencesTable = pgTable("user_preferences", {
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });
+
+// User Module Permissions - module rechten per gebruiker
+export const userModulePermissionsTable = pgTable("user_module_permissions", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  clerkUserId: varchar({ length: 255 }).notNull(), // Clerk User ID
+  module: varchar({ length: 50 }).notNull(), // 'ai-safety', 'ai-schouw', 'ai-toezicht'
+  granted: boolean().default(true), // Of de gebruiker toegang heeft tot deze module
+  grantedBy: varchar({ length: 255 }), // Clerk User ID van degene die de rechten heeft verstrekt
+  grantedAt: timestamp().defaultNow().notNull(),
+  notes: text(), // Notities over waarom deze rechten zijn verstrekt
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  // Unieke constraint: één record per gebruiker per module
+  uniqueUserModule: unique().on(table.clerkUserId, table.module),
+}));
 
 // ============================================
 // PROJECTS & SAFETY

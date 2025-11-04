@@ -1,6 +1,7 @@
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
 import { Shield, Eye, FileSearch } from "lucide-react";
+import { ModuleCard } from "@/components/module-card";
 
 export default function Home() {
   return (
@@ -38,67 +39,31 @@ export default function Home() {
         {/* Feature Cards */}
         <div className="grid gap-8 md:grid-cols-3 max-w-7xl mx-auto">
           {/* AI-Veiligheid */}
-          <Link href="/dashboard/ai-safety" className="group">
-            <div className="h-full rounded-xl border-2 border-border bg-card p-8 text-left transition-all hover:shadow-2xl hover:border-primary hover:-translate-y-2 duration-300">
-              <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                <Shield className="h-8 w-8" />
-              </div>
-              <h3 className="font-bold text-2xl mb-4 text-card-foreground group-hover:text-primary transition-colors">
-                AI-Veiligheid
-              </h3>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Detecteer en beheer veiligheidsmeldingen in real-time. Onze AI analyseert incidenten, categoriseert risico's en stelt preventieve maatregelen voor.
-              </p>
-              <div className="flex items-center text-sm font-medium text-primary group-hover:gap-2 transition-all">
-                Meer informatie
-                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </Link>
+          <ModuleCard
+            href="/dashboard/ai-safety"
+            icon={Shield}
+            title="AI-Veiligheid"
+            description="Detecteer en beheer veiligheidsmeldingen in real-time. Onze AI analyseert incidenten, categoriseert risico's en stelt preventieve maatregelen voor."
+            module="ai-safety"
+          />
 
           {/* AI-Schouw */}
-          <Link href="/dashboard/ai-schouw" className="group">
-            <div className="h-full rounded-xl border-2 border-border bg-card p-8 text-left transition-all hover:shadow-2xl hover:border-primary hover:-translate-y-2 duration-300">
-              <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                <Eye className="h-8 w-8" />
-              </div>
-              <h3 className="font-bold text-2xl mb-4 text-card-foreground group-hover:text-primary transition-colors">
-                AI-Schouw
-              </h3>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Automatische inspectie van ondergrondse infrastructuur. AI-gedreven beeldherkenning identificeert gebreken, corrosie en structurele problemen.
-              </p>
-              <div className="flex items-center text-sm font-medium text-primary group-hover:gap-2 transition-all">
-                Meer informatie
-                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </Link>
+          <ModuleCard
+            href="/dashboard/ai-schouw"
+            icon={Eye}
+            title="AI-Schouw"
+            description="Automatische inspectie van ondergrondse infrastructuur. AI-gedreven beeldherkenning identificeert gebreken, corrosie en structurele problemen."
+            module="ai-schouw"
+          />
 
           {/* AI-Toezicht */}
-          <Link href="/dashboard/ai-toezicht" className="group">
-            <div className="h-full rounded-xl border-2 border-border bg-card p-8 text-left transition-all hover:shadow-2xl hover:border-primary hover:-translate-y-2 duration-300">
-              <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
-                <FileSearch className="h-8 w-8" />
-              </div>
-              <h3 className="font-bold text-2xl mb-4 text-card-foreground group-hover:text-primary transition-colors">
-                AI-Toezicht
-              </h3>
-              <p className="text-muted-foreground leading-relaxed mb-4">
-                Continue monitoring en compliance controle. Slimme analyses van projectvoortgang, regelgeving en kwaliteitsnormen voor optimaal beheer.
-              </p>
-              <div className="flex items-center text-sm font-medium text-primary group-hover:gap-2 transition-all">
-                Meer informatie
-                <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </div>
-            </div>
-          </Link>
+          <ModuleCard
+            href="/dashboard/ai-toezicht"
+            icon={FileSearch}
+            title="AI-Toezicht"
+            description="Continue monitoring en compliance controle. Slimme analyses van projectvoortgang, regelgeving en kwaliteitsnormen voor optimaal beheer."
+            module="ai-toezicht"
+          />
         </div>
 
         {/* Bottom CTA Section */}

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { projectsTable, safetyIncidentsTable, inspectionsTable, supervisionsTable } from "@/lib/db/schema";
-import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
+import { getUserOrganizationIds, isAdmin, getUserModulePermissions } from "@/lib/clerk-admin";
 import { eq, sql, or, isNull, inArray } from "drizzle-orm";
 
 export default async function DashboardPage() {
@@ -14,6 +14,9 @@ export default async function DashboardPage() {
   }
 
   const user = await currentUser();
+  
+  // Haal module rechten op
+  const modulePermissions = await getUserModulePermissions(userId);
   
   // Haal organisatie IDs op voor filtering
   const userIsAdmin = await isAdmin();
@@ -195,8 +198,9 @@ export default async function DashboardPage() {
               </div>
             </Link>
 
-            {/* Module tegels - 3 kolommen */}
+            {/* Module tegels - alleen tonen als gebruiker rechten heeft */}
             <div className="grid gap-6 md:grid-cols-3">
+              {modulePermissions['ai-safety'] && (
               <Link href="/dashboard/ai-safety" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-destructive/50 cursor-pointer group">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
@@ -243,7 +247,9 @@ export default async function DashboardPage() {
                   </span>
                 </div>
               </Link>
+              )}
 
+              {modulePermissions['ai-schouw'] && (
               <Link href="/dashboard/ai-schouw" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -297,7 +303,9 @@ export default async function DashboardPage() {
                   </span>
                 </div>
               </Link>
+              )}
 
+              {modulePermissions['ai-toezicht'] && (
               <Link href="/dashboard/ai-toezicht" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="p-2 rounded-lg bg-chart-2/10 text-chart-2">
@@ -350,6 +358,7 @@ export default async function DashboardPage() {
                   </span>
                 </div>
               </Link>
+              )}
             </div>
           </div>
         </div>

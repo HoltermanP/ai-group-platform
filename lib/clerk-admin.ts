@@ -1,7 +1,9 @@
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { db } from './db';
-import { userRolesTable, organizationMembersTable, organizationsTable, userPreferencesTable } from './db/schema';
+import { userRolesTable, organizationMembersTable, organizationsTable, userPreferencesTable, userModulePermissionsTable } from './db/schema';
 import { eq, and } from 'drizzle-orm';
+
+export type ModuleType = 'ai-safety' | 'ai-schouw' | 'ai-toezicht';
 
 // ============================================
 // TYPES
@@ -494,5 +496,157 @@ export async function getUserOrganizationIds(userId: string): Promise<number[]> 
  */
 export async function shouldFilterByOrganization(userId: string): Promise<boolean> {
   return !(await isAdmin());
+}
+
+// ============================================
+// MODULE PERMISSIONS
+// ============================================
+
+/**
+ * Check of een gebruiker toegang heeft tot een specifieke module
+ * Admins hebben standaard toegang tot alle modules
+ */
+export async function hasModuleAccess(userId: string, module: ModuleType): Promise<boolean> {
+  // Admins hebben altijd toegang
+  const userRole = await getUserGlobalRole(userId);
+  if (userRole === 'super_admin' || userRole === 'admin') {
+    return true;
+  }
+
+  // Check module rechten in database
+  const permission = await db
+    .select()
+    .from(userModulePermissionsTable)
+    .where(
+      and(
+        eq(userModulePermissionsTable.clerkUserId, userId),
+        eq(userModulePermissionsTable.module, module)
+      )
+    )
+    .limit(1);
+
+  // Als er geen record is, heeft de gebruiker standaard geen toegang
+  // Als er een record is, gebruik de granted boolean
+  return permission[0]?.granted === true;
+}
+
+/**
+ * Haal alle module rechten van een gebruiker op
+ */
+export async function getUserModulePermissions(userId: string): Promise<Record<ModuleType, boolean>> {
+  // Admins hebben altijd toegang tot alle modules
+  const userRole = await getUserGlobalRole(userId);
+  if (userRole === 'super_admin' || userRole === 'admin') {
+    return {
+      'ai-safety': true,
+      'ai-schouw': true,
+      'ai-toezicht': true,
+    };
+  }
+
+  // Haal alle module rechten op
+  const permissions = await db
+    .select()
+    .from(userModulePermissionsTable)
+    .where(eq(userModulePermissionsTable.clerkUserId, userId));
+
+  // Maak een map van module -> granted
+  const permissionMap = new Map<ModuleType, boolean>();
+  permissions.forEach(p => {
+    permissionMap.set(p.module as ModuleType, p.granted === true);
+  });
+
+  // Retourneer alle modules met hun toegang status (default: false)
+  return {
+    'ai-safety': permissionMap.get('ai-safety') ?? false,
+    'ai-schouw': permissionMap.get('ai-schouw') ?? false,
+    'ai-toezicht': permissionMap.get('ai-toezicht') ?? false,
+  };
+}
+
+/**
+ * Geef of verwijder module toegang voor een gebruiker
+ */
+export async function setModulePermission(
+  userId: string,
+  module: ModuleType,
+  granted: boolean,
+  notes?: string
+): Promise<void> {
+  const { userId: adminUserId } = await auth();
+  if (!adminUserId || !(await isAdmin())) {
+    throw new Error('Unauthorized: alleen admins kunnen module rechten wijzigen');
+  }
+
+  // Check of er al een record bestaat
+  const existing = await db
+    .select()
+    .from(userModulePermissionsTable)
+    .where(
+      and(
+        eq(userModulePermissionsTable.clerkUserId, userId),
+        eq(userModulePermissionsTable.module, module)
+      )
+    )
+    .limit(1);
+
+  if (existing.length === 0) {
+    // Maak nieuwe record
+    await db.insert(userModulePermissionsTable).values({
+      clerkUserId: userId,
+      module,
+      granted,
+      grantedBy: adminUserId,
+      notes: notes || null,
+    });
+  } else {
+    // Update bestaande record
+    await db
+      .update(userModulePermissionsTable)
+      .set({
+        granted,
+        grantedBy: adminUserId,
+        notes: notes || existing[0].notes || null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(userModulePermissionsTable.clerkUserId, userId),
+          eq(userModulePermissionsTable.module, module)
+        )
+      );
+  }
+}
+
+/**
+ * Haal alle module rechten van alle gebruikers op (voor admin pagina)
+ */
+export async function getAllUsersModulePermissions(): Promise<Record<string, Record<ModuleType, boolean>>> {
+  const permissions = await db
+    .select()
+    .from(userModulePermissionsTable);
+
+  // Groepeer per gebruiker
+  const userPermissionsMap = new Map<string, Record<ModuleType, boolean>>();
+
+  permissions.forEach(p => {
+    if (!userPermissionsMap.has(p.clerkUserId)) {
+      userPermissionsMap.set(p.clerkUserId, {
+        'ai-safety': false,
+        'ai-schouw': false,
+        'ai-toezicht': false,
+      });
+    }
+    const userPerms = userPermissionsMap.get(p.clerkUserId)!;
+    userPerms[p.module as ModuleType] = p.granted === true;
+  });
+
+  // Convert map naar object
+  const result: Record<string, Record<ModuleType, boolean>> = {};
+  userPermissionsMap.forEach((perms, userId) => {
+    result[userId] = perms;
+  });
+
+  return result;
 }
 
