@@ -152,6 +152,18 @@ export default function RootLayout({
                       >
                         Veiligheid
                       </Link>
+                      <Link 
+                        href="/dashboard/ai-schouw" 
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Schouwen
+                      </Link>
+                      <Link 
+                        href="/dashboard/ai-toezicht" 
+                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Toezicht
+                      </Link>
                     </nav>
                   </SignedIn>
                 </div>

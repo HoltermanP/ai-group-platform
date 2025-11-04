@@ -2,7 +2,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
-import { projectsTable, safetyIncidentsTable } from "@/lib/db/schema";
+import { projectsTable, safetyIncidentsTable, inspectionsTable, supervisionsTable } from "@/lib/db/schema";
 import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
 import { eq, sql, or, isNull, inArray } from "drizzle-orm";
 
@@ -72,6 +72,40 @@ export default async function DashboardPage() {
     incidentStats = await incidentsQuery;
   }
   const incidentStatsData = incidentStats[0] || { total: 0, open: 0, critical: 0, high: 0, recent: 0 };
+  
+  // Haal schouw statistieken op (met error handling voor als de tabel nog niet bestaat)
+  let inspectionStatsData = { total: 0, open: 0, in_behandeling: 0, afgerond: 0, goedgekeurd: 0, recent: 0 };
+  try {
+    const inspectionsQuery = db
+      .select({
+        total: sql<number>`cast(count(*) as integer)`,
+        open: sql<number>`cast(count(*) filter (where ${inspectionsTable.status} = 'open') as integer)`,
+        in_behandeling: sql<number>`cast(count(*) filter (where ${inspectionsTable.status} = 'in_behandeling') as integer)`,
+        afgerond: sql<number>`cast(count(*) filter (where ${inspectionsTable.status} = 'afgerond') as integer)`,
+        goedgekeurd: sql<number>`cast(count(*) filter (where ${inspectionsTable.readinessStatus} = 'goedgekeurd') as integer)`,
+        recent: sql<number>`cast(count(*) filter (where ${inspectionsTable.createdAt} >= ${sevenDaysAgo}::timestamp) as integer)`,
+      })
+      .from(inspectionsTable);
+    
+    let inspectionStats;
+    if (!userIsAdmin && userOrgIds.length > 0) {
+      inspectionStats = await inspectionsQuery.where(
+        or(
+          inArray(inspectionsTable.organizationId, userOrgIds),
+          isNull(inspectionsTable.organizationId)
+        )
+      );
+    } else if (!userIsAdmin) {
+      inspectionStats = await inspectionsQuery.where(isNull(inspectionsTable.organizationId));
+    } else {
+      inspectionStats = await inspectionsQuery;
+    }
+    inspectionStatsData = inspectionStats[0] || { total: 0, open: 0, in_behandeling: 0, afgerond: 0, goedgekeurd: 0, recent: 0 };
+  } catch (error) {
+    // Tabel bestaat nog niet - gebruik lege statistieken
+    console.warn("Inspections table not found, using empty stats:", error);
+    inspectionStatsData = { total: 0, open: 0, in_behandeling: 0, afgerond: 0, goedgekeurd: 0, recent: 0 };
+  }
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
@@ -173,6 +207,60 @@ export default async function DashboardPage() {
               </div>
             </Link>
 
+            <Link href="/dashboard/ai-schouw" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg text-card-foreground">AI Schouwen</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                Beheer schouwen voor aansluitleidingen
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Totaal</span>
+                  <span className="text-lg font-semibold text-card-foreground">{inspectionStatsData.total}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Open</span>
+                  <span className="text-sm font-medium text-primary">{inspectionStatsData.open}</span>
+                </div>
+                {inspectionStatsData.in_behandeling > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">In Behandeling</span>
+                    <span className="text-sm font-medium text-yellow-500">{inspectionStatsData.in_behandeling}</span>
+                  </div>
+                )}
+                {inspectionStatsData.afgerond > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Afgerond</span>
+                    <span className="text-sm font-medium text-green-500">{inspectionStatsData.afgerond}</span>
+                  </div>
+                )}
+                {inspectionStatsData.goedgekeurd > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Goedgekeurd</span>
+                    <span className="text-sm font-medium text-green-600">{inspectionStatsData.goedgekeurd}</span>
+                  </div>
+                )}
+                {inspectionStatsData.recent > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
+                    <span className="text-sm font-medium text-card-foreground">{inspectionStatsData.recent}</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t border-border">
+                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
+                  Bekijk alle schouwen →
+                </span>
+              </div>
+            </Link>
+
             <div className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -212,6 +300,59 @@ export default async function DashboardPage() {
                 </div>
               </div>
             </div>
+
+            <Link href="/dashboard/ai-toezicht" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-chart-2/10 text-chart-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                  </svg>
+                </div>
+                <h3 className="font-semibold text-lg text-card-foreground">AI Toezicht</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                Kwaliteitscontrole en toezicht op projecten
+              </p>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Totaal</span>
+                  <span className="text-lg font-semibold text-card-foreground">{supervisionStatsData.total}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Open</span>
+                  <span className="text-sm font-medium text-primary">{supervisionStatsData.open}</span>
+                </div>
+                {supervisionStatsData.in_behandeling > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">In Behandeling</span>
+                    <span className="text-sm font-medium text-yellow-500">{supervisionStatsData.in_behandeling}</span>
+                  </div>
+                )}
+                {supervisionStatsData.afgerond > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Afgerond</span>
+                    <span className="text-sm font-medium text-green-500">{supervisionStatsData.afgerond}</span>
+                  </div>
+                )}
+                {supervisionStatsData.excellent > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Excellent</span>
+                    <span className="text-sm font-medium text-green-600">{supervisionStatsData.excellent}</span>
+                  </div>
+                )}
+                {supervisionStatsData.recent > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
+                    <span className="text-sm font-medium text-card-foreground">{supervisionStatsData.recent}</span>
+                  </div>
+                )}
+              </div>
+              <div className="mt-4 pt-4 border-t border-border">
+                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
+                  Bekijk alle toezichten →
+                </span>
+              </div>
+            </Link>
 
             <Link href="/dashboard/instellingen" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
               <div className="flex items-center gap-3 mb-4">

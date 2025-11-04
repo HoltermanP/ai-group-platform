@@ -205,6 +205,95 @@ export const safetyIncidentsTable = pgTable("safety_incidents", {
   updatedAt: timestamp().defaultNow().notNull(),
 });
 
+// AI Schouwen - inspecties voor aansluitleidingen
+export const inspectionsTable = pgTable("inspections", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  inspectionId: varchar({ length: 50 }).notNull().unique(), // Uniek schouw ID (bijv. SCH-2024-001)
+  title: varchar({ length: 255 }).notNull(),
+  description: text(),
+  
+  // Project koppeling (verplicht)
+  projectId: integer().references(() => projectsTable.id, { onDelete: "cascade" }).notNull(),
+  
+  // Organisatie koppeling
+  organizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }),
+  
+  // Type aansluiting
+  connectionTypes: varchar({ length: 255 }), // JSON array: ["elektra", "gas", "water"]
+  
+  // Status
+  status: varchar({ length: 50 }).default('open'), // open, in_behandeling, afgerond, afgekeurd
+  
+  // Gereedheid beoordeling
+  readinessStatus: varchar({ length: 50 }), // goedgekeurd, afgekeurd, in_beoordeling
+  
+  // Checklist (JSON)
+  checklist: text(), // JSON array met checklist items
+  
+  // Locatie
+  location: text(),
+  coordinates: varchar({ length: 100 }), // GPS coördinaten
+  
+  // Personen
+  inspectedBy: varchar({ length: 255 }).notNull(), // Clerk User ID van schouwer
+  assignedTo: varchar({ length: 255 }), // Clerk User ID van toegewezen persoon
+  
+  // Datums
+  inspectionDate: timestamp(), // Wanneer is de schouw uitgevoerd
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+  
+  // Documentatie
+  photos: text(), // JSON array met foto URLs
+  notes: text(), // Algemene notities bij de schouw
+  remarks: text(), // Opmerkingen/bevindingen
+});
+
+// AI Toezicht - kwaliteitscontrole op projecten
+export const supervisionsTable = pgTable("supervisions", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  supervisionId: varchar({ length: 50 }).notNull().unique(), // Uniek toezicht ID (bijv. TOZ-2024-001)
+  title: varchar({ length: 255 }).notNull(),
+  description: text(),
+  
+  // Project koppeling (verplicht)
+  projectId: integer().references(() => projectsTable.id, { onDelete: "cascade" }).notNull(),
+  
+  // Organisatie koppeling
+  organizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }),
+  
+  // Discipline/Type infrastructuur
+  discipline: varchar({ length: 100 }), // Elektra, Gas, Water, Media
+  
+  // Status
+  status: varchar({ length: 50 }).default('open'), // open, in_behandeling, afgerond, afgekeurd
+  
+  // Algemene beoordeling
+  overallQuality: varchar({ length: 50 }), // excellent, goed, voldoende, onvoldoende
+  
+  // Kwaliteitsnormen (JSON)
+  qualityStandards: text(), // JSON object met kwaliteitsscores per norm
+  
+  // Locatie
+  location: text(),
+  coordinates: varchar({ length: 100 }), // GPS coördinaten
+  
+  // Personen
+  supervisedBy: varchar({ length: 255 }).notNull(), // Clerk User ID van toezichthouder
+  assignedTo: varchar({ length: 255 }), // Clerk User ID van toegewezen persoon
+  
+  // Datums
+  supervisionDate: timestamp(), // Wanneer is het toezicht uitgevoerd
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+  
+  // Documentatie
+  photos: text(), // JSON array met foto URLs
+  notes: text(), // Algemene notities bij het toezicht
+  findings: text(), // Bevindingen en afwijkingen
+  recommendations: text(), // Aanbevelingen voor verbetering
+});
+
 // ============================================
 // AI & TOOLBOXES
 // ============================================

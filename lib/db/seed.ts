@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db } from "./index";
-import { projectsTable, safetyIncidentsTable, organizationsTable } from "./schema";
+import { projectsTable, safetyIncidentsTable, organizationsTable, inspectionsTable, supervisionsTable } from "./schema";
 
 // Helper functies voor realistische data
 function getRandomItem<T>(array: readonly T[]): T {
@@ -207,6 +207,33 @@ const statuses = ["open", "investigating", "resolved", "closed"] as const;
 const priorities = ["low", "medium", "high", "urgent"] as const;
 const disciplines = ["Elektra", "Gas", "Water", "Media"] as const;
 
+// GPS coördinaten per plaats (gedeeld voor incidents en inspections)
+const regionCoords: Record<string, { lat: number; lng: number }> = {
+  'Leeuwarden': { lat: 53.2012, lng: 5.7999 },
+  'Sneek': { lat: 53.0324, lng: 5.6579 },
+  'Heerenveen': { lat: 52.9598, lng: 5.9196 },
+  'Drachten': { lat: 53.1127, lng: 6.0989 },
+  'Harlingen': { lat: 53.1745, lng: 5.4236 },
+  'Franeker': { lat: 53.1865, lng: 5.5419 },
+  'Lelystad': { lat: 52.5083, lng: 5.4750 },
+  'Almere': { lat: 52.3508, lng: 5.2647 },
+  'Dronten': { lat: 52.5252, lng: 5.7176 },
+  'Zeewolde': { lat: 52.3299, lng: 5.5403 },
+  'Emmeloord': { lat: 52.7108, lng: 5.7501 },
+  'Urk': { lat: 52.6632, lng: 5.6013 },
+  'Ens': { lat: 52.6381, lng: 5.8267 },
+  'Kraggenburg': { lat: 52.6789, lng: 5.8967 },
+  'Arnhem': { lat: 51.9851, lng: 5.8987 },
+  'Nijmegen': { lat: 51.8426, lng: 5.8573 },
+  'Apeldoorn': { lat: 52.2110, lng: 5.9699 },
+  'Ede': { lat: 52.0408, lng: 5.6575 },
+  'Doetinchem': { lat: 51.9658, lng: 6.2886 },
+  'Harderwijk': { lat: 52.3500, lng: 5.6167 },
+  'Zutphen': { lat: 52.1393, lng: 6.1950 },
+  'Tiel': { lat: 51.8869, lng: 5.4294 },
+  'Wageningen': { lat: 51.9693, lng: 5.6659 }
+};
+
 async function seed() {
   console.log("🌱 Starting database seeding...");
   
@@ -298,33 +325,6 @@ async function seed() {
         const incidentLocation = getRandomItem(locationsWithMunicipality);
         
         // Genereer GPS coördinaten gebaseerd op de regio
-        // Centrum coördinaten per provincie
-        const regionCoords: Record<string, { lat: number; lng: number }> = {
-          'Leeuwarden': { lat: 53.2012, lng: 5.7999 },
-          'Sneek': { lat: 53.0324, lng: 5.6579 },
-          'Heerenveen': { lat: 52.9598, lng: 5.9196 },
-          'Drachten': { lat: 53.1127, lng: 6.0989 },
-          'Harlingen': { lat: 53.1745, lng: 5.4236 },
-          'Franeker': { lat: 53.1865, lng: 5.5419 },
-          'Lelystad': { lat: 52.5083, lng: 5.4750 },
-          'Almere': { lat: 52.3508, lng: 5.2647 },
-          'Dronten': { lat: 52.5252, lng: 5.7176 },
-          'Zeewolde': { lat: 52.3299, lng: 5.5403 },
-          'Emmeloord': { lat: 52.7108, lng: 5.7501 },
-          'Urk': { lat: 52.6632, lng: 5.6013 },
-          'Ens': { lat: 52.6381, lng: 5.8267 },
-          'Kraggenburg': { lat: 52.6789, lng: 5.8967 },
-          'Arnhem': { lat: 51.9851, lng: 5.8987 },
-          'Nijmegen': { lat: 51.8426, lng: 5.8573 },
-          'Apeldoorn': { lat: 52.2110, lng: 5.9699 },
-          'Ede': { lat: 52.0408, lng: 5.6575 },
-          'Doetinchem': { lat: 51.9658, lng: 6.2886 },
-          'Harderwijk': { lat: 52.3500, lng: 5.6167 },
-          'Zutphen': { lat: 52.1393, lng: 6.1950 },
-          'Tiel': { lat: 51.8869, lng: 5.4294 },
-          'Wageningen': { lat: 51.9693, lng: 5.6659 }
-        };
-        
         const baseCoords = regionCoords[incidentLocation.plaats] || { lat: 52.3676, lng: 4.9041 };
         const lat = baseCoords.lat + (Math.random() - 0.5) * 0.02; // Kleine variatie
         const lng = baseCoords.lng + (Math.random() - 0.5) * 0.02;
@@ -414,11 +414,303 @@ async function seed() {
     
     console.log("\n✅ All safety incidents created successfully!");
     
+    // Stap 3: Maak schouwen voor 25% van de projecten
+    console.log("\n🔍 Creating inspections for 25% of projects...");
+    
+    // Haal alle projecten op (inclusief de net aangemaakte)
+    const allProjects = await db.select().from(projectsTable);
+    
+    // Selecteer 25% van de projecten (afgerond naar boven)
+    const inspectionCount = Math.ceil(allProjects.length * 0.25);
+    const shuffledAllProjects = [...allProjects].sort(() => Math.random() - 0.5);
+    const projectsWithInspections = shuffledAllProjects.slice(0, inspectionCount);
+    
+    // Testdata voor schouwen
+    const inspectionTitles = [
+      "Schouw aansluitleidingen nieuwe woning",
+      "Inspectie elektra aansluiting",
+      "Controle gasleiding gereedheid",
+      "Schouw wateraansluiting project",
+      "Eindcontrole aansluitleidingen",
+      "Inspectie aansluitingen bouwblok",
+      "Schouw voor aansluiting elektra/gas/water",
+      "Gereedheidscontrole aansluitleidingen",
+      "Inspectie aansluitingen woningbouw",
+      "Schouw utiliteitsaansluitingen",
+      "Eindschouw aansluitleidingen",
+      "Controle aansluitingen voor oplevering",
+      "Inspectie aansluitleidingen project fase 2",
+      "Schouw aansluitingen appartementencomplex",
+      "Gereedheidsinspectie aansluitleidingen"
+    ];
+    
+    const connectionTypesOptions = [
+      ["elektra"],
+      ["gas"],
+      ["water"],
+      ["elektra", "gas"],
+      ["elektra", "water"],
+      ["gas", "water"],
+      ["elektra", "gas", "water"]
+    ];
+    
+    const inspectionStatuses = ["open", "in_behandeling", "afgerond", "afgekeurd"] as const;
+    const readinessStatuses = ["goedgekeurd", "afgekeurd", "in_beoordeling"] as const;
+    
+    const checklistItems = [
+      { id: "1", item: "Elektra aansluiting correct geïnstalleerd", checked: true },
+      { id: "2", item: "Gasleiding drukproef uitgevoerd", checked: true },
+      { id: "3", item: "Wateraansluiting lekdicht", checked: true },
+      { id: "4", item: "Aansluitpunten vrij toegankelijk", checked: false },
+      { id: "5", item: "Meterkast correct geplaatst", checked: true },
+      { id: "6", item: "Veiligheidsvoorzieningen aanwezig", checked: true },
+      { id: "7", item: "Documentatie compleet", checked: false },
+      { id: "8", item: "Aardlekbeveiliging getest", checked: true },
+      { id: "9", item: "Gasafsluiter functioneel", checked: true },
+      { id: "10", item: "Waterafsluiter bereikbaar", checked: true }
+    ];
+    
+    const notesOptions = [
+      "Schouw uitgevoerd conform NEN normen. Alle aansluitingen zijn correct geïnstalleerd.",
+      "Tijdens inspectie zijn enkele kleine aanpassingen geconstateerd. Deze zijn tijdens de schouw direct opgelost.",
+      "Alle aansluitingen zijn gecontroleerd en voldoen aan de gestelde eisen. Project is gereed voor aansluiting.",
+      "Schouw uitgevoerd met goede resultaten. Alle meetwaarden zijn binnen de normen.",
+      "Inspectie toont aan dat alle aansluitingen correct zijn uitgevoerd. Geen afwijkingen geconstateerd.",
+      "Tijdens schouw zijn enkele aandachtspunten genoteerd. Deze zijn niet kritiek maar verdienen aandacht.",
+      "Alle aansluitleidingen zijn geïnspecteerd en voldoen aan de veiligheidseisen. Geen belemmeringen voor aansluiting."
+    ];
+    
+    const remarksOptions = [
+      "Aansluitingen zijn correct uitgevoerd. Project kan worden aangesloten.",
+      "Kleine aanpassingen nodig aan meteropstelling. Verder alles conform.",
+      "Alle aansluitingen getest en goedgekeurd. Geen afwijkingen.",
+      "Aansluitpunten zijn goed bereikbaar en correct geïnstalleerd.",
+      "Schouw positief afgerond. Alle systemen functioneren naar behoren.",
+      "Enkele verbeterpunten genoteerd voor toekomstige projecten. Geen belemmeringen.",
+      "Alle aansluitleidingen voldoen aan de eisen. Project gereed voor aansluiting op netwerk."
+    ];
+    
+    let totalInspections = 0;
+    
+    for (const project of projectsWithInspections) {
+      const title = getRandomItem(inspectionTitles);
+      const connectionTypes = getRandomItem(connectionTypesOptions);
+      const status = getRandomItem(inspectionStatuses);
+      
+      // Realistische readiness status op basis van status
+      let readinessStatus: typeof readinessStatuses[number] | null = null;
+      if (status === "afgerond") {
+        readinessStatus = Math.random() > 0.15 ? "goedgekeurd" : "afgekeurd";
+      } else if (status === "in_behandeling") {
+        readinessStatus = "in_beoordeling";
+      }
+      
+      // Genereer inspection datum (tussen project start en nu)
+      const projectStart = project.startDate ? new Date(project.startDate) : new Date(2023, 0, 1);
+      const inspectionDate = getRandomDate(projectStart, new Date());
+      
+      // Kies een locatie die matcht met project
+      const inspectionLocation = getRandomItem(locationsWithMunicipality);
+      
+      // Genereer GPS coördinaten (hergebruik dezelfde regionCoords logica)
+      const baseCoords = regionCoords[project.plaats || ''] || regionCoords[inspectionLocation.plaats] || { lat: 52.3676, lng: 4.9041 };
+      const lat = baseCoords.lat + (Math.random() - 0.5) * 0.02;
+      const lng = baseCoords.lng + (Math.random() - 0.5) * 0.02;
+      
+      // Genereer checklist (sommige items checked, andere niet)
+      const checklist = checklistItems.map(item => ({
+        ...item,
+        checked: Math.random() > 0.3 // 70% checked
+      }));
+      
+      // Genereer beschrijving
+      const description = `Schouw voor aansluitleidingen ${connectionTypes.join(', ')} bij project ${project.name}. Inspectie uitgevoerd door gecertificeerde schouwer.`;
+      
+      totalInspections++;
+      
+      await db.insert(inspectionsTable).values({
+        inspectionId: `SCH-${timestamp}-${String(totalInspections).padStart(3, '0')}`,
+        title: title,
+        description: description,
+        projectId: project.id,
+        organizationId: project.organizationId || null,
+        connectionTypes: JSON.stringify(connectionTypes),
+        status: status,
+        readinessStatus: readinessStatus,
+        checklist: JSON.stringify(checklist),
+        location: inspectionLocation.locatie,
+        coordinates: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+        inspectedBy: dummyUserId,
+        inspectionDate: inspectionDate,
+        notes: getRandomItem(notesOptions),
+        remarks: getRandomItem(remarksOptions),
+      });
+      
+      process.stdout.write(`\rInspections created: ${totalInspections}/${inspectionCount}`);
+    }
+    
+    console.log("\n✅ All inspections created successfully!");
+    
+    // Stap 4: Maak toezichten voor 25% van de projecten
+    console.log("\n🔍 Creating supervisions for 25% of projects...");
+    
+    // Selecteer 25% van de projecten (willekeurig, maar niet dezelfde als inspections)
+    const supervisionCount = Math.ceil(allProjects.length * 0.25);
+    const remainingProjects = allProjects.filter(p => !projectsWithInspections.some(ip => ip.id === p.id));
+    const shuffledRemainingProjects = [...remainingProjects].sort(() => Math.random() - 0.5);
+    const projectsWithSupervisions = shuffledRemainingProjects.slice(0, Math.min(supervisionCount, remainingProjects.length));
+    
+    // Testdata voor toezichten
+    const supervisionTitles = [
+      "Kwaliteitscontrole montage werkzaamheden",
+      "Toezicht diepteligging leidingen",
+      "Controle uitvoering volgens tekening",
+      "Kwaliteitsinspectie aansluitleidingen",
+      "Toezicht op materiaalgebruik",
+      "Controle werkmap en documentatie",
+      "Kwaliteitsbeoordeling project fase 1",
+      "Toezicht op veiligheidsmaatregelen",
+      "Inspectie conform NEN normen",
+      "Kwaliteitscontrole afronding werkzaamheden",
+      "Toezicht op bescherming leidingen",
+      "Controle markering en bebording",
+      "Kwaliteitsinspectie drukproeven",
+      "Toezicht op lekdichtheid",
+      "Eindcontrole kwaliteit project"
+    ];
+    
+    const overallQualityOptions = ["excellent", "goed", "voldoende", "onvoldoende"];
+    const supervisionStatuses = ["open", "in_behandeling", "afgerond", "afgekeurd"] as const;
+    
+    const findingsOptions = [
+      "Tijdens toezicht zijn enkele kleine afwijkingen geconstateerd. Deze zijn direct opgelost.",
+      "Alle werkzaamheden zijn uitgevoerd conform de gestelde normen. Geen afwijkingen geconstateerd.",
+      "Enkele aandachtspunten genoteerd voor verbetering in toekomstige projecten.",
+      "Alle kwaliteitsnormen zijn nageleefd. Project voldoet aan de eisen.",
+      "Tijdens inspectie zijn enkele verbeterpunten geïdentificeerd. Niet kritiek.",
+      "Alle controles zijn positief uitgevallen. Kwaliteit is in orde.",
+      "Enkele kleine afwijkingen geconstateerd die tijdens de werkzaamheden zijn gecorrigeerd."
+    ];
+    
+    const recommendationsOptions = [
+      "Aanbeveling: verbeter de documentatie in werkmap voor toekomstige projecten.",
+      "Aanbeveling: zorg voor betere markering van leidingen tijdens werkzaamheden.",
+      "Aanbeveling: verbeter de communicatie tussen aannemer en toezichthouder.",
+      "Aanbeveling: voer meer frequente kwaliteitscontroles uit tijdens kritieke fasen.",
+      "Aanbeveling: verbeter de bescherming van leidingen tijdens werkzaamheden.",
+      "Aanbeveling: zorg voor betere diepteligging controle tijdens plaatsing.",
+      "Aanbeveling: verbeter de montage kwaliteit door extra training van personeel."
+    ];
+    
+    let totalSupervisions = 0;
+    
+    for (const project of projectsWithSupervisions) {
+      const title = getRandomItem(supervisionTitles);
+      const discipline = getRandomItem(disciplines);
+      const status = getRandomItem(supervisionStatuses);
+      const overallQuality = getRandomItem(overallQualityOptions);
+      
+      // Genereer supervision datum (tussen project start en nu)
+      const projectStart = project.startDate ? new Date(project.startDate) : new Date(2023, 0, 1);
+      const supervisionDate = getRandomDate(projectStart, new Date());
+      
+      // Kies een locatie die matcht met project
+      const supervisionLocation = getRandomItem(locationsWithMunicipality);
+      
+      // Genereer GPS coördinaten
+      const baseCoords = regionCoords[project.plaats || ''] || regionCoords[supervisionLocation.plaats] || { lat: 52.3676, lng: 4.9041 };
+      const lat = baseCoords.lat + (Math.random() - 0.5) * 0.02;
+      const lng = baseCoords.lng + (Math.random() - 0.5) * 0.02;
+      
+      // Genereer kwaliteitsnormen (sommige normen beoordeeld, andere niet)
+      const qualityStandards: Record<string, string> = {};
+      
+      // Altijd montage kwaliteit beoordelen
+      qualityStandards.montage = getRandomItem(["excellent", "goed", "voldoende", "onvoldoende"]);
+      
+      // Altijd diepteligging beoordelen
+      qualityStandards.diepteligging = getRandomItem(["conform", "niet_conform"]);
+      
+      // Meestal werkmap beoordelen
+      if (Math.random() > 0.2) {
+        qualityStandards.werkmap = getRandomItem(["aanwezig", "niet_aanwezig"]);
+      }
+      
+      // Meestal volgens tekening beoordelen
+      if (Math.random() > 0.2) {
+        qualityStandards.volgensTekening = getRandomItem(["ja", "nee"]);
+      }
+      
+      // Discipline-specifieke normen
+      if (discipline === "Elektra") {
+        if (Math.random() > 0.3) {
+          qualityStandards.aarding = getRandomItem(["conform", "niet_conform"]);
+        }
+        if (Math.random() > 0.3) {
+          qualityStandards.materiaalGebruik = getRandomItem(["excellent", "goed", "voldoende", "onvoldoende"]);
+        }
+      } else if (discipline === "Gas" || discipline === "Water") {
+        if (Math.random() > 0.3) {
+          qualityStandards.drukproef = getRandomItem(["geslaagd", "niet_geslaagd"]);
+        }
+        if (Math.random() > 0.3) {
+          qualityStandards.lekdichtheid = getRandomItem(["lekdicht", "niet_lekdicht"]);
+        }
+      }
+      
+      // Optionele normen
+      if (Math.random() > 0.5) {
+        qualityStandards.bescherming = getRandomItem(["voldoende", "onvoldoende"]);
+      }
+      if (Math.random() > 0.5) {
+        qualityStandards.markering = getRandomItem(["aanwezig", "niet_aanwezig"]);
+      }
+      
+      // Genereer beschrijving
+      const description = `Kwaliteitscontrole en toezicht op ${discipline} project ${project.name}. Toezicht uitgevoerd door gecertificeerde toezichthouder conform NEN normen.`;
+      
+      totalSupervisions++;
+      
+      await db.insert(supervisionsTable).values({
+        supervisionId: `TOZ-${timestamp}-${String(totalSupervisions).padStart(3, '0')}`,
+        title: title,
+        description: description,
+        projectId: project.id,
+        organizationId: project.organizationId || null,
+        discipline: discipline,
+        status: status,
+        overallQuality: overallQuality,
+        qualityStandards: JSON.stringify(qualityStandards),
+        location: supervisionLocation.locatie,
+        coordinates: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+        supervisedBy: dummyUserId,
+        supervisionDate: supervisionDate,
+        notes: getRandomItem([
+          "Toezicht uitgevoerd conform NEN normen. Alle kwaliteitsnormen zijn gecontroleerd.",
+          "Tijdens inspectie zijn enkele kleine aandachtspunten geconstateerd. Deze zijn niet kritiek.",
+          "Alle werkzaamheden zijn gecontroleerd en voldoen aan de gestelde eisen.",
+          "Toezicht uitgevoerd met goede resultaten. Alle meetwaarden zijn binnen de normen.",
+          "Inspectie toont aan dat alle werkzaamheden correct zijn uitgevoerd.",
+          "Tijdens toezicht zijn enkele verbeterpunten genoteerd voor toekomstige projecten.",
+        ]),
+        findings: getRandomItem(findingsOptions),
+        recommendations: getRandomItem(recommendationsOptions),
+      });
+      
+      process.stdout.write(`\rSupervisions created: ${totalSupervisions}/${supervisionCount}`);
+    }
+    
+    console.log("\n✅ All supervisions created successfully!");
+    
     // Samenvatting
     console.log("\n📈 Seeding Summary:");
-    console.log(`   • Projects: 30`);
+    console.log(`   • Projects: ${allProjects.length}`);
     console.log(`   • Projects with incidents: 15`);
     console.log(`   • Total safety incidents: ${totalIncidents}`);
+    console.log(`   • Projects with inspections: ${inspectionCount} (${((inspectionCount / allProjects.length) * 100).toFixed(0)}%)`);
+    console.log(`   • Total inspections: ${totalInspections}`);
+    console.log(`   • Projects with supervisions: ${projectsWithSupervisions.length} (${((projectsWithSupervisions.length / allProjects.length) * 100).toFixed(0)}%)`);
+    console.log(`   • Total supervisions: ${totalSupervisions}`);
     console.log(`   • Average incidents per project: ${(totalIncidents / 15).toFixed(1)}`);
     
     console.log("\n🎉 Database seeding completed successfully!");
@@ -428,6 +720,10 @@ async function seed() {
     console.log("   - Status veranderingen");
     console.log("   - Infrastructuur type risico's");
     console.log("   - Maandelijkse incident trends");
+    console.log("   - Schouw gereedheid per project");
+    console.log("   - Aansluitleiding type distributie");
+    console.log("   - Kwaliteitsnormen per discipline");
+    console.log("   - Toezicht kwaliteit trends");
     
   } catch (error) {
     console.error("\n❌ Error during seeding:", error);

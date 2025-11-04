@@ -59,7 +59,7 @@ export default function Home() {
           </Link>
 
           {/* AI-Schouw */}
-          <Link href="/dashboard/projects" className="group">
+          <Link href="/dashboard/ai-schouw" className="group">
             <div className="h-full rounded-xl border-2 border-border bg-card p-8 text-left transition-all hover:shadow-2xl hover:border-primary hover:-translate-y-2 duration-300">
               <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                 <Eye className="h-8 w-8" />
@@ -80,7 +80,7 @@ export default function Home() {
           </Link>
 
           {/* AI-Toezicht */}
-          <Link href="/dashboard" className="group">
+          <Link href="/dashboard/ai-toezicht" className="group">
             <div className="h-full rounded-xl border-2 border-border bg-card p-8 text-left transition-all hover:shadow-2xl hover:border-primary hover:-translate-y-2 duration-300">
               <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all">
                 <FileSearch className="h-8 w-8" />
