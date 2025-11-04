@@ -22,8 +22,8 @@ export default async function RapportagePage() {
     },
     {
       title: "Projectrapportage",
-      description: "Overzicht van alle projecten en hun status",
-      href: "/dashboard/projects",
+      description: "Uitgebreide analyses en inzichten voor projectbeheer en portfolio management",
+      href: "/dashboard/projects/analytics",
       icon: FileText,
       color: "text-primary",
       bgColor: "bg-primary/10",
@@ -31,7 +31,7 @@ export default async function RapportagePage() {
     {
       title: "Schouwrapportage",
       description: "Rapportages van uitgevoerde schouwen en inspecties",
-      href: "/dashboard/ai-schouw",
+      href: "/dashboard/ai-schouw/analytics",
       icon: FileText,
       color: "text-chart-3",
       bgColor: "bg-chart-3/10",
@@ -39,7 +39,7 @@ export default async function RapportagePage() {
     {
       title: "Toezichtrapportage",
       description: "Rapportages van kwaliteitscontrole en toezicht",
-      href: "/dashboard/ai-toezicht",
+      href: "/dashboard/ai-toezicht/analytics",
       icon: TrendingUp,
       color: "text-chart-2",
       bgColor: "bg-chart-2/10",
