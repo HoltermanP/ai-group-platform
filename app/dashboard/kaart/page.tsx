@@ -328,6 +328,7 @@ export default function KaartPage() {
             incidents={filteredIncidents}
             defaultCenter={mapSettings?.center || [52.3676, 5.2]}
             defaultZoom={mapSettings?.defaultZoom || 8}
+            mapStyle={mapSettings?.mapStyle || 'osm'}
           />
         )}
       </div>

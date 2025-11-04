@@ -33,6 +33,7 @@ interface MapViewProps {
   incidents: Incident[];
   defaultCenter?: [number, number];
   defaultZoom?: number;
+  mapStyle?: string;
 }
 
 // Custom icons
@@ -174,10 +175,26 @@ const getCategoryLabel = (category: string) => {
   return labels[category] || category;
 };
 
-export default function MapView({ projects, incidents, defaultCenter, defaultZoom }: MapViewProps) {
+export default function MapView({ projects, incidents, defaultCenter, defaultZoom, mapStyle = 'osm' }: MapViewProps) {
   // Centrum van Nederland als fallback
   const center: L.LatLngTuple = defaultCenter || [52.3676, 5.2];
   const zoom = defaultZoom || 8;
+
+  // Bepaal de juiste tile layer URL op basis van mapStyle
+  const getTileLayerUrl = () => {
+    if (mapStyle === 'satellite') {
+      return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
+    }
+    // Default: OpenStreetMap
+    return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  };
+
+  const getTileLayerAttribution = () => {
+    if (mapStyle === 'satellite') {
+      return '&copy; <a href="https://www.esri.com/">Esri</a> &mdash; Source: Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community';
+    }
+    return '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  };
 
   return (
     <MapContainer
@@ -187,8 +204,8 @@ export default function MapView({ projects, incidents, defaultCenter, defaultZoo
       className="z-0"
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution={getTileLayerAttribution()}
+        url={getTileLayerUrl()}
       />
       
       <MapBounds projects={projects} incidents={incidents} />
