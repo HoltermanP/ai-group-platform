@@ -107,6 +107,40 @@ export default async function DashboardPage() {
     inspectionStatsData = { total: 0, open: 0, in_behandeling: 0, afgerond: 0, goedgekeurd: 0, recent: 0 };
   }
 
+  // Haal toezicht statistieken op (met error handling voor als de tabel nog niet bestaat)
+  let supervisionStatsData = { total: 0, open: 0, in_behandeling: 0, afgerond: 0, excellent: 0, recent: 0 };
+  try {
+    const supervisionsQuery = db
+      .select({
+        total: sql<number>`cast(count(*) as integer)`,
+        open: sql<number>`cast(count(*) filter (where ${supervisionsTable.status} = 'open') as integer)`,
+        in_behandeling: sql<number>`cast(count(*) filter (where ${supervisionsTable.status} = 'in_behandeling') as integer)`,
+        afgerond: sql<number>`cast(count(*) filter (where ${supervisionsTable.status} = 'afgerond') as integer)`,
+        excellent: sql<number>`cast(count(*) filter (where ${supervisionsTable.overallQuality} = 'excellent') as integer)`,
+        recent: sql<number>`cast(count(*) filter (where ${supervisionsTable.createdAt} >= ${sevenDaysAgo}::timestamp) as integer)`,
+      })
+      .from(supervisionsTable);
+    
+    let supervisionStats;
+    if (!userIsAdmin && userOrgIds.length > 0) {
+      supervisionStats = await supervisionsQuery.where(
+        or(
+          inArray(supervisionsTable.organizationId, userOrgIds),
+          isNull(supervisionsTable.organizationId)
+        )
+      );
+    } else if (!userIsAdmin) {
+      supervisionStats = await supervisionsQuery.where(isNull(supervisionsTable.organizationId));
+    } else {
+      supervisionStats = await supervisionsQuery;
+    }
+    supervisionStatsData = supervisionStats[0] || { total: 0, open: 0, in_behandeling: 0, afgerond: 0, excellent: 0, recent: 0 };
+  } catch (error) {
+    // Tabel bestaat nog niet - gebruik lege statistieken
+    console.warn("Supervisions table not found, using empty stats:", error);
+    supervisionStatsData = { total: 0, open: 0, in_behandeling: 0, afgerond: 0, excellent: 0, recent: 0 };
+  }
+
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
       <div className="container mx-auto px-4 py-8">
