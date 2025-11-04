@@ -63,8 +63,8 @@ export async function POST(
           summary: analysisData.summary,
           recommendations: JSON.parse(analysisData.recommendations),
           suggestedToolboxTopics: JSON.parse(analysisData.suggestedToolboxTopics),
-          riskAssessment: analysisData.riskAssessment || "",
-          preventiveMeasures: JSON.parse(analysisData.preventiveMeasures),
+          riskAssessment: analysisData.riskAssessment ?? "",
+          preventiveMeasures: analysisData.preventiveMeasures ? JSON.parse(analysisData.preventiveMeasures) : [],
         };
       }
     }
@@ -88,15 +88,22 @@ export async function POST(
       analysis = analysisResult;
     }
 
+    if (!analysis) {
+      return NextResponse.json(
+        { error: "Kon geen analyse genereren of ophalen" },
+        { status: 500 }
+      );
+    }
+
     // Genereer acties op basis van de analyse
     const suggestedActions = await suggestActionsFromAnalysis(
       analysis,
       {
-        incidentId: incidentData.incidentId,
-        title: incidentData.title,
-        description: incidentData.description,
-        category: incidentData.category,
-        severity: incidentData.severity,
+        incidentId: incidentData.incidentId || '',
+        title: incidentData.title || '',
+        description: incidentData.description || '',
+        category: incidentData.category || '',
+        severity: incidentData.severity || 'medium',
         discipline: incidentData.discipline || null,
         location: incidentData.location || null,
         impact: incidentData.impact || null,
