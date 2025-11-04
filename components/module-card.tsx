@@ -1,19 +1,25 @@
 'use client';
 
 import Link from 'next/link';
-import { LucideIcon } from 'lucide-react';
-import { SignedIn, SignedOut } from '@clerk/nextjs';
+import { Shield, Eye, FileSearch } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface ModuleCardProps {
   href: string;
-  icon: LucideIcon;
+  iconName: 'shield' | 'eye' | 'fileSearch';
   title: string;
   description: string;
   module: 'ai-safety' | 'ai-schouw' | 'ai-toezicht';
 }
 
-export function ModuleCard({ href, icon: Icon, title, description, module }: ModuleCardProps) {
+const iconMap = {
+  shield: Shield,
+  eye: Eye,
+  fileSearch: FileSearch,
+};
+
+export function ModuleCard({ href, iconName, title, description, module }: ModuleCardProps) {
+  const Icon = iconMap[iconName];
   const [hasAccess, setHasAccess] = useState<boolean | null>(null);
 
   useEffect(() => {

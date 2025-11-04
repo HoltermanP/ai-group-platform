@@ -1,6 +1,5 @@
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import Link from "next/link";
-import { Shield, Eye, FileSearch } from "lucide-react";
 import { ModuleCard } from "@/components/module-card";
 
 export default function Home() {
@@ -41,7 +40,7 @@ export default function Home() {
           {/* AI-Veiligheid */}
           <ModuleCard
             href="/dashboard/ai-safety"
-            icon={Shield}
+            iconName="shield"
             title="AI-Veiligheid"
             description="Detecteer en beheer veiligheidsmeldingen in real-time. Onze AI analyseert incidenten, categoriseert risico's en stelt preventieve maatregelen voor."
             module="ai-safety"
@@ -50,7 +49,7 @@ export default function Home() {
           {/* AI-Schouw */}
           <ModuleCard
             href="/dashboard/ai-schouw"
-            icon={Eye}
+            iconName="eye"
             title="AI-Schouw"
             description="Automatische inspectie van ondergrondse infrastructuur. AI-gedreven beeldherkenning identificeert gebreken, corrosie en structurele problemen."
             module="ai-schouw"
@@ -59,7 +58,7 @@ export default function Home() {
           {/* AI-Toezicht */}
           <ModuleCard
             href="/dashboard/ai-toezicht"
-            icon={FileSearch}
+            iconName="fileSearch"
             title="AI-Toezicht"
             description="Continue monitoring en compliance controle. Slimme analyses van projectvoortgang, regelgeving en kwaliteitsnormen voor optimaal beheer."
             module="ai-toezicht"
