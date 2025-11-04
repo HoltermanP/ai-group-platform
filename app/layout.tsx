@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { AdminNav } from "@/components/admin-nav";
+import { MainNav } from "@/components/main-nav";
 import Link from "next/link";
 import {
   ClerkProvider,
@@ -127,44 +128,7 @@ export default function RootLayout({
                     AI Group Platform
                   </Link>
                   <SignedIn>
-                    <nav className="hidden md:flex gap-6">
-                      <Link 
-                        href="/dashboard" 
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Dashboard
-                      </Link>
-                      <Link 
-                        href="/dashboard/projects" 
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Projecten
-                      </Link>
-                      <Link 
-                        href="/dashboard/kaart" 
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Kaart
-                      </Link>
-                      <Link 
-                        href="/dashboard/ai-safety" 
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Veiligheid
-                      </Link>
-                      <Link 
-                        href="/dashboard/ai-schouw" 
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Schouwen
-                      </Link>
-                      <Link 
-                        href="/dashboard/ai-toezicht" 
-                        className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        Toezicht
-                      </Link>
-                    </nav>
+                    <MainNav />
                   </SignedIn>
                 </div>
                 <div className="flex gap-3 items-center">
