@@ -8,6 +8,17 @@ import { nanoid } from "nanoid";
 
 export async function POST(req: Request) {
   try {
+    // Check of OpenAI API key is geconfigureerd
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json(
+        { 
+          error: "OpenAI API key is niet geconfigureerd. Voeg OPENAI_API_KEY toe aan je Vercel environment variables.",
+          errorCode: "OPENAI_NOT_CONFIGURED"
+        },
+        { status: 500 }
+      );
+    }
+
     const { userId } = await auth();
     
     if (!userId) {
