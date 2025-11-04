@@ -513,21 +513,27 @@ export async function hasModuleAccess(userId: string, module: ModuleType): Promi
     return true;
   }
 
-  // Check module rechten in database
-  const permission = await db
-    .select()
-    .from(userModulePermissionsTable)
-    .where(
-      and(
-        eq(userModulePermissionsTable.clerkUserId, userId),
-        eq(userModulePermissionsTable.module, module)
+  try {
+    // Check module rechten in database
+    const permission = await db
+      .select()
+      .from(userModulePermissionsTable)
+      .where(
+        and(
+          eq(userModulePermissionsTable.clerkUserId, userId),
+          eq(userModulePermissionsTable.module, module)
+        )
       )
-    )
-    .limit(1);
+      .limit(1);
 
-  // Als er geen record is, heeft de gebruiker standaard geen toegang
-  // Als er een record is, gebruik de granted boolean
-  return permission[0]?.granted === true;
+    // Als er geen record is, heeft de gebruiker standaard geen toegang
+    // Als er een record is, gebruik de granted boolean
+    return permission[0]?.granted === true;
+  } catch (error) {
+    // Als de tabel nog niet bestaat, retourneer geen toegang
+    console.warn('Error checking module access, table may not exist yet:', error);
+    return false;
+  }
 }
 
 /**
@@ -544,24 +550,35 @@ export async function getUserModulePermissions(userId: string): Promise<Record<M
     };
   }
 
-  // Haal alle module rechten op
-  const permissions = await db
-    .select()
-    .from(userModulePermissionsTable)
-    .where(eq(userModulePermissionsTable.clerkUserId, userId));
+  try {
+    // Haal alle module rechten op
+    const permissions = await db
+      .select()
+      .from(userModulePermissionsTable)
+      .where(eq(userModulePermissionsTable.clerkUserId, userId));
 
-  // Maak een map van module -> granted
-  const permissionMap = new Map<ModuleType, boolean>();
-  permissions.forEach(p => {
-    permissionMap.set(p.module as ModuleType, p.granted === true);
-  });
+    // Maak een map van module -> granted
+    const permissionMap = new Map<ModuleType, boolean>();
+    permissions.forEach(p => {
+      permissionMap.set(p.module as ModuleType, p.granted === true);
+    });
 
-  // Retourneer alle modules met hun toegang status (default: false)
-  return {
-    'ai-safety': permissionMap.get('ai-safety') ?? false,
-    'ai-schouw': permissionMap.get('ai-schouw') ?? false,
-    'ai-toezicht': permissionMap.get('ai-toezicht') ?? false,
-  };
+    // Retourneer alle modules met hun toegang status (default: false)
+    return {
+      'ai-safety': permissionMap.get('ai-safety') ?? false,
+      'ai-schouw': permissionMap.get('ai-schouw') ?? false,
+      'ai-toezicht': permissionMap.get('ai-toezicht') ?? false,
+    };
+  } catch (error) {
+    // Als de tabel nog niet bestaat, retourneer standaard geen toegang
+    // Dit kan voorkomen bij eerste deployment voordat migraties zijn uitgevoerd
+    console.warn('Error fetching module permissions, table may not exist yet:', error);
+    return {
+      'ai-safety': false,
+      'ai-schouw': false,
+      'ai-toezicht': false,
+    };
+  }
 }
 
 /**
@@ -622,31 +639,37 @@ export async function setModulePermission(
  * Haal alle module rechten van alle gebruikers op (voor admin pagina)
  */
 export async function getAllUsersModulePermissions(): Promise<Record<string, Record<ModuleType, boolean>>> {
-  const permissions = await db
-    .select()
-    .from(userModulePermissionsTable);
+  try {
+    const permissions = await db
+      .select()
+      .from(userModulePermissionsTable);
 
-  // Groepeer per gebruiker
-  const userPermissionsMap = new Map<string, Record<ModuleType, boolean>>();
+    // Groepeer per gebruiker
+    const userPermissionsMap = new Map<string, Record<ModuleType, boolean>>();
 
-  permissions.forEach(p => {
-    if (!userPermissionsMap.has(p.clerkUserId)) {
-      userPermissionsMap.set(p.clerkUserId, {
-        'ai-safety': false,
-        'ai-schouw': false,
-        'ai-toezicht': false,
-      });
-    }
-    const userPerms = userPermissionsMap.get(p.clerkUserId)!;
-    userPerms[p.module as ModuleType] = p.granted === true;
-  });
+    permissions.forEach(p => {
+      if (!userPermissionsMap.has(p.clerkUserId)) {
+        userPermissionsMap.set(p.clerkUserId, {
+          'ai-safety': false,
+          'ai-schouw': false,
+          'ai-toezicht': false,
+        });
+      }
+      const userPerms = userPermissionsMap.get(p.clerkUserId)!;
+      userPerms[p.module as ModuleType] = p.granted === true;
+    });
 
-  // Convert map naar object
-  const result: Record<string, Record<ModuleType, boolean>> = {};
-  userPermissionsMap.forEach((perms, userId) => {
-    result[userId] = perms;
-  });
+    // Convert map naar object
+    const result: Record<string, Record<ModuleType, boolean>> = {};
+    userPermissionsMap.forEach((perms, userId) => {
+      result[userId] = perms;
+    });
 
-  return result;
+    return result;
+  } catch (error) {
+    // Als de tabel nog niet bestaat, retourneer leeg object
+    console.warn('Error fetching all users module permissions, table may not exist yet:', error);
+    return {};
+  }
 }
 
