@@ -152,8 +152,9 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Link href="/dashboard/projects" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+          <div className="space-y-6">
+            {/* Projecten tegel - overkoepelend */}
+            <Link href="/dashboard/projects" className="block rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-chart-3/10 text-chart-3">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -162,28 +163,28 @@ export default async function DashboardPage() {
                 </div>
                 <h3 className="font-semibold text-lg text-card-foreground">Projecten</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+              <p className="text-sm text-muted-foreground mb-4">
                 Beheer je projecten en voeg nieuwe toe
               </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Totaal</span>
-                  <span className="text-lg font-semibold text-card-foreground">{projectStatsData.total}</span>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground mb-1">Totaal</span>
+                  <span className="text-2xl font-semibold text-card-foreground">{projectStatsData.total}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Actief</span>
-                  <span className="text-sm font-medium text-chart-3">{projectStatsData.active}</span>
+                <div className="flex flex-col">
+                  <span className="text-sm text-muted-foreground mb-1">Actief</span>
+                  <span className="text-2xl font-semibold text-chart-3">{projectStatsData.active}</span>
                 </div>
                 {projectStatsData.onHold > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Op hold</span>
-                    <span className="text-sm font-medium text-muted-foreground">{projectStatsData.onHold}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground mb-1">Op hold</span>
+                    <span className="text-2xl font-semibold text-muted-foreground">{projectStatsData.onHold}</span>
                   </div>
                 )}
                 {projectStatsData.completed > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Voltooid</span>
-                    <span className="text-sm font-medium text-muted-foreground">{projectStatsData.completed}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-muted-foreground mb-1">Voltooid</span>
+                    <span className="text-2xl font-semibold text-muted-foreground">{projectStatsData.completed}</span>
                   </div>
                 )}
               </div>
@@ -194,179 +195,162 @@ export default async function DashboardPage() {
               </div>
             </Link>
 
-            <Link href="/dashboard/ai-safety" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-destructive/50 cursor-pointer group">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-lg text-card-foreground">Veiligheidsmeldingen</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
-                Beheer veiligheidsmeldingen en analyses
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Totaal</span>
-                  <span className="text-lg font-semibold text-card-foreground">{incidentStatsData.total}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Open</span>
-                  <span className="text-sm font-medium text-destructive">{incidentStatsData.open}</span>
-                </div>
-                {incidentStatsData.critical > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Kritiek</span>
-                    <span className="text-sm font-medium text-destructive">{incidentStatsData.critical}</span>
+            {/* Module tegels - 3 kolommen */}
+            <div className="grid gap-6 md:grid-cols-3">
+              <Link href="/dashboard/ai-safety" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-destructive/50 cursor-pointer group">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
                   </div>
-                )}
-                {incidentStatsData.high > 0 && (
+                  <h3 className="font-semibold text-lg text-card-foreground">Veiligheidsmeldingen</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                  Beheer veiligheidsmeldingen en analyses
+                </p>
+                <div className="space-y-2 mb-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Hoog</span>
-                    <span className="text-sm font-medium text-orange-500">{incidentStatsData.high}</span>
+                    <span className="text-sm text-muted-foreground">Totaal</span>
+                    <span className="text-lg font-semibold text-card-foreground">{incidentStatsData.total}</span>
                   </div>
-                )}
-                {incidentStatsData.recent > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
-                    <span className="text-sm font-medium text-card-foreground">{incidentStatsData.recent}</span>
+                    <span className="text-sm text-muted-foreground">Open</span>
+                    <span className="text-sm font-medium text-destructive">{incidentStatsData.open}</span>
                   </div>
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
-                  Bekijk alle meldingen →
-                </span>
-              </div>
-            </Link>
+                  {incidentStatsData.critical > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Kritiek</span>
+                      <span className="text-sm font-medium text-destructive">{incidentStatsData.critical}</span>
+                    </div>
+                  )}
+                  {incidentStatsData.high > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Hoog</span>
+                      <span className="text-sm font-medium text-orange-500">{incidentStatsData.high}</span>
+                    </div>
+                  )}
+                  {incidentStatsData.recent > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
+                      <span className="text-sm font-medium text-card-foreground">{incidentStatsData.recent}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-4 pt-4 border-t border-border">
+                  <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
+                    Bekijk alle meldingen →
+                  </span>
+                </div>
+              </Link>
 
-            <Link href="/dashboard/ai-schouw" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+              <Link href="/dashboard/ai-schouw" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-lg text-card-foreground">AI Schouwen</h3>
                 </div>
-                <h3 className="font-semibold text-lg text-card-foreground">AI Schouwen</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
-                Beheer schouwen voor aansluitleidingen
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Totaal</span>
-                  <span className="text-lg font-semibold text-card-foreground">{inspectionStatsData.total}</span>
+                <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                  Beheer schouwen voor aansluitleidingen
+                </p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Totaal</span>
+                    <span className="text-lg font-semibold text-card-foreground">{inspectionStatsData.total}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Open</span>
+                    <span className="text-sm font-medium text-primary">{inspectionStatsData.open}</span>
+                  </div>
+                  {inspectionStatsData.in_behandeling > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">In Behandeling</span>
+                      <span className="text-sm font-medium text-yellow-500">{inspectionStatsData.in_behandeling}</span>
+                    </div>
+                  )}
+                  {inspectionStatsData.afgerond > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Afgerond</span>
+                      <span className="text-sm font-medium text-green-500">{inspectionStatsData.afgerond}</span>
+                    </div>
+                  )}
+                  {inspectionStatsData.goedgekeurd > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Goedgekeurd</span>
+                      <span className="text-sm font-medium text-green-600">{inspectionStatsData.goedgekeurd}</span>
+                    </div>
+                  )}
+                  {inspectionStatsData.recent > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
+                      <span className="text-sm font-medium text-card-foreground">{inspectionStatsData.recent}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Open</span>
-                  <span className="text-sm font-medium text-primary">{inspectionStatsData.open}</span>
+                <div className="mt-4 pt-4 border-t border-border">
+                  <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
+                    Bekijk alle schouwen →
+                  </span>
                 </div>
-                {inspectionStatsData.in_behandeling > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">In Behandeling</span>
-                    <span className="text-sm font-medium text-yellow-500">{inspectionStatsData.in_behandeling}</span>
-                  </div>
-                )}
-                {inspectionStatsData.afgerond > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Afgerond</span>
-                    <span className="text-sm font-medium text-green-500">{inspectionStatsData.afgerond}</span>
-                  </div>
-                )}
-                {inspectionStatsData.goedgekeurd > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Goedgekeurd</span>
-                    <span className="text-sm font-medium text-green-600">{inspectionStatsData.goedgekeurd}</span>
-                  </div>
-                )}
-                {inspectionStatsData.recent > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
-                    <span className="text-sm font-medium text-card-foreground">{inspectionStatsData.recent}</span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
-                  Bekijk alle schouwen →
-                </span>
-              </div>
-            </Link>
+              </Link>
 
-            <div className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-chart-1/10 text-chart-1">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
+              <Link href="/dashboard/ai-toezicht" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-chart-2/10 text-chart-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-semibold text-lg text-card-foreground">AI Toezicht</h3>
                 </div>
-                <h3 className="font-semibold text-lg text-card-foreground">Statistieken</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Je account statistieken en activiteit
-              </p>
-              <div className="mt-4 pt-4 border-t border-border">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-muted-foreground">Activiteit</span>
-                  <span className="text-xs font-medium text-chart-1">Binnenkort beschikbaar</span>
+                <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                  Kwaliteitscontrole en toezicht op projecten
+                </p>
+                <div className="space-y-2 mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Totaal</span>
+                    <span className="text-lg font-semibold text-card-foreground">{supervisionStatsData.total}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Open</span>
+                    <span className="text-sm font-medium text-primary">{supervisionStatsData.open}</span>
+                  </div>
+                  {supervisionStatsData.in_behandeling > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">In Behandeling</span>
+                      <span className="text-sm font-medium text-yellow-500">{supervisionStatsData.in_behandeling}</span>
+                    </div>
+                  )}
+                  {supervisionStatsData.afgerond > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Afgerond</span>
+                      <span className="text-sm font-medium text-green-500">{supervisionStatsData.afgerond}</span>
+                    </div>
+                  )}
+                  {supervisionStatsData.excellent > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Excellent</span>
+                      <span className="text-sm font-medium text-green-600">{supervisionStatsData.excellent}</span>
+                    </div>
+                  )}
+                  {supervisionStatsData.recent > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
+                      <span className="text-sm font-medium text-card-foreground">{supervisionStatsData.recent}</span>
+                    </div>
+                  )}
                 </div>
-              </div>
+                <div className="mt-4 pt-4 border-t border-border">
+                  <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
+                    Bekijk alle toezichten →
+                  </span>
+                </div>
+              </Link>
             </div>
-
-            <Link href="/dashboard/ai-toezicht" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-chart-2/10 text-chart-2">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-lg text-card-foreground">AI Toezicht</h3>
-              </div>
-              <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
-                Kwaliteitscontrole en toezicht op projecten
-              </p>
-              <div className="space-y-2 mb-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Totaal</span>
-                  <span className="text-lg font-semibold text-card-foreground">{supervisionStatsData.total}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Open</span>
-                  <span className="text-sm font-medium text-primary">{supervisionStatsData.open}</span>
-                </div>
-                {supervisionStatsData.in_behandeling > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">In Behandeling</span>
-                    <span className="text-sm font-medium text-yellow-500">{supervisionStatsData.in_behandeling}</span>
-                  </div>
-                )}
-                {supervisionStatsData.afgerond > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Afgerond</span>
-                    <span className="text-sm font-medium text-green-500">{supervisionStatsData.afgerond}</span>
-                  </div>
-                )}
-                {supervisionStatsData.excellent > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Excellent</span>
-                    <span className="text-sm font-medium text-green-600">{supervisionStatsData.excellent}</span>
-                  </div>
-                )}
-                {supervisionStatsData.recent > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Laatste 7 dagen</span>
-                    <span className="text-sm font-medium text-card-foreground">{supervisionStatsData.recent}</span>
-                  </div>
-                )}
-              </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <span className="text-xs text-primary group-hover:text-primary/80 transition-colors font-medium">
-                  Bekijk alle toezichten →
-                </span>
-              </div>
-            </Link>
           </div>
         </div>
       </div>
