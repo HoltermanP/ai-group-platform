@@ -364,3 +364,40 @@ export const toolboxesTable = pgTable("toolboxes", {
   updatedAt: timestamp().defaultNow().notNull(),
 });
 
+// Incident Actions - acties die gekoppeld zijn aan veiligheidsincidenten
+export const incidentActionsTable = pgTable("incident_actions", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  actionId: varchar({ length: 50 }).notNull().unique(), // Uniek actie ID (bijv. ACT-2024-001)
+  
+  // Koppeling naar incident
+  incidentId: integer().notNull().references(() => safetyIncidentsTable.id, { onDelete: "cascade" }),
+  
+  // Koppeling naar analyse (optioneel - als actie vanuit AI analyse komt)
+  analysisId: integer().references(() => aiAnalysesTable.id, { onDelete: "set null" }),
+  
+  // Actie details
+  title: varchar({ length: 255 }).notNull(),
+  description: text().notNull(),
+  priority: varchar({ length: 50 }).default('medium'), // low, medium, high, urgent
+  
+  // Status
+  status: varchar({ length: 50 }).default('suggested'), // suggested, approved, in_progress, completed, cancelled
+  
+  // Actiehouder
+  actionHolder: varchar({ length: 255 }), // Naam van de actiehouder
+  actionHolderEmail: varchar({ length: 255 }), // Email van de actiehouder
+  
+  // Deadline
+  deadline: timestamp(), // Deadline voor de actie
+  
+  // Metadata
+  aiSuggested: boolean().default(false), // Of deze actie door AI is voorgesteld
+  originalSuggestion: text(), // Originele AI suggestie (voor referentie)
+  approvedBy: varchar({ length: 255 }), // Clerk User ID van degene die heeft goedgekeurd
+  approvedAt: timestamp(), // Wanneer is de actie goedgekeurd
+  createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID van creator
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+  completedAt: timestamp(), // Wanneer is de actie voltooid
+});
+

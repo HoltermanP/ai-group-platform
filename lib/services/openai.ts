@@ -41,6 +41,15 @@ export interface AIAnalysisResult {
   tokensUsed?: number;
 }
 
+export interface SuggestedAction {
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  suggestedDeadline?: string; // ISO date string voor voorgestelde deadline
+  suggestedActionHolder?: string; // Voorgestelde naam van actiehouder
+  suggestedActionHolderEmail?: string; // Voorgestelde email van actiehouder
+}
+
 export async function analyzeSafetyIncidents(
   incidents: SafetyIncidentForAnalysis[]
 ): Promise<AIAnalysisResult> {
@@ -276,5 +285,113 @@ BELANGRIJK:
       throw new Error(`Kon JSON niet parsen: ${jsonContent.substring(0, 200)}`);
     }
   }
+}
+
+export async function suggestActionsFromAnalysis(
+  analysis: AIAnalysisResult,
+  incident: SafetyIncidentForAnalysis
+): Promise<SuggestedAction[]> {
+  if (!openai) {
+    throw new Error('OpenAI API key is not configured');
+  }
+
+  const prompt = `Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. 
+Op basis van de volgende AI analyse en het bijbehorende incident, stel concrete, uitvoerbare acties voor.
+
+Incident:
+- ID: ${incident.incidentId}
+- Titel: ${incident.title}
+- Beschrijving: ${incident.description}
+- Categorie: ${incident.category}
+- Ernst: ${incident.severity}
+- Discipline: ${incident.discipline || 'Onbekend'}
+- Locatie: ${incident.location || 'Onbekend'}
+- Impact: ${incident.impact || 'Niet gespecificeerd'}
+
+AI Analyse Samenvatting:
+${analysis.summary}
+
+Aanbevelingen:
+${analysis.recommendations.map((rec, idx) => `${idx + 1}. ${rec}`).join('\n')}
+
+Risico Assessment:
+${analysis.riskAssessment}
+
+Voorkomende Maatregelen:
+${analysis.preventiveMeasures.map((measure, idx) => `${idx + 1}. ${measure}`).join('\n')}
+
+Stel nu concrete, uitvoerbare acties voor die genomen moeten worden om dit incident op te lossen en toekomstige incidenten te voorkomen.
+
+Geef ALLEEN de JSON terug in dit exacte formaat (zonder extra tekst of markdown):
+{
+  "actions": [
+    {
+      "title": "Korte, duidelijke titel van de actie",
+      "description": "Gedetailleerde beschrijving van wat er moet gebeuren en waarom",
+      "priority": "low|medium|high|urgent",
+      "suggestedDeadline": "YYYY-MM-DD (optioneel, alleen als er een duidelijke deadline is)",
+      "suggestedActionHolder": "Voorgestelde naam van actiehouder (optioneel)",
+      "suggestedActionHolderEmail": "Voorgestelde email van actiehouder (optioneel)"
+    }
+  ]
+}
+
+BELANGRIJK:
+- Geef minstens 3 en maximaal 10 acties terug
+- Elke actie moet concreet, uitvoerbaar en meetbaar zijn
+- Prioriteit moet gebaseerd zijn op de ernst van het incident en de urgentie van de actie
+- Voorgestelde deadlines zijn optioneel, gebruik alleen als er een duidelijke deadline is
+- Geef ALLEEN geldige JSON terug, zonder markdown code blocks`;
+
+  const completion = await openai.chat.completions.create({
+    model: 'gpt-4',
+    messages: [
+      {
+        role: 'system',
+        content: 'Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. Je geeft altijd concrete, uitvoerbare acties in JSON formaat. Antwoord ALLEEN met geldige JSON, zonder markdown formatting of extra tekst.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.7,
+  });
+
+  const content = completion.choices[0]?.message?.content;
+  if (!content) {
+    throw new Error('Geen response van OpenAI');
+  }
+
+  // Haal JSON uit de response (kan tussen markdown code blocks zitten)
+  let jsonContent = content.trim();
+  
+  // Verwijder markdown code blocks als die er zijn
+  const jsonMatch = jsonContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+  if (jsonMatch) {
+    jsonContent = jsonMatch[1];
+  }
+
+  // Probeer de JSON te parsen
+  let result: { actions: SuggestedAction[] };
+  try {
+    result = JSON.parse(jsonContent) as { actions: SuggestedAction[] };
+  } catch (error) {
+    // Als parsing faalt, probeer de eerste { } block te vinden
+    const firstBrace = jsonContent.indexOf('{');
+    const lastBrace = jsonContent.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      jsonContent = jsonContent.substring(firstBrace, lastBrace + 1);
+      result = JSON.parse(jsonContent) as { actions: SuggestedAction[] };
+    } else {
+      throw new Error(`Kon JSON niet parsen: ${jsonContent.substring(0, 200)}`);
+    }
+  }
+
+  if (!result.actions || !Array.isArray(result.actions)) {
+    throw new Error('Geen acties gevonden in AI response');
+  }
+
+  return result.actions;
 }
 

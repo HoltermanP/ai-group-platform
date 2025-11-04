@@ -12,6 +12,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SafetyIncident {
   id: number;
@@ -80,6 +89,37 @@ interface SavedAnalysis {
   createdAt: string;
 }
 
+interface SuggestedAction {
+  title: string;
+  description: string;
+  priority: 'low' | 'medium' | 'high' | 'urgent';
+  suggestedDeadline?: string;
+  suggestedActionHolder?: string;
+  suggestedActionHolderEmail?: string;
+}
+
+interface IncidentAction {
+  id: number;
+  actionId: string;
+  incidentId: number;
+  analysisId: number | null;
+  title: string;
+  description: string;
+  priority: string;
+  status: string;
+  actionHolder: string | null;
+  actionHolderEmail: string | null;
+  deadline: string | null;
+  aiSuggested: boolean;
+  originalSuggestion: string | null;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+
 export default function SafetyIncidentDetailPage() {
   const router = useRouter();
   const params = useParams();
@@ -103,12 +143,23 @@ export default function SafetyIncidentDetailPage() {
     fileUrl: string;
     createdAt: string;
   }>>([]);
+  const [actions, setActions] = useState<IncidentAction[]>([]);
+  const [isLoadingActions, setIsLoadingActions] = useState(false);
+  const [isGeneratingActions, setIsGeneratingActions] = useState(false);
+  const [suggestedActions, setSuggestedActions] = useState<SuggestedAction[]>([]);
+  const [selectedActions, setSelectedActions] = useState<Set<number>>(new Set());
+  const [showActionsDialog, setShowActionsDialog] = useState(false);
+  const [isSavingActions, setIsSavingActions] = useState(false);
+  const [selectedAnalysisId, setSelectedAnalysisId] = useState<number | null>(null);
+  const [editingAction, setEditingAction] = useState<IncidentAction | null>(null);
+  const [showEditActionDialog, setShowEditActionDialog] = useState(false);
 
   useEffect(() => {
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (id) {
       fetchIncident(id);
       fetchAnalyses(id);
+      fetchActions(id);
     }
   }, [params.id]);
 
@@ -143,6 +194,158 @@ export default function SafetyIncidentDetailPage() {
       console.error("Error fetching analyses:", error);
     } finally {
       setIsLoadingAnalyses(false);
+    }
+  };
+
+  const fetchActions = async (id: string) => {
+    setIsLoadingActions(true);
+    try {
+      const response = await fetch(`/api/safety-incidents/${id}/actions`);
+      if (response.ok) {
+        const data = await response.json();
+        setActions(data);
+      }
+    } catch (error) {
+      console.error("Error fetching actions:", error);
+    } finally {
+      setIsLoadingActions(false);
+    }
+  };
+
+  const handleGenerateActions = async (analysisId?: number) => {
+    if (!incident) return;
+
+    setIsGeneratingActions(true);
+    try {
+      const response = await fetch(`/api/safety-incidents/${incident.id}/actions/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysisId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Fout bij het genereren van acties");
+      }
+
+      const result = await response.json();
+      setSuggestedActions(result.actions);
+      // Standaard alle acties selecteren
+      setSelectedActions(new Set(result.actions.map((_: any, index: number) => index)));
+      setSelectedAnalysisId(analysisId || null);
+      setShowActionsDialog(true);
+    } catch (error) {
+      console.error("Error generating actions:", error);
+      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij het genereren van acties");
+    } finally {
+      setIsGeneratingActions(false);
+    }
+  };
+
+  const handleSaveActions = async () => {
+    if (!incident) return;
+
+    // Alleen geselecteerde acties opslaan
+    const actionsToSave = suggestedActions.filter((_, index) => selectedActions.has(index));
+
+    if (actionsToSave.length === 0) {
+      alert("Selecteer minimaal één actie om toe te voegen.");
+      return;
+    }
+
+    setIsSavingActions(true);
+    try {
+      const response = await fetch(`/api/safety-incidents/${incident.id}/actions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          actions: actionsToSave.map(action => ({
+            title: action.title,
+            description: action.description,
+            priority: action.priority,
+            deadline: action.suggestedDeadline || null,
+            actionHolder: action.suggestedActionHolder || null,
+            actionHolderEmail: action.suggestedActionHolderEmail || null,
+            aiSuggested: true,
+            originalSuggestion: JSON.stringify(action),
+            status: 'approved',
+          })),
+          analysisId: selectedAnalysisId,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Fout bij het opslaan van acties");
+      }
+
+      alert(`${actionsToSave.length} actie(s) succesvol toegevoegd aan het incident!`);
+      setShowActionsDialog(false);
+      setSuggestedActions([]);
+      setSelectedActions(new Set());
+      setSelectedAnalysisId(null);
+      fetchActions(incident.id.toString());
+    } catch (error) {
+      console.error("Error saving actions:", error);
+      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij het opslaan");
+    } finally {
+      setIsSavingActions(false);
+    }
+  };
+
+  const toggleActionSelection = (index: number) => {
+    const newSelected = new Set(selectedActions);
+    if (newSelected.has(index)) {
+      newSelected.delete(index);
+    } else {
+      newSelected.add(index);
+    }
+    setSelectedActions(newSelected);
+  };
+
+  const handleUpdateAction = async (actionId: number, updates: Partial<IncidentAction>) => {
+    if (!incident) return;
+
+    try {
+      const response = await fetch(`/api/safety-incidents/${incident.id}/actions/${actionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Fout bij het updaten van de actie");
+      }
+
+      alert("Actie succesvol bijgewerkt!");
+      setShowEditActionDialog(false);
+      setEditingAction(null);
+      fetchActions(incident.id.toString());
+    } catch (error) {
+      console.error("Error updating action:", error);
+      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij het updaten");
+    }
+  };
+
+  const handleDeleteAction = async (actionId: number) => {
+    if (!incident || !confirm("Weet je zeker dat je deze actie wilt verwijderen?")) return;
+
+    try {
+      const response = await fetch(`/api/safety-incidents/${incident.id}/actions/${actionId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Fout bij het verwijderen van de actie");
+      }
+
+      alert("Actie succesvol verwijderd!");
+      fetchActions(incident.id.toString());
+    } catch (error) {
+      console.error("Error deleting action:", error);
+      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij het verwijderen");
     }
   };
 
@@ -815,29 +1018,168 @@ export default function SafetyIncidentDetailPage() {
                       )}
                     </div>
 
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setAiAnalysis({
-                          summary: analysis.summary,
-                          recommendations: analysis.recommendations,
-                          suggestedToolboxTopics: analysis.suggestedToolboxTopics,
-                          riskAssessment: analysis.riskAssessment || "",
-                          preventiveMeasures: analysis.preventiveMeasures,
-                        });
-                        setIsViewingSavedAnalysis(true);
-                        setShowAnalysisDialog(true);
-                      }}
-                      className="mt-4"
-                    >
-                      Volledige Analyse Bekijken
-                    </Button>
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setAiAnalysis({
+                            summary: analysis.summary,
+                            recommendations: analysis.recommendations,
+                            suggestedToolboxTopics: analysis.suggestedToolboxTopics,
+                            riskAssessment: analysis.riskAssessment || "",
+                            preventiveMeasures: analysis.preventiveMeasures,
+                          });
+                          setIsViewingSavedAnalysis(true);
+                          setShowAnalysisDialog(true);
+                        }}
+                      >
+                        Volledige Analyse Bekijken
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleGenerateActions(analysis.id)}
+                        disabled={isGeneratingActions}
+                      >
+                        {isGeneratingActions ? "Genereren..." : "Acties Genereren"}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Acties Sectie */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-card-foreground flex items-center gap-2">
+                <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                </svg>
+                Acties ({actions.length})
+              </h2>
+              <div className="flex gap-2">
+                {savedAnalyses.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleGenerateActions()}
+                    disabled={isGeneratingActions}
+                  >
+                    {isGeneratingActions ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Acties genereren...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                        AI Acties Genereren
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {isLoadingActions ? (
+              <div className="text-center py-8 text-muted-foreground">Acties laden...</div>
+            ) : actions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nog geen acties. {savedAnalyses.length > 0 && "Genereer acties op basis van een analyse."}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {actions.map((action) => (
+                  <div key={action.id} className="bg-muted/30 border border-border rounded-lg p-5 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-foreground">{action.title}</h3>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            action.priority === 'urgent' ? 'bg-destructive/10 text-destructive border border-destructive/20' :
+                            action.priority === 'high' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' :
+                            action.priority === 'medium' ? 'bg-chart-4/10 text-chart-4 border border-chart-4/20' :
+                            'bg-chart-1/10 text-chart-1 border border-chart-1/20'
+                          }`}>
+                            {getPriorityLabel(action.priority)}
+                          </span>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                            action.status === 'completed' ? 'bg-chart-2/10 text-chart-2 border border-chart-2/20' :
+                            action.status === 'in_progress' ? 'bg-primary/10 text-primary border border-primary/20' :
+                            action.status === 'approved' ? 'bg-chart-4/10 text-chart-4 border border-chart-4/20' :
+                            'bg-muted text-muted-foreground border border-border'
+                          }`}>
+                            {action.status === 'completed' ? 'Voltooid' :
+                             action.status === 'in_progress' ? 'In Uitvoering' :
+                             action.status === 'approved' ? 'Goedgekeurd' :
+                             action.status === 'suggested' ? 'Voorgesteld' :
+                             action.status === 'cancelled' ? 'Geannuleerd' : action.status}
+                          </span>
+                          {action.aiSuggested && (
+                            <span className="px-2 py-1 rounded text-xs bg-primary/10 text-primary border border-primary/20">
+                              AI
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm text-foreground mb-3">{action.description}</p>
+                        <div className="grid gap-2 md:grid-cols-2 text-xs text-muted-foreground">
+                          {action.actionHolder && (
+                            <div>
+                              <span className="font-semibold">Actiehouder: </span>
+                              <span className="text-foreground">{action.actionHolder}</span>
+                              {action.actionHolderEmail && (
+                                <span className="text-muted-foreground"> ({action.actionHolderEmail})</span>
+                              )}
+                            </div>
+                          )}
+                          {action.deadline && (
+                            <div>
+                              <span className="font-semibold">Deadline: </span>
+                              <span className="text-foreground">{formatDate(action.deadline)}</span>
+                            </div>
+                          )}
+                          {action.completedAt && (
+                            <div>
+                              <span className="font-semibold">Voltooid op: </span>
+                              <span className="text-foreground">{formatDate(action.completedAt)}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingAction(action);
+                            setShowEditActionDialog(true);
+                          }}
+                        >
+                          Bewerken
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteAction(action.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          Verwijderen
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Foto's Toevoegen */}
           <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
@@ -1104,6 +1446,305 @@ export default function SafetyIncidentDetailPage() {
                     )}
                   </Button>
                 )}
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Acties Goedkeuren Dialog */}
+          <Dialog open={showActionsDialog} onOpenChange={setShowActionsDialog}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>AI Voorgestelde Acties</DialogTitle>
+                <DialogDescription>
+                  Selecteer welke acties je wilt toevoegen en pas ze aan voordat je ze goedkeurt.
+                </DialogDescription>
+              </DialogHeader>
+
+              {suggestedActions.length > 0 && (
+                <div className="space-y-4 py-4">
+                  <div className="flex items-center justify-between mb-4 pb-2 border-b border-border">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedActions.size === suggestedActions.length}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedActions(new Set(suggestedActions.map((_, i) => i)));
+                          } else {
+                            setSelectedActions(new Set());
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-input text-primary focus:ring-primary"
+                      />
+                      <Label className="font-medium">
+                        Selecteer alles ({selectedActions.size} van {suggestedActions.length} geselecteerd)
+                      </Label>
+                    </div>
+                  </div>
+
+                  {suggestedActions.map((action, index) => (
+                    <div key={index} className={`bg-muted/30 border rounded-lg p-4 transition-colors ${
+                      selectedActions.has(index) ? 'border-primary shadow-sm' : 'border-border opacity-60'
+                    }`}>
+                      <div className="flex items-start gap-3 mb-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedActions.has(index)}
+                          onChange={() => toggleActionSelection(index)}
+                          className="w-5 h-5 rounded border-input text-primary focus:ring-primary mt-1 flex-shrink-0"
+                        />
+                        <div className="flex-1 space-y-3">
+                        <div>
+                          <Label htmlFor={`action-title-${index}`}>Titel *</Label>
+                          <Input
+                            id={`action-title-${index}`}
+                            value={action.title}
+                            onChange={(e) => {
+                              const updated = [...suggestedActions];
+                              updated[index].title = e.target.value;
+                              setSuggestedActions(updated);
+                            }}
+                            disabled={!selectedActions.has(index)}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor={`action-description-${index}`}>Beschrijving *</Label>
+                          <textarea
+                            id={`action-description-${index}`}
+                            value={action.description}
+                            onChange={(e) => {
+                              const updated = [...suggestedActions];
+                              updated[index].description = e.target.value;
+                              setSuggestedActions(updated);
+                            }}
+                            disabled={!selectedActions.has(index)}
+                            className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground min-h-[100px] disabled:opacity-50 disabled:cursor-not-allowed"
+                          />
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <Label htmlFor={`action-priority-${index}`}>Prioriteit</Label>
+                            <Select
+                              value={action.priority}
+                              onValueChange={(value) => {
+                                const updated = [...suggestedActions];
+                                updated[index].priority = value as 'low' | 'medium' | 'high' | 'urgent';
+                                setSuggestedActions(updated);
+                              }}
+                              disabled={!selectedActions.has(index)}
+                            >
+                              <SelectTrigger disabled={!selectedActions.has(index)}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="low">Laag</SelectItem>
+                                <SelectItem value="medium">Middel</SelectItem>
+                                <SelectItem value="high">Hoog</SelectItem>
+                                <SelectItem value="urgent">Urgent</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <Label htmlFor={`action-deadline-${index}`}>Deadline</Label>
+                            <Input
+                              id={`action-deadline-${index}`}
+                              type="date"
+                              value={action.suggestedDeadline || ''}
+                              onChange={(e) => {
+                                const updated = [...suggestedActions];
+                                updated[index].suggestedDeadline = e.target.value;
+                                setSuggestedActions(updated);
+                              }}
+                              disabled={!selectedActions.has(index)}
+                            />
+                          </div>
+                        </div>
+                        <div className="grid gap-4 md:grid-cols-2">
+                          <div>
+                            <Label htmlFor={`action-holder-${index}`}>Actiehouder</Label>
+                            <Input
+                              id={`action-holder-${index}`}
+                              value={action.suggestedActionHolder || ''}
+                              onChange={(e) => {
+                                const updated = [...suggestedActions];
+                                updated[index].suggestedActionHolder = e.target.value;
+                                setSuggestedActions(updated);
+                              }}
+                              placeholder="Naam van actiehouder"
+                              disabled={!selectedActions.has(index)}
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor={`action-holder-email-${index}`}>Email Actiehouder</Label>
+                            <Input
+                              id={`action-holder-email-${index}`}
+                              type="email"
+                              value={action.suggestedActionHolderEmail || ''}
+                              onChange={(e) => {
+                                const updated = [...suggestedActions];
+                                updated[index].suggestedActionHolderEmail = e.target.value;
+                                setSuggestedActions(updated);
+                              }}
+                              placeholder="email@voorbeeld.nl"
+                              disabled={!selectedActions.has(index)}
+                            />
+                          </div>
+                        </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowActionsDialog(false);
+                    setSuggestedActions([]);
+                    setSelectedActions(new Set());
+                    setSelectedAnalysisId(null);
+                  }}
+                  disabled={isSavingActions}
+                >
+                  Annuleren
+                </Button>
+                <Button
+                  onClick={handleSaveActions}
+                  disabled={isSavingActions || selectedActions.size === 0}
+                >
+                  {isSavingActions ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Opslaan...
+                    </>
+                  ) : (
+                    `Geselecteerde Acties Toevoegen (${selectedActions.size})`
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Actie Bewerken Dialog */}
+          <Dialog open={showEditActionDialog} onOpenChange={setShowEditActionDialog}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Actie Bewerken</DialogTitle>
+                <DialogDescription>
+                  Pas de actie aan en sla de wijzigingen op.
+                </DialogDescription>
+              </DialogHeader>
+
+              {editingAction && (
+                <div className="space-y-4 py-4">
+                  <div>
+                    <Label htmlFor="edit-action-title">Titel *</Label>
+                    <Input
+                      id="edit-action-title"
+                      value={editingAction.title}
+                      onChange={(e) => setEditingAction({ ...editingAction, title: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-action-description">Beschrijving *</Label>
+                    <textarea
+                      id="edit-action-description"
+                      value={editingAction.description}
+                      onChange={(e) => setEditingAction({ ...editingAction, description: e.target.value })}
+                      className="w-full px-3 py-2 border border-input bg-background rounded-md focus:outline-none focus:ring-2 focus:ring-ring text-foreground min-h-[100px]"
+                    />
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="edit-action-priority">Prioriteit</Label>
+                      <Select
+                        value={editingAction.priority}
+                        onValueChange={(value) => setEditingAction({ ...editingAction, priority: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Laag</SelectItem>
+                          <SelectItem value="medium">Middel</SelectItem>
+                          <SelectItem value="high">Hoog</SelectItem>
+                          <SelectItem value="urgent">Urgent</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-action-status">Status</Label>
+                      <Select
+                        value={editingAction.status}
+                        onValueChange={(value) => setEditingAction({ ...editingAction, status: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="suggested">Voorgesteld</SelectItem>
+                          <SelectItem value="approved">Goedgekeurd</SelectItem>
+                          <SelectItem value="in_progress">In Uitvoering</SelectItem>
+                          <SelectItem value="completed">Voltooid</SelectItem>
+                          <SelectItem value="cancelled">Geannuleerd</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="edit-action-holder">Actiehouder</Label>
+                      <Input
+                        id="edit-action-holder"
+                        value={editingAction.actionHolder || ''}
+                        onChange={(e) => setEditingAction({ ...editingAction, actionHolder: e.target.value })}
+                        placeholder="Naam van actiehouder"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-action-holder-email">Email Actiehouder</Label>
+                      <Input
+                        id="edit-action-holder-email"
+                        type="email"
+                        value={editingAction.actionHolderEmail || ''}
+                        onChange={(e) => setEditingAction({ ...editingAction, actionHolderEmail: e.target.value })}
+                        placeholder="email@voorbeeld.nl"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label htmlFor="edit-action-deadline">Deadline</Label>
+                    <Input
+                      id="edit-action-deadline"
+                      type="date"
+                      value={editingAction.deadline ? new Date(editingAction.deadline).toISOString().split('T')[0] : ''}
+                      onChange={(e) => setEditingAction({ ...editingAction, deadline: e.target.value || null })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowEditActionDialog(false);
+                    setEditingAction(null);
+                  }}
+                >
+                  Annuleren
+                </Button>
+                <Button
+                  onClick={() => editingAction && handleUpdateAction(editingAction.id, editingAction)}
+                  disabled={!editingAction || !editingAction.title || !editingAction.description}
+                >
+                  Wijzigingen Opslaan
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
