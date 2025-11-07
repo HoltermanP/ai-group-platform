@@ -160,6 +160,14 @@ export default function SafetyIncidentDetailPage() {
       fetchIncident(id);
       fetchAnalyses(id);
       fetchActions(id);
+      
+      // Refresh incident data after a short delay to ensure database updates are complete
+      // This is especially important when navigating from the create page with photos
+      const refreshTimer = setTimeout(() => {
+        fetchIncident(id);
+      }, 800);
+      
+      return () => clearTimeout(refreshTimer);
     }
   }, [params.id]);
 
@@ -647,13 +655,13 @@ export default function SafetyIncidentDetailPage() {
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-6 sm:mb-8">
             <Link
               href="/dashboard/ai-safety"
-              className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
+              className="inline-flex items-center text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors mb-3 sm:mb-4"
             >
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -661,17 +669,18 @@ export default function SafetyIncidentDetailPage() {
               Terug naar Veiligheidsmeldingen
             </Link>
             
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h1 className="text-4xl font-bold text-foreground">{incident.title}</h1>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 mb-2">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground break-words">{incident.title}</h1>
                 </div>
-                <p className="text-muted-foreground">Incident ID: {incident.incidentId}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">Incident ID: {incident.incidentId}</p>
               </div>
               <Button
                 onClick={handleAIAnalysis}
                 disabled={isAnalyzing}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 w-full sm:w-auto shrink-0"
+                size="sm"
               >
                 {isAnalyzing ? (
                   <>
@@ -679,14 +688,16 @@ export default function SafetyIncidentDetailPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Analyseren...
+                    <span className="hidden sm:inline">Analyseren...</span>
+                    <span className="sm:hidden">Analyseren</span>
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
-                    AI Analyse Uitvoeren
+                    <span className="hidden sm:inline">AI Analyse Uitvoeren</span>
+                    <span className="sm:hidden">AI Analyse</span>
                   </>
                 )}
               </Button>
@@ -695,29 +706,29 @@ export default function SafetyIncidentDetailPage() {
             {/* Status Badges */}
             <div className="flex flex-wrap gap-2">
               <span
-                className={`inline-flex px-3 py-1 rounded-md text-sm font-medium border ${getSeverityColor(incident.severity)}`}
+                className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium border ${getSeverityColor(incident.severity)}`}
               >
                 Ernst: {getSeverityLabel(incident.severity)}
               </span>
               <span
-                className={`inline-flex px-3 py-1 rounded-md text-sm font-medium border ${getStatusColor(incident.status)}`}
+                className={`inline-flex px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium border ${getStatusColor(incident.status)}`}
               >
                 {getStatusLabel(incident.status)}
               </span>
-              <span className="inline-flex px-3 py-1 rounded-md text-sm font-medium border bg-muted/50 text-foreground border-border">
+              <span className="inline-flex px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium border bg-muted/50 text-foreground border-border">
                 {getCategoryLabel(incident.category)}
               </span>
-              <span className="inline-flex px-3 py-1 rounded-md text-sm font-medium border bg-muted/50 text-foreground border-border">
+              <span className="inline-flex px-2 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium border bg-muted/50 text-foreground border-border">
                 Prioriteit: {getPriorityLabel(incident.priority)}
               </span>
             </div>
           </div>
 
           {/* Info Cards */}
-          <div className="grid gap-6 md:grid-cols-2 mb-6">
+          <div className="grid gap-4 sm:gap-6 md:grid-cols-2 mb-4 sm:mb-6">
             {/* Incident Details */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground flex items-center gap-2">
                 <svg className="w-5 h-5 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
@@ -748,8 +759,8 @@ export default function SafetyIncidentDetailPage() {
             </div>
 
             {/* Locatie */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground flex items-center gap-2">
                 <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -785,8 +796,8 @@ export default function SafetyIncidentDetailPage() {
             </div>
 
             {/* Datums */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground flex items-center gap-2">
                 <svg className="w-5 h-5 text-chart-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
@@ -817,8 +828,8 @@ export default function SafetyIncidentDetailPage() {
             </div>
 
             {/* Project Koppeling */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground flex items-center gap-2">
                 <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
@@ -839,8 +850,8 @@ export default function SafetyIncidentDetailPage() {
             </div>
 
             {/* Metadata */}
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground flex items-center gap-2">
                 <svg className="w-5 h-5 text-chart-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                 </svg>
@@ -880,86 +891,88 @@ export default function SafetyIncidentDetailPage() {
           </div>
 
           {/* Description */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-            <h2 className="text-xl font-semibold mb-4 text-card-foreground">Beschrijving</h2>
-            <p className="text-foreground whitespace-pre-wrap">{incident.description}</p>
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground">Beschrijving</h2>
+            <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap">{incident.description}</p>
           </div>
 
           {/* Impact */}
           {incident.impact && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground">Impact</h2>
-              <p className="text-foreground whitespace-pre-wrap">{incident.impact}</p>
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground">Impact</h2>
+              <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap">{incident.impact}</p>
             </div>
           )}
 
           {/* Mitigation */}
           {incident.mitigation && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground">Genomen Maatregelen</h2>
-              <p className="text-foreground whitespace-pre-wrap">{incident.mitigation}</p>
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground">Genomen Maatregelen</h2>
+              <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap">{incident.mitigation}</p>
             </div>
           )}
 
           {/* Safety Measures */}
           {incident.safetyMeasures && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground">Veiligheidsmaatregelen ter Plaatse</h2>
-              <p className="text-foreground whitespace-pre-wrap">{incident.safetyMeasures}</p>
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground">Veiligheidsmaatregelen ter Plaatse</h2>
+              <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap">{incident.safetyMeasures}</p>
             </div>
           )}
 
           {/* Risk Assessment */}
           {incident.riskAssessment && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground">Risico Inschatting</h2>
-              <p className="text-foreground whitespace-pre-wrap">{incident.riskAssessment}</p>
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground">Risico Inschatting</h2>
+              <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap">{incident.riskAssessment}</p>
             </div>
           )}
 
           {/* Affected Systems */}
           {incident.affectedSystems && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground">Getroffen Infrastructuur</h2>
-              <p className="text-foreground whitespace-pre-wrap">{incident.affectedSystems}</p>
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground">Getroffen Infrastructuur</h2>
+              <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap">{incident.affectedSystems}</p>
             </div>
           )}
 
           {/* Opgeslagen Toolbox Presentaties */}
           {toolboxPresentations.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-card-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-card-foreground flex items-center gap-2">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Toolbox Presentaties ({toolboxPresentations.length})
+                  <span className="hidden sm:inline">Toolbox Presentaties ({toolboxPresentations.length})</span>
+                  <span className="sm:hidden">Toolbox ({toolboxPresentations.length})</span>
                 </h2>
               </div>
               <div className="space-y-3">
                 {toolboxPresentations.map((presentation) => (
-                  <div key={presentation.id} className="bg-muted/30 border border-border rounded-lg p-4 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
+                  <div key={presentation.id} className="bg-muted/30 border border-border rounded-lg p-3 sm:p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5 text-primary shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
-                          <h3 className="font-semibold text-foreground">{presentation.topic}</h3>
+                          <h3 className="font-semibold text-sm sm:text-base text-foreground break-words">{presentation.topic}</h3>
                         </div>
-                        <p className="text-xs text-muted-foreground mb-3">
+                        <p className="text-xs text-muted-foreground mb-2 sm:mb-3">
                           Gegenereerd op {formatDate(presentation.createdAt)}
                         </p>
                       </div>
                       <a
                         href={presentation.fileUrl}
                         download
-                        className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-sm font-medium flex items-center gap-2"
+                        className="px-3 sm:px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2 shrink-0"
                       >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        Download PPT
+                        <span className="hidden sm:inline">Download PPT</span>
+                        <span className="sm:hidden">Download</span>
                       </a>
                     </div>
                   </div>
@@ -970,18 +983,19 @@ export default function SafetyIncidentDetailPage() {
 
           {/* Opgeslagen AI Analyses */}
           {savedAnalyses.length > 0 && (
-            <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-card-foreground flex items-center gap-2">
+            <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h2 className="text-lg sm:text-xl font-semibold text-card-foreground flex items-center gap-2">
                   <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
-                  AI Analyses ({savedAnalyses.length})
+                  <span className="hidden sm:inline">AI Analyses ({savedAnalyses.length})</span>
+                  <span className="sm:hidden">AI ({savedAnalyses.length})</span>
                 </h2>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {savedAnalyses.map((analysis) => (
-                  <div key={analysis.id} className="bg-muted/30 border border-border rounded-lg p-5 hover:bg-muted/50 transition-colors">
+                  <div key={analysis.id} className="bg-muted/30 border border-border rounded-lg p-3 sm:p-5 hover:bg-muted/50 transition-colors">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -1018,7 +1032,7 @@ export default function SafetyIncidentDetailPage() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 mt-4">
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
                       <Button
                         variant="outline"
                         size="sm"
@@ -1033,14 +1047,17 @@ export default function SafetyIncidentDetailPage() {
                           setIsViewingSavedAnalysis(true);
                           setShowAnalysisDialog(true);
                         }}
+                        className="w-full sm:w-auto"
                       >
-                        Volledige Analyse Bekijken
+                        <span className="hidden sm:inline">Volledige Analyse Bekijken</span>
+                        <span className="sm:hidden">Bekijken</span>
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleGenerateActions(analysis.id)}
                         disabled={isGeneratingActions}
+                        className="w-full sm:w-auto"
                       >
                         {isGeneratingActions ? "Genereren..." : "Acties Genereren"}
                       </Button>
@@ -1052,9 +1069,9 @@ export default function SafetyIncidentDetailPage() {
           )}
 
           {/* Acties Sectie */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-card-foreground flex items-center gap-2">
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2 mb-3 sm:mb-4">
+              <h2 className="text-lg sm:text-xl font-semibold text-card-foreground flex items-center gap-2">
                 <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                 </svg>
@@ -1096,14 +1113,14 @@ export default function SafetyIncidentDetailPage() {
                 Nog geen acties. {savedAnalyses.length > 0 && "Genereer acties op basis van een analyse."}
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {actions.map((action) => (
-                  <div key={action.id} className="bg-muted/30 border border-border rounded-lg p-5 hover:bg-muted/50 transition-colors">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h3 className="font-semibold text-foreground">{action.title}</h3>
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                  <div key={action.id} className="bg-muted/30 border border-border rounded-lg p-3 sm:p-5 hover:bg-muted/50 transition-colors">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="font-semibold text-sm sm:text-base text-foreground break-words">{action.title}</h3>
+                          <span className={`px-2 py-1 rounded text-xs font-semibold shrink-0 ${
                             action.priority === 'urgent' ? 'bg-destructive/10 text-destructive border border-destructive/20' :
                             action.priority === 'high' ? 'bg-orange-500/10 text-orange-500 border border-orange-500/20' :
                             action.priority === 'medium' ? 'bg-chart-4/10 text-chart-4 border border-chart-4/20' :
@@ -1111,7 +1128,7 @@ export default function SafetyIncidentDetailPage() {
                           }`}>
                             {getPriorityLabel(action.priority)}
                           </span>
-                          <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                          <span className={`px-2 py-1 rounded text-xs font-semibold shrink-0 ${
                             action.status === 'completed' ? 'bg-chart-2/10 text-chart-2 border border-chart-2/20' :
                             action.status === 'in_progress' ? 'bg-primary/10 text-primary border border-primary/20' :
                             action.status === 'approved' ? 'bg-chart-4/10 text-chart-4 border border-chart-4/20' :
@@ -1124,19 +1141,19 @@ export default function SafetyIncidentDetailPage() {
                              action.status === 'cancelled' ? 'Geannuleerd' : action.status}
                           </span>
                           {action.aiSuggested && (
-                            <span className="px-2 py-1 rounded text-xs bg-primary/10 text-primary border border-primary/20">
+                            <span className="px-2 py-1 rounded text-xs bg-primary/10 text-primary border border-primary/20 shrink-0">
                               AI
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-foreground mb-3">{action.description}</p>
-                        <div className="grid gap-2 md:grid-cols-2 text-xs text-muted-foreground">
+                        <p className="text-xs sm:text-sm text-foreground mb-3 break-words">{action.description}</p>
+                        <div className="grid gap-2 sm:grid-cols-2 text-xs text-muted-foreground">
                           {action.actionHolder && (
                             <div>
                               <span className="font-semibold">Actiehouder: </span>
-                              <span className="text-foreground">{action.actionHolder}</span>
+                              <span className="text-foreground break-words">{action.actionHolder}</span>
                               {action.actionHolderEmail && (
-                                <span className="text-muted-foreground"> ({action.actionHolderEmail})</span>
+                                <span className="text-muted-foreground break-all"> ({action.actionHolderEmail})</span>
                               )}
                             </div>
                           )}
@@ -1154,7 +1171,7 @@ export default function SafetyIncidentDetailPage() {
                           )}
                         </div>
                       </div>
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2 sm:ml-4 shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
@@ -1162,6 +1179,7 @@ export default function SafetyIncidentDetailPage() {
                             setEditingAction(action);
                             setShowEditActionDialog(true);
                           }}
+                          className="flex-1 sm:flex-initial"
                         >
                           Bewerken
                         </Button>
@@ -1169,7 +1187,7 @@ export default function SafetyIncidentDetailPage() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteAction(action.id)}
-                          className="text-destructive hover:text-destructive"
+                          className="text-destructive hover:text-destructive flex-1 sm:flex-initial"
                         >
                           Verwijderen
                         </Button>
@@ -1182,16 +1200,16 @@ export default function SafetyIncidentDetailPage() {
           </div>
 
           {/* Foto's Toevoegen */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
-            <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+          <div className="bg-card border border-border rounded-lg p-4 sm:p-6 shadow-sm mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4 text-card-foreground flex items-center gap-2">
               <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               Foto's
             </h2>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* Upload Input */}
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 <input
                   type="file"
                   multiple
@@ -1201,17 +1219,17 @@ export default function SafetyIncidentDetailPage() {
                       setPhotoInput(Array.from(e.target.files));
                     }
                   }}
-                  className="w-full px-3 py-2 border border-input bg-background rounded-md text-foreground"
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-input bg-background rounded-md text-foreground"
                 />
                 {photoInput.length > 0 && (
                   <div className="flex flex-wrap gap-2 mb-2">
                     {photoInput.map((file, index) => (
-                      <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-sm">
-                        <span className="text-foreground">{file.name}</span>
+                      <div key={index} className="flex items-center gap-2 bg-muted px-2 py-1 rounded text-xs sm:text-sm max-w-full">
+                        <span className="text-foreground truncate">{file.name}</span>
                         <button
                           type="button"
                           onClick={() => setPhotoInput(photoInput.filter((_, i) => i !== index))}
-                          className="text-destructive hover:text-destructive/80 font-bold"
+                          className="text-destructive hover:text-destructive/80 font-bold shrink-0"
                         >
                           ×
                         </button>
@@ -1223,7 +1241,7 @@ export default function SafetyIncidentDetailPage() {
                   <button
                     onClick={handlePhotoUpload}
                     disabled={uploadingPhotos}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    className="w-full sm:w-auto px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors text-sm font-medium"
                   >
                     {uploadingPhotos ? "Uploaden..." : "Foto's Uploaden"}
                   </button>
@@ -1235,15 +1253,15 @@ export default function SafetyIncidentDetailPage() {
                 const photos = parsePhotos(incident.photos);
                 if (photos.length > 0) {
                   return (
-                    <div className="mt-6">
-                      <h3 className="text-lg font-medium mb-4 text-foreground">Geüploade Foto's</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="mt-4 sm:mt-6">
+                      <h3 className="text-base sm:text-lg font-medium mb-3 sm:mb-4 text-foreground">Geüploade Foto's</h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         {photos.map((photoUrl, index) => (
                           <div key={index} className="relative group">
                             <img
                               src={photoUrl}
                               alt={`Foto ${index + 1} van incident ${incident.incidentId}`}
-                              className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                              className="w-full h-40 sm:h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => window.open(photoUrl, "_blank")}
                             />
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -1258,7 +1276,7 @@ export default function SafetyIncidentDetailPage() {
                   );
                 }
                 return (
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Nog geen foto's toegevoegd. Upload foto's hierboven.
                   </p>
                 );

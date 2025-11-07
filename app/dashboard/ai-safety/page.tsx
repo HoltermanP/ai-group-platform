@@ -177,6 +177,7 @@ function AISafetyPageContent() {
         const newIncident = await response.json();
 
         // Als er foto's zijn, upload deze
+        let photosUploaded = false;
         if (selectedPhotos.length > 0) {
           const photoFormData = new FormData();
           selectedPhotos.forEach((photo) => {
@@ -184,10 +185,18 @@ function AISafetyPageContent() {
           });
 
           try {
-            await fetch(`/api/safety-incidents/${newIncident.id}/photos`, {
+            const photoResponse = await fetch(`/api/safety-incidents/${newIncident.id}/photos`, {
               method: "POST",
               body: photoFormData,
             });
+
+            if (photoResponse.ok) {
+              photosUploaded = true;
+            } else {
+              const photoError = await photoResponse.json();
+              console.error("Error uploading photos:", photoError);
+              alert("Incident aangemaakt, maar er was een probleem bij het uploaden van foto's.");
+            }
           } catch (photoError) {
             console.error("Error uploading photos:", photoError);
             // Laat de gebruiker weten dat het incident is aangemaakt maar foto's niet zijn geüpload
@@ -222,6 +231,12 @@ function AISafetyPageContent() {
         setSelectedPhotos([]);
         setShowForm(false);
         fetchIncidents();
+        
+        // Navigeer naar de detailpagina om de foto's direct te zien
+        // Wacht even om ervoor te zorgen dat de database update is voltooid
+        setTimeout(() => {
+          router.push(`/dashboard/ai-safety/${newIncident.id}`);
+        }, 500);
       }
     } catch (error) {
       console.error("Error creating incident:", error);
