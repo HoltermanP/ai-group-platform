@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
-import { MapPin, Building2, AlertTriangle, Layers } from "lucide-react";
+import { MapPin, Building2, AlertTriangle, Layers, Filter, X } from "lucide-react";
 
 // Dynamic import van Map component om SSR issues te voorkomen
 const MapView = dynamic(() => import("@/components/MapView"), {
@@ -49,6 +49,7 @@ export default function KaartPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Filter states - initialiseer met user preferences
   const [showProjects, setShowProjects] = useState(true);
@@ -81,7 +82,7 @@ export default function KaartPage() {
             setMapSettings(settings);
             setShowProjects(settings.showProjects ?? true);
             setShowIncidents(settings.showIncidents ?? true);
-          } catch (e) {
+          } catch {
             // Use defaults
           }
         }
@@ -172,63 +173,106 @@ export default function KaartPage() {
   const filteredProjects = showProjects ? projects : [];
 
   return (
-    <div className="h-[calc(100vh-73px)] bg-background flex">
+    <div className="h-[calc(100vh-73px)] bg-background flex flex-col md:flex-row relative">
+      {/* Mobile Toggle Button */}
+      <button
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="md:hidden fixed top-20 left-3 z-50 p-2 bg-card border border-border rounded-lg shadow-lg hover:bg-accent transition-colors"
+        aria-label="Toggle filters"
+      >
+        {sidebarOpen ? (
+          <X className="h-5 w-5 text-foreground" />
+        ) : (
+          <Filter className="h-5 w-5 text-foreground" />
+        )}
+      </button>
+
+      {/* Backdrop overlay voor mobiel */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar met filters */}
-      <div className="w-80 border-r border-border bg-card overflow-y-auto">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold mb-2 text-foreground">Kaart Overzicht</h1>
-          <p className="text-sm text-muted-foreground mb-6">
-            Projecten en incidenten op locatie
-          </p>
+      <div
+        className={`
+          fixed md:static
+          top-0 left-0
+          h-full md:h-auto
+          w-full md:w-80
+          max-w-sm md:max-w-none
+          border-r border-border bg-card overflow-y-auto z-40
+          transform transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}
+      >
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2 text-foreground">Kaart Overzicht</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Projecten en incidenten op locatie
+              </p>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="md:hidden p-1 hover:bg-muted rounded transition-colors"
+              aria-label="Sluiten"
+            >
+              <X className="h-5 w-5 text-foreground" />
+            </button>
+          </div>
 
           {/* Statistieken */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
-            <div className="bg-background border border-border rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Building2 className="h-4 w-4 text-primary" />
+          <div className="grid grid-cols-2 gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <div className="bg-background border border-border rounded-lg p-2 sm:p-3">
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                 <span className="text-xs text-muted-foreground">Projecten</span>
               </div>
-              <div className="text-2xl font-bold text-foreground">{projects.length}</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{projects.length}</div>
             </div>
-            <div className="bg-background border border-border rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
+            <div className="bg-background border border-border rounded-lg p-2 sm:p-3">
+              <div className="flex items-center gap-1 sm:gap-2 mb-1">
+                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
                 <span className="text-xs text-muted-foreground">Incidenten</span>
               </div>
-              <div className="text-2xl font-bold text-foreground">{incidents.length}</div>
+              <div className="text-xl sm:text-2xl font-bold text-foreground">{incidents.length}</div>
             </div>
           </div>
 
           {/* Lagen */}
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Layers className="h-4 w-4 text-foreground" />
-              <h3 className="font-semibold text-foreground">Lagen</h3>
+          <div className="mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
+              <Layers className="h-3 w-3 sm:h-4 sm:w-4 text-foreground" />
+              <h3 className="text-sm sm:text-base font-semibold text-foreground">Lagen</h3>
             </div>
             
             <div className="space-y-2">
-              <label className="flex items-center gap-3 p-3 bg-background border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+              <label className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-background border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <input
                   type="checkbox"
                   checked={showProjects}
                   onChange={(e) => setShowProjects(e.target.checked)}
                   className="w-4 h-4"
                 />
-                <Building2 className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-foreground">
+                <Building2 className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                <span className="text-xs sm:text-sm font-medium text-foreground">
                   Projecten ({filteredProjects.length})
                 </span>
               </label>
 
-              <label className="flex items-center gap-3 p-3 bg-background border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+              <label className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-background border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                 <input
                   type="checkbox"
                   checked={showIncidents}
                   onChange={(e) => setShowIncidents(e.target.checked)}
                   className="w-4 h-4"
                 />
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="text-sm font-medium text-foreground">
+                <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
+                <span className="text-xs sm:text-sm font-medium text-foreground">
                   Incidenten ({filteredIncidents.length})
                 </span>
               </label>
@@ -237,8 +281,8 @@ export default function KaartPage() {
 
           {/* Ernst Filters */}
           {showIncidents && (
-            <div className="mb-6">
-              <h3 className="font-semibold text-foreground mb-3">Ernst Niveau</h3>
+            <div className="mb-4 sm:mb-6">
+              <h3 className="text-sm sm:text-base font-semibold text-foreground mb-2 sm:mb-3">Ernst Niveau</h3>
               <div className="space-y-2">
                 {[
                   { value: "low", label: "Laag", color: "bg-chart-1" },
@@ -248,7 +292,7 @@ export default function KaartPage() {
                 ].map(({ value, label, color }) => (
                   <label
                     key={value}
-                    className="flex items-center gap-3 p-2 bg-background border border-border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 p-2 bg-background border border-border rounded cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     <input
                       type="checkbox"
@@ -257,7 +301,7 @@ export default function KaartPage() {
                       className="w-4 h-4"
                     />
                     <div className={`w-3 h-3 rounded-full ${color}`} />
-                    <span className="text-sm text-foreground">{label}</span>
+                    <span className="text-xs sm:text-sm text-foreground">{label}</span>
                   </label>
                 ))}
               </div>
@@ -266,8 +310,8 @@ export default function KaartPage() {
 
           {/* Status Filters */}
           {showIncidents && (
-            <div className="mb-6">
-              <h3 className="font-semibold text-foreground mb-3">Status</h3>
+            <div className="mb-4 sm:mb-6">
+              <h3 className="text-sm sm:text-base font-semibold text-foreground mb-2 sm:mb-3">Status</h3>
               <div className="space-y-2">
                 {[
                   { value: "open", label: "Open" },
@@ -277,7 +321,7 @@ export default function KaartPage() {
                 ].map(({ value, label }) => (
                   <label
                     key={value}
-                    className="flex items-center gap-3 p-2 bg-background border border-border rounded cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="flex items-center gap-2 sm:gap-3 p-2 bg-background border border-border rounded cursor-pointer hover:bg-muted/50 transition-colors"
                   >
                     <input
                       type="checkbox"
@@ -285,7 +329,7 @@ export default function KaartPage() {
                       onChange={() => toggleStatus(value)}
                       className="w-4 h-4"
                     />
-                    <span className="text-sm text-foreground">{label}</span>
+                    <span className="text-xs sm:text-sm text-foreground">{label}</span>
                   </label>
                 ))}
               </div>
@@ -293,11 +337,11 @@ export default function KaartPage() {
           )}
 
           {/* Legenda */}
-          <div className="border-t border-border pt-4">
-            <h3 className="font-semibold text-foreground mb-3 text-sm">Legenda</h3>
-            <div className="space-y-2 text-xs">
+          <div className="border-t border-border pt-3 sm:pt-4">
+            <h3 className="text-xs sm:text-sm font-semibold text-foreground mb-2 sm:mb-3">Legenda</h3>
+            <div className="space-y-1.5 sm:space-y-2 text-xs">
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                 <span className="text-muted-foreground">Project Locatie</span>
               </div>
               <div className="flex items-center gap-2">
@@ -314,7 +358,7 @@ export default function KaartPage() {
       </div>
 
       {/* Kaart */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative w-full h-full">
         {isLoading ? (
           <div className="h-full w-full flex items-center justify-center bg-muted">
             <div className="text-center">
