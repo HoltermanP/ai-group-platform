@@ -57,29 +57,49 @@ export async function POST(
     }
     
     for (const file of files) {
-      if (!file.type.startsWith("image/")) {
+      // Valideer file type (op mobiel kan dit soms leeg zijn)
+      // Accepteer bestanden met image/* type OF met een bekende image extensie
+      const fileName = file.name || '';
+      const hasImageExtension = /\.(jpg|jpeg|png|gif|webp|bmp|heic|heif)$/i.test(fileName);
+      const hasImageType = file.type && file.type.startsWith("image/");
+      
+      if (!hasImageType && !hasImageExtension) {
+        console.log(`Skipping file: invalid type ${file.type || 'empty'}, name: ${fileName}`);
         continue;
       }
 
       // Validatie: max 5MB per foto
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (file.size > maxSize) {
+        console.log(`Skipping file: too large ${file.size} bytes`);
         continue;
       }
 
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      
-      // Genereer unieke bestandsnaam
-      const timestamp = Date.now();
-      const randomStr = Math.random().toString(36).substring(2, 15);
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-      const filename = `${inspectionId}-${timestamp}-${randomStr}-${sanitizedName}`;
-      const filepath = join(uploadDir, filename);
-      
-      await writeFile(filepath, buffer);
-      const url = `/uploads/inspections/${filename}`;
-      uploadedUrls.push(url);
+      if (file.size === 0) {
+        console.log(`Skipping file: empty file`);
+        continue;
+      }
+
+      try {
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        
+        // Genereer unieke bestandsnaam - handle lege of ontbrekende namen
+        const timestamp = Date.now();
+        const randomStr = Math.random().toString(36).substring(2, 15);
+        const originalName = file.name || `foto-${timestamp}.jpg`;
+        const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const filename = `${inspectionId}-${timestamp}-${randomStr}-${sanitizedName}`;
+        const filepath = join(uploadDir, filename);
+        
+        await writeFile(filepath, buffer);
+        const url = `/uploads/inspections/${filename}`;
+        uploadedUrls.push(url);
+        console.log(`Successfully uploaded: ${filename}`);
+      } catch (fileError) {
+        console.error(`Error processing file ${file.name || 'unnamed'}:`, fileError);
+        continue;
+      }
     }
 
     if (uploadedUrls.length === 0) {

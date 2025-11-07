@@ -163,7 +163,17 @@ export default function InspectionDetailPage() {
     
     setUploadingPhotos(true);
     const formData = new FormData();
-    photoInput.forEach((file) => {
+    
+    // Log file info voor debugging
+    console.log(`Uploading ${photoInput.length} file(s)`);
+    photoInput.forEach((file, index) => {
+      console.log(`File ${index + 1}:`, {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        lastModified: file.lastModified
+      });
+      
       // Zorg dat bestand een naam heeft (voor camera foto's)
       const fileName = file.name && file.name.trim() ? file.name : `foto-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.jpg`;
       const fileToUpload = file.name && file.name.trim() ? file : new File([file], fileName, { type: file.type || 'image/jpeg' });
@@ -172,13 +182,18 @@ export default function InspectionDetailPage() {
 
     try {
       const id = Array.isArray(params.id) ? params.id[0] : params.id;
+      console.log(`Uploading to /api/inspections/${id}/photos`);
+      
       const response = await fetch(`/api/inspections/${id}/photos`, {
         method: "POST",
         body: formData,
       });
 
+      console.log(`Response status: ${response.status}`);
+
       if (response.ok) {
         const data = await response.json();
+        console.log("Upload successful:", data);
         setInspection({ ...inspection!, photos: JSON.stringify(data.photos) });
         setPhotoInput([]);
         // Refresh de inspection data
@@ -186,7 +201,11 @@ export default function InspectionDetailPage() {
       } else {
         const errorData = await response.json().catch(() => ({ error: "Onbekende fout" }));
         const errorMessage = errorData.error || `Fout bij uploaden (status: ${response.status})`;
-        console.error("Upload error:", errorMessage, errorData);
+        console.error("Upload error:", errorMessage, errorData, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: Object.fromEntries(response.headers.entries())
+        });
         alert(errorMessage);
       }
     } catch (error) {
