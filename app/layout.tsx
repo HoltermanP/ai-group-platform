@@ -123,43 +123,47 @@ export default function RootLayout({
             storageKey="ai-group-theme"
           >
             <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                <div className="flex items-center gap-8">
-                  <Link href="/" className="text-xl font-bold text-foreground hover:text-primary transition-colors">
-                    AI Group Platform
-                  </Link>
-                  <SignedIn>
-                    <MainNav />
-                  </SignedIn>
-                </div>
-                <div className="flex gap-3 items-center">
-                  <ThemeSwitcher />
-                  <SignedOut>
-                    <SignInButton mode="modal">
-                      <button className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md">
-                        Inloggen
-                      </button>
-                    </SignInButton>
-                    <SignUpButton mode="modal">
-                      <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-md font-medium">
-                        Registreren
-                      </button>
-                    </SignUpButton>
-                  </SignedOut>
-                  <SignedIn>
-                    <Link 
-                      href="/dashboard/instellingen"
-                      className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                      title="Instellingen"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
+              <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+                <div className="flex justify-between items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4 md:gap-8 min-w-0 flex-1">
+                    <Link href="/" className="text-lg sm:text-xl font-bold text-foreground hover:text-primary transition-colors truncate">
+                      AI Group Platform
                     </Link>
-                    <AdminNav />
-                    <ProfileLink />
-                  </SignedIn>
+                    <SignedIn>
+                      <MainNav />
+                    </SignedIn>
+                  </div>
+                  <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
+                    <ThemeSwitcher />
+                    <SignedOut>
+                      <SignInButton mode="modal">
+                        <button className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md text-sm sm:text-base">
+                          <span className="hidden sm:inline">Inloggen</span>
+                          <span className="sm:hidden">In</span>
+                        </button>
+                      </SignInButton>
+                      <SignUpButton mode="modal">
+                        <button className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-md font-medium text-sm sm:text-base">
+                          <span className="hidden sm:inline">Registreren</span>
+                          <span className="sm:hidden">Reg</span>
+                        </button>
+                      </SignUpButton>
+                    </SignedOut>
+                    <SignedIn>
+                      <Link 
+                        href="/dashboard/instellingen"
+                        className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                        title="Instellingen"
+                      >
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                      </Link>
+                      <AdminNav />
+                      <ProfileLink />
+                    </SignedIn>
+                  </div>
                 </div>
               </div>
             </header>

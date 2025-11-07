@@ -305,6 +305,27 @@ function AIToezichtPageContent() {
     }
   };
 
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      open: "bg-chart-4/10 text-chart-4 border-chart-4/20",
+      in_behandeling: "bg-primary/10 text-primary border-primary/20",
+      afgerond: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+      afgekeurd: "bg-destructive/10 text-destructive border-destructive/20",
+    };
+    return colors[status] || "bg-muted text-muted-foreground border-border";
+  };
+
+  const getQualityColor = (quality: string | null) => {
+    if (!quality) return "bg-muted text-muted-foreground border-border";
+    const colors: Record<string, string> = {
+      excellent: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+      goed: "bg-chart-3/10 text-chart-3 border-chart-3/20",
+      voldoende: "bg-chart-4/10 text-chart-4 border-chart-4/20",
+      onvoldoende: "bg-destructive/10 text-destructive border-destructive/20",
+    };
+    return colors[quality] || "bg-muted text-muted-foreground border-border";
+  };
+
   // Filter supervisions
   const filteredSupervisions = supervisions.filter((supervision) => {
     // Project filter
@@ -352,28 +373,29 @@ function AIToezichtPageContent() {
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8 flex justify-between items-start">
+          <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div>
-              <h1 className="text-4xl font-bold mb-2 text-foreground">AI Toezicht</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-foreground">AI Toezicht</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Kwaliteitscontrole en toezicht op projecten
               </p>
             </div>
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <a
                 href="/dashboard/ai-toezicht/analytics"
-                className="px-6 py-3 rounded-md border border-border hover:bg-accent transition-colors font-medium text-foreground shadow-sm flex items-center gap-2"
+                className="px-3 sm:px-6 py-2 sm:py-3 rounded-md border border-border hover:bg-accent transition-colors font-medium text-foreground shadow-sm flex items-center gap-2 text-sm sm:text-base"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Rapportage
+                <span className="hidden sm:inline">Rapportage</span>
+                <span className="sm:hidden">Rapp.</span>
               </a>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm"
+                className="bg-primary text-primary-foreground px-3 sm:px-6 py-2 sm:py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm text-sm sm:text-base w-full sm:w-auto"
               >
                 {showForm ? "Annuleren" : "+ Nieuw Toezicht"}
               </button>
@@ -776,87 +798,196 @@ function AIToezichtPageContent() {
                 </button>
               </div>
             ) : (
-              <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px]">
-                    <thead className="bg-muted/50 border-b border-border">
-                      <tr>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Toezicht ID
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Titel
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Project
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Discipline
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Kwaliteit
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Normen
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Datum
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {filteredSupervisions.map((supervision) => {
-                        const project = projects.find((p) => p.id === supervision.projectId);
-                        return (
-                          <tr
-                            key={supervision.id}
-                            onClick={() => router.push(`/dashboard/ai-toezicht/${supervision.id}`)}
-                            className="hover:bg-muted/30 transition-colors cursor-pointer"
-                          >
-                            <td className="px-3 py-3 text-sm font-medium text-foreground">
-                              {supervision.supervisionId}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-foreground">{supervision.title}</td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {project ? `${project.projectId} - ${project.name}` : "-"}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {supervision.discipline || "-"}
-                            </td>
-                            <td className="px-3 py-3 text-sm">
-                              <span
-                                className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                                  supervision.status === "afgerond"
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                    : supervision.status === "afgekeurd"
-                                    ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                    : supervision.status === "in_behandeling"
-                                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                    : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                }`}
-                              >
-                                {getStatusLabel(supervision.status)}
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {getQualityLabel(supervision.overallQuality)}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {getQualityStandardsLabel(supervision.qualityStandards)}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {formatDate(supervision.supervisionDate || supervision.createdAt)}
-                            </td>
+              <>
+                {/* Desktop Table View - Hidden on mobile */}
+                <div className="hidden md:block">
+                  <p className="text-xs text-muted-foreground mb-2 text-right">
+                    💡 Scroll horizontaal voor meer details
+                  </p>
+                  <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto scrollbar-thin">
+                      <table className="w-full min-w-[900px]">
+                        <thead className="bg-muted/50 border-b border-border">
+                          <tr>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Toezicht ID
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Titel
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Project
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Discipline
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Status
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Kwaliteit
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Normen
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Datum
+                            </th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {filteredSupervisions.map((supervision) => {
+                            const project = projects.find((p) => p.id === supervision.projectId);
+                            return (
+                              <tr
+                                key={supervision.id}
+                                onClick={() => router.push(`/dashboard/ai-toezicht/${supervision.id}`)}
+                                className="hover:bg-muted/30 transition-colors cursor-pointer"
+                              >
+                                <td className="px-3 py-3">
+                                  <div className="text-xs text-muted-foreground mb-0.5">
+                                    {supervision.supervisionId}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3">
+                                  <div className="text-sm font-medium text-foreground">{supervision.title}</div>
+                                  {supervision.description && (
+                                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                      {supervision.description}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-foreground">
+                                    {project ? (
+                                      <span className="text-primary">{project.projectId}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-muted-foreground">
+                                    {supervision.discipline || "-"}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <span
+                                    className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(supervision.status)}`}
+                                  >
+                                    {getStatusLabel(supervision.status)}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <span
+                                    className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getQualityColor(supervision.overallQuality)}`}
+                                  >
+                                    {getQualityLabel(supervision.overallQuality)}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-muted-foreground">
+                                    {getQualityStandardsLabel(supervision.qualityStandards)}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-foreground">
+                                    {formatDate(supervision.supervisionDate || supervision.createdAt)}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                {/* Mobile Card View - Hidden on desktop */}
+                <div className="md:hidden space-y-4">
+                  {filteredSupervisions.map((supervision) => {
+                    const project = projects.find((p) => p.id === supervision.projectId);
+                    return (
+                      <div
+                        key={supervision.id}
+                        onClick={() => router.push(`/dashboard/ai-toezicht/${supervision.id}`)}
+                        className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                      >
+                        {/* Header */}
+                        <div className="mb-3">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {supervision.supervisionId}
+                          </div>
+                          <h3 className="text-base font-semibold text-foreground">
+                            {supervision.title}
+                          </h3>
+                          {supervision.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {supervision.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span
+                            className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(supervision.status)}`}
+                          >
+                            {getStatusLabel(supervision.status)}
+                          </span>
+                          {supervision.overallQuality && (
+                            <span
+                              className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getQualityColor(supervision.overallQuality)}`}
+                            >
+                              {getQualityLabel(supervision.overallQuality)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          {/* Project */}
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Project</div>
+                            <div className="text-foreground font-medium">
+                              {project ? (
+                                <span className="text-primary">{project.projectId}</span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Discipline */}
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Discipline</div>
+                            <div className="text-foreground font-medium">
+                              {supervision.discipline || "-"}
+                            </div>
+                          </div>
+
+                          {/* Normen */}
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Normen</div>
+                            <div className="text-foreground">
+                              {getQualityStandardsLabel(supervision.qualityStandards)}
+                            </div>
+                          </div>
+
+                          {/* Datum */}
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Datum</div>
+                            <div className="text-foreground">
+                              {formatDate(supervision.supervisionDate || supervision.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>

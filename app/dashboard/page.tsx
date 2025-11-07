@@ -146,30 +146,30 @@ export default async function DashboardPage() {
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold mb-2 text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-foreground">Dashboard</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
               Welkom terug, {user?.firstName || user?.emailAddresses[0]?.emailAddress}!
             </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Projecten tegel - overkoepelend */}
-            <Link href="/dashboard/projects" className="block rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-chart-3/10 text-chart-3">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <Link href="/dashboard/projects" className="block rounded-lg border border-border bg-card p-4 sm:p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+              <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-chart-3/10 text-chart-3">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                   </svg>
                 </div>
-                <h3 className="font-semibold text-lg text-card-foreground">Projecten</h3>
+                <h3 className="font-semibold text-base sm:text-lg text-card-foreground">Projecten</h3>
               </div>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
                 Beheer je projecten en voeg nieuwe toe
               </p>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-3 sm:mb-4">
                 <div className="flex flex-col">
                   <span className="text-sm text-muted-foreground mb-1">Totaal</span>
                   <span className="text-2xl font-semibold text-card-foreground">{projectStatsData.total}</span>
@@ -199,18 +199,18 @@ export default async function DashboardPage() {
             </Link>
 
             {/* Module tegels - alleen tonen als gebruiker rechten heeft */}
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
               {modulePermissions['ai-safety'] && (
-              <Link href="/dashboard/ai-safety" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-destructive/50 cursor-pointer group">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-destructive/10 text-destructive">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Link href="/dashboard/ai-safety" className="rounded-lg border border-border bg-card p-4 sm:p-6 transition-all hover:shadow-lg hover:border-destructive/50 cursor-pointer group">
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-destructive/10 text-destructive">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                   </div>
-                  <h3 className="font-semibold text-lg text-card-foreground">Veiligheidsmeldingen</h3>
+                  <h3 className="font-semibold text-base sm:text-lg text-card-foreground">Veiligheidsmeldingen</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 min-h-[2.5rem]">
                   Beheer veiligheidsmeldingen en analyses
                 </p>
                 <div className="space-y-2 mb-4">
@@ -250,17 +250,17 @@ export default async function DashboardPage() {
               )}
 
               {modulePermissions['ai-schouw'] && (
-              <Link href="/dashboard/ai-schouw" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Link href="/dashboard/ai-schouw" className="rounded-lg border border-border bg-card p-4 sm:p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 text-primary">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
                   </div>
-                  <h3 className="font-semibold text-lg text-card-foreground">AI Schouwen</h3>
+                  <h3 className="font-semibold text-base sm:text-lg text-card-foreground">AI Schouwen</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 min-h-[2.5rem]">
                   Beheer schouwen voor aansluitleidingen
                 </p>
                 <div className="space-y-2 mb-4">
@@ -306,16 +306,16 @@ export default async function DashboardPage() {
               )}
 
               {modulePermissions['ai-toezicht'] && (
-              <Link href="/dashboard/ai-toezicht" className="rounded-lg border border-border bg-card p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 rounded-lg bg-chart-2/10 text-chart-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <Link href="/dashboard/ai-toezicht" className="rounded-lg border border-border bg-card p-4 sm:p-6 transition-all hover:shadow-lg hover:border-primary/50 cursor-pointer group">
+                <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                  <div className="p-1.5 sm:p-2 rounded-lg bg-chart-2/10 text-chart-2">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                     </svg>
                   </div>
-                  <h3 className="font-semibold text-lg text-card-foreground">AI Toezicht</h3>
+                  <h3 className="font-semibold text-base sm:text-lg text-card-foreground">AI Toezicht</h3>
                 </div>
-                <p className="text-sm text-muted-foreground mb-4 min-h-[2.5rem]">
+                <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4 min-h-[2.5rem]">
                   Kwaliteitscontrole en toezicht op projecten
                 </p>
                 <div className="space-y-2 mb-4">

@@ -10,9 +10,18 @@ import {
   Search, 
   Eye, 
   Map,
-  FileText
+  FileText,
+  Menu,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 const navigationItems = [
   {
@@ -92,30 +101,72 @@ export function MainNav() {
   });
 
   return (
-    <nav className="hidden md:flex gap-1">
-      {visibleItems.map((item) => {
-        const Icon = item.icon;
-        const isActive = pathname === item.href || 
-          (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+    <>
+      {/* Desktop Navigation */}
+      <nav className="hidden md:flex gap-1">
+        {visibleItems.map((item) => {
+          const Icon = item.icon;
+          const isActive = pathname === item.href || 
+            (item.href !== '/dashboard' && pathname?.startsWith(item.href));
 
-        return (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
-              "hover:bg-accent hover:text-accent-foreground",
-              isActive
-                ? "bg-primary/10 text-primary font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            <span>{item.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                "hover:bg-accent hover:text-accent-foreground",
+                isActive
+                  ? "bg-primary/10 text-primary font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4" />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Mobile Navigation */}
+      <Sheet>
+        <SheetTrigger asChild>
+          <button className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors">
+            <Menu className="h-5 w-5 text-foreground" />
+            <span className="sr-only">Open menu</span>
+          </button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-[300px] sm:w-[400px]">
+          <SheetHeader>
+            <SheetTitle>Navigatie</SheetTitle>
+          </SheetHeader>
+          <nav className="mt-6 flex flex-col gap-2">
+            {visibleItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || 
+                (item.href !== '/dashboard' && pathname?.startsWith(item.href));
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={cn(
+                    "flex items-center gap-3 px-4 py-3 rounded-lg text-base font-medium transition-all",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    isActive
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
 

@@ -253,6 +253,26 @@ function AISchouwPageContent() {
     return labels[status] || status;
   };
 
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      open: "bg-chart-4/10 text-chart-4 border-chart-4/20",
+      in_behandeling: "bg-primary/10 text-primary border-primary/20",
+      afgerond: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+      afgekeurd: "bg-destructive/10 text-destructive border-destructive/20",
+    };
+    return colors[status] || "bg-muted text-muted-foreground border-border";
+  };
+
+  const getReadinessStatusColor = (status: string | null) => {
+    if (!status) return "bg-muted text-muted-foreground border-border";
+    const colors: Record<string, string> = {
+      goedgekeurd: "bg-chart-2/10 text-chart-2 border-chart-2/20",
+      afgekeurd: "bg-destructive/10 text-destructive border-destructive/20",
+      in_beoordeling: "bg-primary/10 text-primary border-primary/20",
+    };
+    return colors[status] || "bg-muted text-muted-foreground border-border";
+  };
+
   const getConnectionTypesLabel = (connectionTypes: string | null) => {
     if (!connectionTypes) return "-";
     try {
@@ -315,28 +335,29 @@ function AISchouwPageContent() {
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-8 flex justify-between items-start">
+          <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
             <div>
-              <h1 className="text-4xl font-bold mb-2 text-foreground">AI Schouwen</h1>
-              <p className="text-muted-foreground">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-foreground">AI Schouwen</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
                 Beheer schouwen voor aansluitleidingen op projecten
               </p>
             </div>
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <a
                 href="/dashboard/ai-schouw/analytics"
-                className="px-6 py-3 rounded-md border border-border hover:bg-accent transition-colors font-medium text-foreground shadow-sm flex items-center gap-2"
+                className="px-3 sm:px-6 py-2 sm:py-3 rounded-md border border-border hover:bg-accent transition-colors font-medium text-foreground shadow-sm flex items-center gap-2 text-sm sm:text-base"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                Rapportage
+                <span className="hidden sm:inline">Rapportage</span>
+                <span className="sm:hidden">Rapp.</span>
               </a>
               <button
                 onClick={() => setShowForm(!showForm)}
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm"
+                className="bg-primary text-primary-foreground px-3 sm:px-6 py-2 sm:py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm text-sm sm:text-base w-full sm:w-auto"
               >
                 {showForm ? "Annuleren" : "+ Nieuwe Schouw"}
               </button>
@@ -691,81 +712,180 @@ function AISchouwPageContent() {
                 </button>
               </div>
             ) : (
-              <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[900px]">
-                    <thead className="bg-muted/50 border-b border-border">
-                      <tr>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Schouw ID
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Titel
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Project
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Type Aansluiting
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Gereedheid
-                        </th>
-                        <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Datum
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {filteredInspections.map((inspection) => {
-                        const project = projects.find((p) => p.id === inspection.projectId);
-                        return (
-                          <tr
-                            key={inspection.id}
-                            onClick={() => router.push(`/dashboard/ai-schouw/${inspection.id}`)}
-                            className="hover:bg-muted/30 transition-colors cursor-pointer"
-                          >
-                            <td className="px-3 py-3 text-sm font-medium text-foreground">
-                              {inspection.inspectionId}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-foreground">{inspection.title}</td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {project ? `${project.projectId} - ${project.name}` : "-"}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {getConnectionTypesLabel(inspection.connectionTypes)}
-                            </td>
-                            <td className="px-3 py-3 text-sm">
-                              <span
-                                className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
-                                  inspection.status === "afgerond"
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                                    : inspection.status === "afgekeurd"
-                                    ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                                    : inspection.status === "in_behandeling"
-                                    ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-                                    : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-                                }`}
-                              >
-                                {getStatusLabel(inspection.status)}
-                              </span>
-                            </td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {getReadinessStatusLabel(inspection.readinessStatus)}
-                            </td>
-                            <td className="px-3 py-3 text-sm text-muted-foreground">
-                              {formatDate(inspection.inspectionDate || inspection.createdAt)}
-                            </td>
+              <>
+                {/* Desktop Table View - Hidden on mobile */}
+                <div className="hidden md:block">
+                  <p className="text-xs text-muted-foreground mb-2 text-right">
+                    💡 Scroll horizontaal voor meer details
+                  </p>
+                  <div className="bg-card border border-border rounded-lg overflow-hidden shadow-sm">
+                    <div className="overflow-x-auto scrollbar-thin">
+                      <table className="w-full min-w-[900px]">
+                        <thead className="bg-muted/50 border-b border-border">
+                          <tr>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Schouw ID
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Titel
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Project
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Type Aansluiting
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Status
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Gereedheid
+                            </th>
+                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+                              Datum
+                            </th>
                           </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {filteredInspections.map((inspection) => {
+                            const project = projects.find((p) => p.id === inspection.projectId);
+                            return (
+                              <tr
+                                key={inspection.id}
+                                onClick={() => router.push(`/dashboard/ai-schouw/${inspection.id}`)}
+                                className="hover:bg-muted/30 transition-colors cursor-pointer"
+                              >
+                                <td className="px-3 py-3">
+                                  <div className="text-xs text-muted-foreground mb-0.5">
+                                    {inspection.inspectionId}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3">
+                                  <div className="text-sm font-medium text-foreground">{inspection.title}</div>
+                                  {inspection.description && (
+                                    <div className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
+                                      {inspection.description}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-foreground">
+                                    {project ? (
+                                      <span className="text-primary">{project.projectId}</span>
+                                    ) : (
+                                      <span className="text-muted-foreground">-</span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-muted-foreground">
+                                    {getConnectionTypesLabel(inspection.connectionTypes)}
+                                  </div>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <span
+                                    className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(inspection.status)}`}
+                                  >
+                                    {getStatusLabel(inspection.status)}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <span
+                                    className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getReadinessStatusColor(inspection.readinessStatus)}`}
+                                  >
+                                    {getReadinessStatusLabel(inspection.readinessStatus)}
+                                  </span>
+                                </td>
+                                <td className="px-3 py-3 whitespace-nowrap">
+                                  <div className="text-sm text-foreground">
+                                    {formatDate(inspection.inspectionDate || inspection.createdAt)}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                {/* Mobile Card View - Hidden on desktop */}
+                <div className="md:hidden space-y-4">
+                  {filteredInspections.map((inspection) => {
+                    const project = projects.find((p) => p.id === inspection.projectId);
+                    return (
+                      <div
+                        key={inspection.id}
+                        onClick={() => router.push(`/dashboard/ai-schouw/${inspection.id}`)}
+                        className="bg-card border border-border rounded-lg p-4 shadow-sm hover:shadow-md transition-all cursor-pointer"
+                      >
+                        {/* Header */}
+                        <div className="mb-3">
+                          <div className="text-xs text-muted-foreground mb-1">
+                            {inspection.inspectionId}
+                          </div>
+                          <h3 className="text-base font-semibold text-foreground">
+                            {inspection.title}
+                          </h3>
+                          {inspection.description && (
+                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                              {inspection.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Badges */}
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          <span
+                            className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(inspection.status)}`}
+                          >
+                            {getStatusLabel(inspection.status)}
+                          </span>
+                          {inspection.readinessStatus && (
+                            <span
+                              className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getReadinessStatusColor(inspection.readinessStatus)}`}
+                            >
+                              {getReadinessStatusLabel(inspection.readinessStatus)}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Details Grid */}
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          {/* Project */}
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Project</div>
+                            <div className="text-foreground font-medium">
+                              {project ? (
+                                <span className="text-primary">{project.projectId}</span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Type Aansluiting */}
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Type Aansluiting</div>
+                            <div className="text-foreground font-medium">
+                              {getConnectionTypesLabel(inspection.connectionTypes)}
+                            </div>
+                          </div>
+
+                          {/* Datum */}
+                          <div>
+                            <div className="text-xs text-muted-foreground mb-1">Datum</div>
+                            <div className="text-foreground">
+                              {formatDate(inspection.inspectionDate || inspection.createdAt)}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </div>
         </div>

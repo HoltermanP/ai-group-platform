@@ -244,34 +244,35 @@ export default function InstellingenPage() {
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-2">
-              <Settings className="w-8 h-8 text-primary" />
-              <h1 className="text-4xl font-bold text-foreground">Instellingen</h1>
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center gap-2 sm:gap-3 mb-2">
+              <Settings className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Instellingen</h1>
             </div>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               Pas je applicatie voorkeuren aan. Wijzigingen worden automatisch opgeslagen per gebruiker.
             </p>
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 border-b border-border">
-            <div className="flex gap-2 overflow-x-auto">
+          <div className="mb-4 sm:mb-6 border-b border-border">
+            <div className="flex gap-1 sm:gap-2 overflow-x-auto scrollbar-hide">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+                  className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
+                  <span className="mr-1 sm:mr-2">{tab.icon}</span>
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
                 </button>
               ))}
             </div>
@@ -349,7 +350,7 @@ export default function InstellingenPage() {
                       </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Datumformaat</Label>
                         <Select
@@ -521,7 +522,7 @@ export default function InstellingenPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Centrum Latitude</Label>
                         <Input
@@ -795,22 +796,22 @@ export default function InstellingenPage() {
             )}
 
             {/* Save Button */}
-            <div className="flex items-center justify-between pt-6 border-t border-border">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 sm:pt-6 border-t border-border">
               <div className="flex items-center gap-2">
                 {saveStatus === 'success' && (
                   <div className="flex items-center gap-2 text-green-600">
                     <CheckCircle2 className="w-4 h-4" />
-                    <span className="text-sm">Instellingen opgeslagen!</span>
+                    <span className="text-xs sm:text-sm">Instellingen opgeslagen!</span>
                   </div>
                 )}
                 {saveStatus === 'error' && (
                   <div className="flex items-center gap-2 text-destructive">
                     <AlertCircle className="w-4 h-4" />
-                    <span className="text-sm">Fout bij opslaan. Probeer opnieuw.</span>
+                    <span className="text-xs sm:text-sm">Fout bij opslaan. Probeer opnieuw.</span>
                   </div>
                 )}
               </div>
-              <Button onClick={savePreferences} disabled={saving} size="lg">
+              <Button onClick={savePreferences} disabled={saving} size="lg" className="w-full sm:w-auto">
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
