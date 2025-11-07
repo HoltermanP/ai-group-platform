@@ -164,7 +164,10 @@ export default function InspectionDetailPage() {
     setUploadingPhotos(true);
     const formData = new FormData();
     photoInput.forEach((file) => {
-      formData.append("photos", file);
+      // Zorg dat bestand een naam heeft (voor camera foto's)
+      const fileName = file.name && file.name.trim() ? file.name : `foto-${Date.now()}-${Math.random().toString(36).substring(2, 9)}.jpg`;
+      const fileToUpload = file.name && file.name.trim() ? file : new File([file], fileName, { type: file.type || 'image/jpeg' });
+      formData.append("photos", fileToUpload);
     });
 
     try {
@@ -181,12 +184,15 @@ export default function InspectionDetailPage() {
         // Refresh de inspection data
         fetchInspection(id);
       } else {
-        const error = await response.json();
-        alert(error.error || "Fout bij het uploaden van foto's");
+        const errorData = await response.json().catch(() => ({ error: "Onbekende fout" }));
+        const errorMessage = errorData.error || `Fout bij uploaden (status: ${response.status})`;
+        console.error("Upload error:", errorMessage, errorData);
+        alert(errorMessage);
       }
     } catch (error) {
       console.error("Error uploading photos:", error);
-      alert("Er is een fout opgetreden");
+      const errorMessage = error instanceof Error ? error.message : "Er is een fout opgetreden bij het uploaden";
+      alert(errorMessage);
     } finally {
       setUploadingPhotos(false);
     }
@@ -443,10 +449,23 @@ export default function InspectionDetailPage() {
                   type="file"
                   multiple
                   accept="image/*"
-                  capture="environment"
                   onChange={(e) => {
                     if (e.target.files) {
-                      setPhotoInput(Array.from(e.target.files));
+                      const files = Array.from(e.target.files);
+                      // Valideer bestanden
+                      const validFiles = files.filter(file => {
+                        if (!file.type.startsWith("image/")) {
+                          alert(`Bestand ${file.name} is geen afbeelding en wordt overgeslagen.`);
+                          return false;
+                        }
+                        const maxSize = 5 * 1024 * 1024; // 5MB
+                        if (file.size > maxSize) {
+                          alert(`Bestand ${file.name} is te groot (max 5MB) en wordt overgeslagen.`);
+                          return false;
+                        }
+                        return true;
+                      });
+                      setPhotoInput(validFiles);
                     }
                   }}
                   className="w-full px-3 py-2 border border-input bg-background rounded-md text-foreground"
