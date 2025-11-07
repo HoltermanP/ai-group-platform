@@ -506,7 +506,12 @@ export default function SafetyIncidentDetailPage() {
   const parsePhotos = (photosString: string | null): string[] => {
     if (!photosString) return [];
     try {
-      return JSON.parse(photosString);
+      const photos = JSON.parse(photosString);
+      return Array.isArray(photos) 
+        ? photos.map((url: string) => 
+            url.startsWith('http') ? url : `${typeof window !== 'undefined' ? window.location.origin : ''}${url}`
+          )
+        : [];
     } catch {
       return [];
     }
@@ -1214,6 +1219,7 @@ export default function SafetyIncidentDetailPage() {
                   type="file"
                   multiple
                   accept="image/*"
+                  capture="environment"
                   onChange={(e) => {
                     if (e.target.files) {
                       setPhotoInput(Array.from(e.target.files));
@@ -1263,6 +1269,15 @@ export default function SafetyIncidentDetailPage() {
                               alt={`Foto ${index + 1} van incident ${incident.incidentId}`}
                               className="w-full h-40 sm:h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
                               onClick={() => window.open(photoUrl, "_blank")}
+                              loading="lazy"
+                              decoding="async"
+                              crossOrigin="anonymous"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                if (!target.src.startsWith('http')) {
+                                  target.src = `${window.location.origin}${photoUrl}`;
+                                }
+                              }}
                             />
                             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <div className="bg-black/50 text-white px-2 py-1 rounded text-xs">
