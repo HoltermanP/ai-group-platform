@@ -3,9 +3,7 @@ import { db } from "@/lib/db";
 import { inspectionsTable } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { existsSync } from "fs";
+import { put } from "@vercel/blob";
 
 export async function POST(
   req: Request,
@@ -49,12 +47,9 @@ export async function POST(
 
     // Upload foto's
     const uploadedUrls: string[] = [];
-    const uploadDir = join(process.cwd(), "public", "uploads", "inspections");
     
-    // Zorg dat de directory bestaat
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
+    // Gebruik Vercel Blob Storage als BLOB_READ_WRITE_TOKEN beschikbaar is, anders lokaal filesystem
+    const useBlobStorage = !!process.env.BLOB_READ_WRITE_TOKEN;
     
     for (const file of files) {
       // Valideer file type (op mobiel kan dit soms leeg zijn)
@@ -89,13 +84,36 @@ export async function POST(
         const randomStr = Math.random().toString(36).substring(2, 15);
         const originalName = file.name || `foto-${timestamp}.jpg`;
         const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const filename = `${inspectionId}-${timestamp}-${randomStr}-${sanitizedName}`;
-        const filepath = join(uploadDir, filename);
+        const filename = `inspections/${inspectionId}-${timestamp}-${randomStr}-${sanitizedName}`;
         
-        await writeFile(filepath, buffer);
-        const url = `/uploads/inspections/${filename}`;
+        let url: string;
+        
+        if (useBlobStorage) {
+          // Gebruik Vercel Blob Storage
+          const blob = await put(filename, buffer, {
+            access: 'public',
+            contentType: file.type || 'image/jpeg',
+          });
+          url = blob.url;
+          console.log(`Successfully uploaded to Blob Storage: ${filename}`);
+        } else {
+          // Lokaal filesystem (development)
+          const { writeFile, mkdir } = await import("fs/promises");
+          const { join } = await import("path");
+          const { existsSync } = await import("fs");
+          
+          const uploadDir = join(process.cwd(), "public", "uploads", "inspections");
+          if (!existsSync(uploadDir)) {
+            await mkdir(uploadDir, { recursive: true });
+          }
+          
+          const filepath = join(uploadDir, filename.split('/').pop()!);
+          await writeFile(filepath, buffer);
+          url = `/uploads/inspections/${filename.split('/').pop()!}`;
+          console.log(`Successfully uploaded locally: ${filename}`);
+        }
+        
         uploadedUrls.push(url);
-        console.log(`Successfully uploaded: ${filename}`);
       } catch (fileError) {
         console.error(`Error processing file ${file.name || 'unnamed'}:`, fileError);
         continue;
