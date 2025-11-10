@@ -224,6 +224,13 @@ export default function ProjectsPage() {
                 <Calendar className="h-4 w-4" />
                 Planning Overzicht
               </Link>
+              <Link
+                href="/dashboard/projects/bezetting"
+                className="bg-chart-2 text-primary-foreground px-6 py-3 rounded-md hover:bg-chart-2/90 transition-colors font-medium shadow-sm flex items-center justify-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                Bezettingsoverzicht
+              </Link>
               <button
                 onClick={() => setShowForm(!showForm)}
                 className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm flex-1 sm:flex-none"
