@@ -313,12 +313,23 @@ export default function ProjectDetailPage() {
                 <p className="text-muted-foreground">Project ID: {project.projectId}</p>
               </div>
               
-              <button
-                onClick={() => router.push(`/dashboard/projects/${project.id}/edit`)}
-                className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium"
-              >
-                Bewerken
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => router.push(`/dashboard/projects/${project.id}/planning`)}
+                  className="px-4 py-2 bg-chart-3 text-primary-foreground rounded-md hover:bg-chart-3/90 transition-colors font-medium flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Planning
+                </button>
+                <button
+                  onClick={() => router.push(`/dashboard/projects/${project.id}/edit`)}
+                  className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium"
+                >
+                  Bewerken
+                </button>
+              </div>
             </div>
           </div>
 
@@ -370,12 +381,20 @@ export default function ProjectDetailPage() {
 
             {/* Planning */}
             <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
-              <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
-                <svg className="w-5 h-5 text-chart-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Planning
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-card-foreground flex items-center gap-2">
+                  <svg className="w-5 h-5 text-chart-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Planning
+                </h2>
+                <Link
+                  href={`/dashboard/projects/${project.id}/planning`}
+                  className="text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+                >
+                  Beheer planning →
+                </Link>
+              </div>
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-muted-foreground">Startdatum</p>

@@ -424,3 +424,43 @@ export const incidentActionsTable = pgTable("incident_actions", {
   completedAt: timestamp(), // Wanneer is de actie voltooid
 });
 
+// Project Tasks - taken en milestones voor projectplanning
+export const projectTasksTable = pgTable("project_tasks", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  taskId: varchar({ length: 50 }).notNull().unique(), // Uniek taak ID (bijv. TASK-2024-001)
+  
+  // Project koppeling
+  projectId: integer().notNull().references(() => projectsTable.id, { onDelete: "cascade" }),
+  
+  // Taak details
+  title: varchar({ length: 255 }).notNull(),
+  description: text(),
+  status: varchar({ length: 50 }).default('not_started'), // not_started, in_progress, completed, blocked, cancelled
+  priority: varchar({ length: 50 }).default('medium'), // low, medium, high, urgent
+  
+  // Type taak
+  type: varchar({ length: 50 }).default('task'), // task, milestone, phase
+  
+  // Planning
+  startDate: timestamp(),
+  endDate: timestamp(),
+  plannedDuration: integer(), // In dagen
+  actualDuration: integer(), // In dagen (berekend na voltooiing)
+  
+  // Afhankelijkheden (JSON array van task IDs)
+  dependencies: text(), // JSON array: [1, 2, 3]
+  
+  // Toewijzing
+  assignedTo: varchar({ length: 255 }), // Clerk User ID
+  assignedToName: varchar({ length: 255 }), // Naam van toegewezen persoon
+  
+  // Voortgang
+  progress: integer().default(0), // 0-100 percentage
+  completedAt: timestamp(),
+  
+  // Metadata
+  createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+});
+

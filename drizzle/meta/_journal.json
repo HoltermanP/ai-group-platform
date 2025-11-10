@@ -50,6 +50,13 @@
       "when": 1762799875638,
       "tag": "0006_wakeful_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1762801530512,
+      "tag": "0007_fearless_terrax",
+      "breakpoints": true
     }
   ]
 }

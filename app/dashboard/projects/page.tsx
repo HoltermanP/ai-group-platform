@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldAlert, Search, Eye } from "lucide-react";
+import { ShieldAlert, Search, Eye, Calendar } from "lucide-react";
+import Link from "next/link";
 import {
   Tooltip,
   TooltipContent,
@@ -215,12 +216,21 @@ export default function ProjectsPage() {
                 Beheer en maak nieuwe projecten aan
               </p>
             </div>
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm shrink-0 w-full sm:w-auto"
-            >
-              {showForm ? "Annuleren" : "+ Nieuw Project"}
-            </button>
+            <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+              <Link
+                href="/dashboard/projects/planning"
+                className="bg-chart-3 text-primary-foreground px-6 py-3 rounded-md hover:bg-chart-3/90 transition-colors font-medium shadow-sm flex items-center justify-center gap-2"
+              >
+                <Calendar className="h-4 w-4" />
+                Planning Overzicht
+              </Link>
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm flex-1 sm:flex-none"
+              >
+                {showForm ? "Annuleren" : "+ Nieuw Project"}
+              </button>
+            </div>
           </div>
 
           {/* Create Project Form */}
