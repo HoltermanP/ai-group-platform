@@ -10,6 +10,7 @@ export interface ToolboxPresentationOptions {
   incidentTitle?: string;
   recommendations?: string[];
   suggestedItems?: string[];
+  model?: string; // AI model om te gebruiken
   incident?: {
     title: string;
     description: string;
@@ -34,7 +35,7 @@ export interface ToolboxPresentationOptions {
 /**
  * Haal web kennis op met AI over het onderwerp
  */
-async function getWebKnowledge(topic: string, incidentInfo?: string): Promise<string> {
+async function getWebKnowledge(topic: string, incidentInfo?: string, model: string = 'gpt-4'): Promise<string> {
   if (!openai) return '';
   
   try {
@@ -51,8 +52,14 @@ Gebruik je kennis over:
 
 Geef een beknopte, praktische samenvatting terug.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+    // Bepaal temperature op basis van model
+    // GPT-5 modellen ondersteunen alleen default temperature (1)
+    const modelsWithFixedTemperature = ['gpt-5-nano', 'gpt-5', 'gpt-5-turbo', 'gpt-5-pro'];
+    const temperature = modelsWithFixedTemperature.includes(model.toLowerCase()) ? undefined : 0.7;
+    const usesMaxCompletionTokens = modelsWithFixedTemperature.includes(model.toLowerCase());
+    
+    const completionOptions: any = {
+      model: model,
       messages: [
         {
           role: 'system',
@@ -63,9 +70,20 @@ Geef een beknopte, praktische samenvatting terug.`;
           content: prompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 300,
-    });
+    };
+    
+    // GPT-5 modellen gebruiken max_completion_tokens in plaats van max_tokens
+    if (usesMaxCompletionTokens) {
+      completionOptions.max_completion_tokens = 300;
+    } else {
+      completionOptions.max_tokens = 300;
+    }
+    
+    if (temperature !== undefined) {
+      completionOptions.temperature = temperature;
+    }
+
+    const completion = await openai.chat.completions.create(completionOptions);
 
     return completion.choices[0]?.message?.content || '';
   } catch (error) {
@@ -116,7 +134,8 @@ ${options.aiAnalysis.riskAssessment ? `- Uitgebreide risico analyse: ${options.a
   }
 
   // Haal web kennis op
-  const webKnowledge = await getWebKnowledge(topic, contextInfo);
+  const model = options.model || 'gpt-4';
+  const webKnowledge = await getWebKnowledge(topic, contextInfo, model);
 
   // Genereer toolbox content met alle context
   const toolboxContent = await generateToolboxContent(
@@ -124,7 +143,8 @@ ${options.aiAnalysis.riskAssessment ? `- Uitgebreide risico analyse: ${options.a
     description + contextInfo,
     {
       recommendations: options.recommendations || options.aiAnalysis?.recommendations,
-    }
+    },
+    model
   );
 
   // Voeg image queries toe aan items

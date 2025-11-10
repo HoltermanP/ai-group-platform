@@ -36,6 +36,20 @@
       "when": 1762287803423,
       "tag": "0004_sad_hellcat",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762795019415,
+      "tag": "0005_nasty_red_ghost",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1762799875638,
+      "tag": "0006_wakeful_lake",
+      "breakpoints": true
     }
   ]
 }

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from 'next-themes';
 import { Settings, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 
@@ -36,6 +37,7 @@ interface UserPreferences {
   defaultAIModel?: string;
   showAISuggestions?: boolean;
   autoGenerateToolbox?: boolean;
+  aiSafetyIncidentPrompt?: string;
   // Organisatie voorkeuren
   defaultOrganizationId?: number;
   // Weergave voorkeuren
@@ -84,7 +86,13 @@ const dashboardLayouts = [
 const aiModels = [
   { value: 'gpt-4', label: 'GPT-4' },
   { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  { value: 'gpt-4o', label: 'GPT-4o' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
   { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+  { value: 'gpt-5-nano', label: 'GPT-5 Nano' },
+  { value: 'gpt-5', label: 'GPT-5' },
+  { value: 'gpt-5-turbo', label: 'GPT-5 Turbo' },
+  { value: 'gpt-5-pro', label: 'GPT-5 Pro' },
 ];
 
 export default function InstellingenPage() {
@@ -180,6 +188,7 @@ export default function InstellingenPage() {
         defaultAIModel: preferences?.defaultAIModel || 'gpt-4',
         showAISuggestions: preferences?.showAISuggestions ?? true,
         autoGenerateToolbox: preferences?.autoGenerateToolbox ?? false,
+        aiSafetyIncidentPrompt: preferences?.aiSafetyIncidentPrompt || null,
         defaultOrganizationId: preferences?.defaultOrganizationId || null,
         compactMode: preferences?.compactMode ?? false,
         autoRefresh: preferences?.autoRefresh ?? true,
@@ -789,6 +798,45 @@ export default function InstellingenPage() {
                           onCheckedChange={(checked) => updatePreference('autoGenerateToolbox', checked)}
                         />
                       </div>
+                    </div>
+
+                    {/* Prompt sectie voor veiligheidsmeldingen */}
+                    <div className="space-y-2 pt-4 border-t border-border">
+                      <Label htmlFor="safety-prompt">AI Prompt voor Veiligheidsmeldingen</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Configureer het prompt dat gebruikt wordt voor AI analyses van veiligheidsmeldingen. 
+                        Gebruik {'{incidents}'} als placeholder voor de incident data.
+                      </p>
+                      <Textarea
+                        id="safety-prompt"
+                        value={preferences?.aiSafetyIncidentPrompt || ''}
+                        onChange={(e) => updatePreference('aiSafetyIncidentPrompt', e.target.value)}
+                        placeholder={`Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. 
+Analyseer de volgende veiligheidsmeldingen en geef advies.
+
+Veiligheidsmeldingen:
+{incidents}
+
+Geef een uitgebreide analyse in JSON formaat met de volgende structuur:
+{
+  "summary": "Een samenvatting van alle meldingen en patronen die je ziet",
+  "recommendations": ["Aanbeveling 1", "Aanbeveling 2", ...],
+  "suggestedToolboxTopics": [
+    {
+      "topic": "Onderwerp naam",
+      "description": "Waarom dit onderwerp belangrijk is",
+      "priority": "high|medium|low",
+      "suggestedItems": ["Item 1", "Item 2", ...]
+    }
+  ],
+  "riskAssessment": "Uitgebreide risico analyse",
+  "preventiveMeasures": ["Maatregel 1", "Maatregel 2", ...]
+}
+
+Geef alleen de JSON terug, zonder extra tekst.`}
+                        rows={12}
+                        className="font-mono text-sm"
+                      />
                     </div>
                   </CardContent>
                 </Card>

@@ -77,6 +77,7 @@ export async function PUT(req: Request) {
       defaultAIModel,
       showAISuggestions,
       autoGenerateToolbox,
+      aiSafetyIncidentPrompt,
       // Organisatie voorkeuren
       defaultOrganizationId,
       // Weergave voorkeuren
@@ -127,6 +128,7 @@ export async function PUT(req: Request) {
     if (defaultAIModel !== undefined) updateData.defaultAIModel = defaultAIModel;
     if (showAISuggestions !== undefined) updateData.showAISuggestions = showAISuggestions;
     if (autoGenerateToolbox !== undefined) updateData.autoGenerateToolbox = autoGenerateToolbox;
+    if (aiSafetyIncidentPrompt !== undefined) updateData.aiSafetyIncidentPrompt = aiSafetyIncidentPrompt || null;
 
     // Organisatie voorkeuren
     if (defaultOrganizationId !== undefined) updateData.defaultOrganizationId = defaultOrganizationId;
@@ -154,6 +156,7 @@ export async function PUT(req: Request) {
           defaultAIModel: defaultAIModel || 'gpt-4',
           showAISuggestions: showAISuggestions ?? true,
           autoGenerateToolbox: autoGenerateToolbox ?? false,
+          aiSafetyIncidentPrompt: aiSafetyIncidentPrompt || null,
           compactMode: compactMode ?? false,
           autoRefresh: autoRefresh ?? true,
           autoRefreshInterval: autoRefreshInterval || 30000,
@@ -179,8 +182,12 @@ export async function PUT(req: Request) {
     }
   } catch (error) {
     console.error('Error updating preferences:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { 
+        error: 'Internal server error',
+        details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+      },
       { status: 500 }
     );
   }

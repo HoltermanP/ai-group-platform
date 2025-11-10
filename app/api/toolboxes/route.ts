@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { toolboxesTable } from "@/lib/db/schema";
+import { toolboxesTable, userPreferencesTable } from "@/lib/db/schema";
 import { getUserOrganizationIds } from "@/lib/clerk-admin";
 import { generateToolboxContent } from "@/lib/services/openai";
 import { eq, desc, or, isNull, inArray, and } from "drizzle-orm";
@@ -44,9 +44,20 @@ export async function POST(req: Request) {
     // Als generateWithAI true is, genereer items met AI
     if (generateWithAI) {
       try {
+        // Haal user preferences op voor model
+        const userPrefs = await db
+          .select()
+          .from(userPreferencesTable)
+          .where(eq(userPreferencesTable.clerkUserId, userId))
+          .limit(1);
+
+        const selectedModel = userPrefs.length > 0 && userPrefs[0].defaultAIModel
+          ? userPrefs[0].defaultAIModel
+          : 'gpt-4';
+
         const generated = await generateToolboxContent(topic, description || '', {
           incidentIds: sourceIncidentIds,
-        });
+        }, selectedModel);
         items = generated.items;
       } catch (error) {
         console.error("Error generating toolbox with AI:", error);

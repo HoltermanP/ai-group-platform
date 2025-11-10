@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { safetyIncidentsTable, aiAnalysesTable } from "@/lib/db/schema";
+import { safetyIncidentsTable, aiAnalysesTable, userPreferencesTable } from "@/lib/db/schema";
 import { generateToolboxPresentation } from "@/lib/services/powerpoint";
 import { eq } from "drizzle-orm";
 import { writeFile, mkdir } from "fs/promises";
@@ -91,6 +91,17 @@ export async function POST(
       }
     }
 
+    // Haal user preferences op voor model
+    const userPrefs = await db
+      .select()
+      .from(userPreferencesTable)
+      .where(eq(userPreferencesTable.clerkUserId, userId))
+      .limit(1);
+
+    const selectedModel = userPrefs.length > 0 && userPrefs[0].defaultAIModel
+      ? userPrefs[0].defaultAIModel
+      : 'gpt-4';
+
     // Genereer PowerPoint met alle beschikbare informatie
     const pptBuffer = await generateToolboxPresentation({
       topic,
@@ -99,6 +110,7 @@ export async function POST(
       incidentTitle: incident.title,
       recommendations,
       suggestedItems,
+      model: selectedModel,
       incident: {
         title: incident.title,
         description: incident.description,

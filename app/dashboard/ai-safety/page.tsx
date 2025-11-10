@@ -493,6 +493,10 @@ function AISafetyPageContent() {
 
     setIsAnalyzing(true);
     try {
+      // Maak een abort controller voor timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minuten timeout
+
       const response = await fetch("/api/ai/analyze-safety", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -500,7 +504,10 @@ function AISafetyPageContent() {
           incidentIds: selectedIncidents,
           save: true // Direct opslaan op overzichtspagina
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const error = await response.json();
@@ -512,7 +519,15 @@ function AISafetyPageContent() {
       setShowAIAnalysis(true);
     } catch (error) {
       console.error("Error analyzing incidents:", error);
-      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij de AI analyse");
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          alert("De AI analyse duurt te lang. Probeer het opnieuw of neem contact op met de beheerder.");
+        } else {
+          alert(error.message || "Er is een fout opgetreden bij de AI analyse");
+        }
+      } else {
+        alert("Er is een fout opgetreden bij de AI analyse");
+      }
     } finally {
       setIsAnalyzing(false);
     }

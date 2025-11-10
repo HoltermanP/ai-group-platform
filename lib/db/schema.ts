@@ -83,6 +83,7 @@ export const userPreferencesTable = pgTable("user_preferences", {
   defaultAIModel: varchar({ length: 50 }).default('gpt-4'),
   showAISuggestions: boolean().default(true),
   autoGenerateToolbox: boolean().default(false),
+  aiSafetyIncidentPrompt: text(), // Custom prompt voor veiligheidsmeldingen analyses
   
   // Organisatie voorkeuren
   defaultOrganizationId: integer().references(() => organizationsTable.id, { onDelete: "set null" }), // Standaard organisatie
@@ -164,6 +165,28 @@ export const projectMembersTable = pgTable("project_members", {
   clerkUserId: varchar({ length: 255 }).notNull(),
   role: varchar({ length: 50 }).notNull(), // project-manager, developer, designer, etc.
   joinedAt: timestamp().defaultNow().notNull(),
+});
+
+// Project Documents - documenten gekoppeld aan projecten
+export const projectDocumentsTable = pgTable("project_documents", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  projectId: integer().notNull().references(() => projectsTable.id, { onDelete: "cascade" }),
+  
+  // Document type (een van de voorgedefinieerde types)
+  documentType: varchar({ length: 100 }).notNull(), // "intake-d2-formulier", "vo-kl", etc.
+  
+  // Bestand informatie
+  fileName: varchar({ length: 255 }).notNull(),
+  fileUrl: text().notNull(), // URL naar het geüploade bestand
+  fileSize: integer(), // Bestandsgrootte in bytes
+  mimeType: varchar({ length: 100 }), // MIME type van het bestand
+  
+  // Metadata
+  uploadedBy: varchar({ length: 255 }).notNull(), // Clerk User ID
+  uploadedAt: timestamp().defaultNow().notNull(),
+  
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
 });
 
 // Safety Incidents - veiligheidsmeldingen voor ondergrondse infrastructuur

@@ -582,6 +582,10 @@ export default function SafetyIncidentDetailPage() {
     setIsAnalyzing(true);
     setIsViewingSavedAnalysis(false);
     try {
+      // Maak een abort controller voor timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minuten timeout
+
       const response = await fetch("/api/ai/analyze-safety", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -589,7 +593,10 @@ export default function SafetyIncidentDetailPage() {
           incidentIds: [incident.id],
           save: false // Niet direct opslaan, eerst akkoord vragen
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const error = await response.json();
@@ -601,7 +608,15 @@ export default function SafetyIncidentDetailPage() {
       setShowAnalysisDialog(true);
     } catch (error) {
       console.error("Error analyzing incident:", error);
-      alert(error instanceof Error ? error.message : "Er is een fout opgetreden bij de AI analyse");
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          alert("De AI analyse duurt te lang. Probeer het opnieuw of neem contact op met de beheerder.");
+        } else {
+          alert(error.message || "Er is een fout opgetreden bij de AI analyse");
+        }
+      } else {
+        alert("Er is een fout opgetreden bij de AI analyse");
+      }
     } finally {
       setIsAnalyzing(false);
     }
@@ -610,6 +625,15 @@ export default function SafetyIncidentDetailPage() {
   const handleSaveAnalysis = async () => {
     if (!aiAnalysis || !incident) return;
 
+    // Debug: log de analyse data
+    console.log('Saving analysis:', {
+      hasSummary: !!aiAnalysis.summary,
+      hasRecommendations: !!aiAnalysis.recommendations && Array.isArray(aiAnalysis.recommendations),
+      hasSuggestedToolboxTopics: !!aiAnalysis.suggestedToolboxTopics && Array.isArray(aiAnalysis.suggestedToolboxTopics),
+      hasPreventiveMeasures: !!aiAnalysis.preventiveMeasures && Array.isArray(aiAnalysis.preventiveMeasures),
+      analysis: aiAnalysis
+    });
+
     setIsSavingAnalysis(true);
     try {
       const response = await fetch("/api/ai/analyze-safety/save", {
@@ -617,18 +641,20 @@ export default function SafetyIncidentDetailPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           incidentIds: [incident.id],
-          summary: aiAnalysis.summary,
-          recommendations: aiAnalysis.recommendations,
-          suggestedToolboxTopics: aiAnalysis.suggestedToolboxTopics,
-          riskAssessment: aiAnalysis.riskAssessment,
-          preventiveMeasures: aiAnalysis.preventiveMeasures,
+          summary: aiAnalysis.summary || '',
+          recommendations: aiAnalysis.recommendations || [],
+          suggestedToolboxTopics: aiAnalysis.suggestedToolboxTopics || [],
+          riskAssessment: aiAnalysis.riskAssessment || null,
+          preventiveMeasures: aiAnalysis.preventiveMeasures || [],
           tokensUsed: aiAnalysis.tokensUsed,
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || "Fout bij het opslaan van de analyse");
+        const errorMsg = error.error || "Fout bij het opslaan van de analyse";
+        const details = error.missingFields ? `Ontbrekende velden: ${error.missingFields.join(', ')}` : '';
+        throw new Error(`${errorMsg}${details ? ` - ${details}` : ''}`);
       }
 
       alert("Analyse succesvol toegevoegd aan het incident!");

@@ -3,6 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { PROJECT_DOCUMENT_TYPES } from "@/lib/constants/project-documents";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 interface Project {
   id: number;
@@ -34,19 +42,36 @@ interface SafetyIncident {
   reportedDate: string;
 }
 
+interface ProjectDocument {
+  id: number;
+  documentType: string;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number | null;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
   const [project, setProject] = useState<Project | null>(null);
   const [safetyIncidents, setSafetyIncidents] = useState<SafetyIncident[]>([]);
+  const [documents, setDocuments] = useState<ProjectDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [uploadingDocument, setUploadingDocument] = useState(false);
+  const [selectedDocumentType, setSelectedDocumentType] = useState<string>("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadingForType, setUploadingForType] = useState<string | null>(null);
 
   useEffect(() => {
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
     if (id) {
       fetchProject(id);
       fetchSafetyIncidents(id);
+      fetchDocuments(id);
     }
   }, [params.id]);
 
@@ -79,11 +104,76 @@ export default function ProjectDetailPage() {
     }
   };
 
+  const fetchDocuments = async (id: string) => {
+    try {
+      const response = await fetch(`/api/projects/${id}/documents`);
+      if (response.ok) {
+        const data = await response.json();
+        setDocuments(data.documents || []);
+      }
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+    }
+  };
+
+  const handleDocumentUpload = async () => {
+    if (!selectedFile || !selectedDocumentType || !params.id) return;
+    
+    setUploadingDocument(true);
+    setUploadingForType(selectedDocumentType);
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    formData.append("documentType", selectedDocumentType);
+
+    try {
+      const id = Array.isArray(params.id) ? params.id[0] : params.id;
+      const response = await fetch(`/api/projects/${id}/documents`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDocuments([...documents, data.document]);
+        setSelectedFile(null);
+        setSelectedDocumentType("");
+        setUploadDialogOpen(false);
+        setUploadingForType(null);
+        // Reset file input
+        const fileInput = document.getElementById("document-file") as HTMLInputElement;
+        if (fileInput) fileInput.value = "";
+      } else {
+        const error = await response.json();
+        alert(error.error || "Er is een fout opgetreden bij het uploaden");
+      }
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      alert("Er is een fout opgetreden bij het uploaden");
+    } finally {
+      setUploadingDocument(false);
+      setUploadingForType(null);
+    }
+  };
+
+  const openUploadDialog = (documentType: string) => {
+    setSelectedDocumentType(documentType);
+    setUploadDialogOpen(true);
+  };
+
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
     return new Date(dateString).toLocaleDateString("nl-NL", {
       day: "numeric",
       month: "long",
+      year: "numeric",
+    });
+  };
+
+  const formatDateShort = (dateString: string | null) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("nl-NL", {
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
     });
   };
@@ -94,6 +184,17 @@ export default function ProjectDetailPage() {
       style: "currency",
       currency: "EUR",
     }).format(cents / 100);
+  };
+
+  const formatFileSize = (bytes: number | null) => {
+    if (!bytes) return "-";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const getDocumentTypeLabel = (type: string) => {
+    return PROJECT_DOCUMENT_TYPES.find(t => t.value === type)?.label || type;
   };
 
   const getStatusLabel = (status: string) => {
@@ -323,7 +424,7 @@ export default function ProjectDetailPage() {
           )}
 
           {/* Safety Incidents */}
-          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm mb-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold text-card-foreground flex items-center gap-2">
                 <svg className="w-5 h-5 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,6 +477,204 @@ export default function ProjectDetailPage() {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Project Documenten */}
+          <div className="bg-card border border-border rounded-lg p-6 shadow-sm">
+            <h2 className="text-xl font-semibold mb-4 text-card-foreground flex items-center gap-2">
+              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Project Documenten ({documents.length}/{PROJECT_DOCUMENT_TYPES.length})
+            </h2>
+
+            <div className="border border-border rounded-lg overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[3%] px-1 text-center">Status</TableHead>
+                    <TableHead className="w-[32%] px-2">Document type</TableHead>
+                    <TableHead className="w-[25%] px-2">Bestand</TableHead>
+                    <TableHead className="w-[8%] px-1 text-center">Grootte</TableHead>
+                    <TableHead className="w-[32%] px-2">Actie</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {PROJECT_DOCUMENT_TYPES.map((type) => {
+                    const typeDocuments = documents.filter(doc => doc.documentType === type.value);
+                    const hasDocument = typeDocuments.length > 0;
+                    const document = typeDocuments[0]; // Neem het eerste document als er meerdere zijn
+                    const isUploading = uploadingForType === type.value;
+
+                    return (
+                      <TableRow 
+                        key={type.value}
+                        className={hasDocument ? "bg-chart-1/5" : ""}
+                      >
+                        <TableCell className="px-1 text-center">
+                          {hasDocument ? (
+                            <div className="flex items-center justify-center">
+                              <svg className="w-4 h-4 text-chart-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-center">
+                              <div className="w-2 h-2 rounded-full bg-muted-foreground/30"></div>
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="px-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-medium text-foreground text-xs truncate">{type.label}</span>
+                            <div className="flex-shrink-0">
+                              {hasDocument && (
+                                <Badge variant="outline" className="text-[10px] bg-chart-1/10 text-chart-1 border-chart-1/20 px-1 py-0">
+                                  Geüpload
+                                </Badge>
+                              )}
+                              {!hasDocument && (
+                                <Badge variant="secondary" className="text-[10px] px-1 py-0">
+                                  Ontbreekt
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="px-2">
+                          {hasDocument && document ? (
+                            <a
+                              href={document.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:text-primary/80 flex items-center gap-1 font-medium text-xs"
+                            >
+                              <svg className="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              <span className="truncate" title={document.fileName}>
+                                {document.fileName}
+                              </span>
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">-</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-[10px] px-1 text-center">
+                          {hasDocument && document ? formatFileSize(document.fileSize) : "-"}
+                        </TableCell>
+                        <TableCell className="px-2">
+                          {hasDocument ? (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] text-muted-foreground">
+                                {formatDateShort(document.uploadedAt)}
+                              </span>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openUploadDialog(type.value)}
+                              disabled={isUploading || uploadingDocument}
+                              className="text-[10px] h-7 px-2"
+                            >
+                              {isUploading ? (
+                                <>
+                                  <svg className="w-3 h-3 mr-1 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Uploaden...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-3 h-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  Uploaden
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Upload Dialog */}
+            <Dialog 
+              open={uploadDialogOpen} 
+              onOpenChange={(open) => {
+                setUploadDialogOpen(open);
+                if (!open) {
+                  // Reset state wanneer dialog sluit
+                  setSelectedFile(null);
+                  setSelectedDocumentType("");
+                  const fileInput = document.getElementById("document-file") as HTMLInputElement;
+                  if (fileInput) fileInput.value = "";
+                }
+              }}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>
+                    {selectedDocumentType 
+                      ? `${getDocumentTypeLabel(selectedDocumentType)} uploaden`
+                      : "Nieuw document uploaden"
+                    }
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  {!selectedDocumentType && (
+                    <div>
+                      <Label htmlFor="document-type">Document type</Label>
+                      <Select value={selectedDocumentType} onValueChange={setSelectedDocumentType}>
+                        <SelectTrigger id="document-type">
+                          <SelectValue placeholder="Selecteer document type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {PROJECT_DOCUMENT_TYPES.map((type) => (
+                            <SelectItem key={type.value} value={type.value}>
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  {selectedDocumentType && (
+                    <div className="p-3 bg-muted/30 rounded-md">
+                      <p className="text-sm font-medium text-foreground mb-1">Document type:</p>
+                      <p className="text-sm text-muted-foreground">{getDocumentTypeLabel(selectedDocumentType)}</p>
+                    </div>
+                  )}
+                  <div>
+                    <Label htmlFor="document-file">Bestand</Label>
+                    <Input
+                      id="document-file"
+                      type="file"
+                      onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                      className="mt-1"
+                    />
+                    {selectedFile && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Geselecteerd: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    onClick={handleDocumentUpload}
+                    disabled={!selectedFile || !selectedDocumentType || uploadingDocument}
+                    className="w-full"
+                  >
+                    {uploadingDocument ? "Uploaden..." : "Uploaden"}
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

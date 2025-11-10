@@ -33,9 +33,33 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!summary || !recommendations || !suggestedToolboxTopics || !preventiveMeasures) {
+    // Valideer vereiste velden met betere error messages
+    const missingFields: string[] = [];
+    if (summary === undefined || summary === null || (typeof summary === 'string' && summary.trim() === '')) {
+      missingFields.push('summary');
+    }
+    if (recommendations === undefined || recommendations === null || !Array.isArray(recommendations)) {
+      missingFields.push('recommendations');
+    }
+    if (suggestedToolboxTopics === undefined || suggestedToolboxTopics === null || !Array.isArray(suggestedToolboxTopics)) {
+      missingFields.push('suggestedToolboxTopics');
+    }
+    if (preventiveMeasures === undefined || preventiveMeasures === null || !Array.isArray(preventiveMeasures)) {
+      missingFields.push('preventiveMeasures');
+    }
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: "Alle analyse velden zijn vereist" },
+        { 
+          error: "Alle analyse velden zijn vereist",
+          missingFields: missingFields,
+          received: {
+            hasSummary: !!summary,
+            hasRecommendations: !!recommendations && Array.isArray(recommendations),
+            hasSuggestedToolboxTopics: !!suggestedToolboxTopics && Array.isArray(suggestedToolboxTopics),
+            hasPreventiveMeasures: !!preventiveMeasures && Array.isArray(preventiveMeasures),
+          }
+        },
         { status: 400 }
       );
     }

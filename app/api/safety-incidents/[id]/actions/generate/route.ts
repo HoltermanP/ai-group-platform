@@ -1,7 +1,7 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { safetyIncidentsTable, aiAnalysesTable } from "@/lib/db/schema";
+import { safetyIncidentsTable, aiAnalysesTable, userPreferencesTable } from "@/lib/db/schema";
 import { suggestActionsFromAnalysis, analyzeSafetyIncidents } from "@/lib/services/openai";
 import { eq } from "drizzle-orm";
 
@@ -80,8 +80,21 @@ export async function POST(
       }
     }
 
+    // Haal user preferences op voor custom prompt en model
+    const userPrefs = await db
+      .select()
+      .from(userPreferencesTable)
+      .where(eq(userPreferencesTable.clerkUserId, userId))
+      .limit(1);
+
+    const selectedModel = userPrefs.length > 0 && userPrefs[0].defaultAIModel
+      ? userPrefs[0].defaultAIModel
+      : 'gpt-4';
+
     // Als er geen analyse is, genereer er eerst een
     if (!analysis) {
+      const customPrompt = userPrefs.length > 0 ? userPrefs[0].aiSafetyIncidentPrompt : undefined;
+
       const analysisResult = await analyzeSafetyIncidents([{
         incidentId: incidentData.incidentId,
         title: incidentData.title,
@@ -95,7 +108,7 @@ export async function POST(
         affectedSystems: incidentData.affectedSystems || null,
         safetyMeasures: incidentData.safetyMeasures || null,
         riskAssessment: incidentData.riskAssessment || null,
-      }]);
+      }], customPrompt || undefined, selectedModel);
       analysis = analysisResult;
     }
 
@@ -122,7 +135,8 @@ export async function POST(
         affectedSystems: incidentData.affectedSystems || null,
         safetyMeasures: incidentData.safetyMeasures || null,
         riskAssessment: incidentData.riskAssessment || null,
-      }
+      },
+      selectedModel
     );
 
     return NextResponse.json({
