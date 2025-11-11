@@ -44,7 +44,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, MoreVertical, Edit, Trash2, X } from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash2, X, Database } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -83,6 +83,8 @@ export default function CertificatesManagementPage() {
   // Delete confirmation dialog
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [certificateToDelete, setCertificateToDelete] = useState<Certificate | null>(null);
+  const [seeding, setSeeding] = useState(false);
+  const [seedResult, setSeedResult] = useState<string | null>(null);
   
   // Filter
   const [disciplineFilter, setDisciplineFilter] = useState<string>('all');
@@ -218,6 +220,35 @@ export default function CertificatesManagementPage() {
     }
   };
 
+  const handleSeedCertificates = async () => {
+    if (!confirm('Weet je zeker dat je de standaard certificaten wilt toevoegen? Bestaande certificaten worden overgeslagen.')) {
+      return;
+    }
+
+    setSeeding(true);
+    setSeedResult(null);
+    try {
+      const res = await fetch('/api/admin/certificates/seed', {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        setSeedResult(`Fout: ${error.error || 'Onbekende fout'}`);
+        return;
+      }
+
+      const data = await res.json();
+      setSeedResult(data.message || 'Certificaten succesvol toegevoegd');
+      fetchCertificates(); // Refresh de lijst
+    } catch (err) {
+      console.error('Error seeding certificates:', err);
+      setSeedResult('Fout bij seeden certificaten');
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   const filteredCertificates = certificates.filter(cert => 
     disciplineFilter === 'all' || cert.discipline === disciplineFilter
   );
@@ -251,11 +282,26 @@ export default function CertificatesManagementPage() {
             Beheer de catalogus van beschikbare diploma's en certificaten
           </p>
         </div>
-        <Button onClick={openCreateDialog}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nieuw Certificaat
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleSeedCertificates} variant="outline" disabled={seeding}>
+            <Database className="mr-2 h-4 w-4" />
+            {seeding ? 'Seeden...' : 'Seed Standaard Certificaten'}
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nieuw Certificaat
+          </Button>
+        </div>
       </div>
+      {seedResult && (
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <p className={seedResult.includes('Fout') ? 'text-destructive' : 'text-green-600'}>
+              {seedResult}
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
