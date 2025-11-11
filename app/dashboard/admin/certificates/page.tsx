@@ -85,6 +85,8 @@ export default function CertificatesManagementPage() {
   const [certificateToDelete, setCertificateToDelete] = useState<Certificate | null>(null);
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
+  const [seedingTestUsers, setSeedingTestUsers] = useState(false);
+  const [testUsersSeedResult, setTestUsersSeedResult] = useState<string | null>(null);
   
   // Filter
   const [disciplineFilter, setDisciplineFilter] = useState<string>('all');
@@ -249,6 +251,34 @@ export default function CertificatesManagementPage() {
     }
   };
 
+  const handleSeedTestUsers = async () => {
+    if (!confirm('Weet je zeker dat je testusers wilt aanmaken met certificaten? Bestaande users worden overgeslagen.')) {
+      return;
+    }
+
+    setSeedingTestUsers(true);
+    setTestUsersSeedResult(null);
+    try {
+      const res = await fetch('/api/admin/test-users/seed', {
+        method: 'POST',
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        setTestUsersSeedResult(`Fout: ${error.error || 'Onbekende fout'}`);
+        return;
+      }
+
+      const data = await res.json();
+      setTestUsersSeedResult(data.message || 'Testusers succesvol aangemaakt');
+    } catch (err) {
+      console.error('Error seeding test users:', err);
+      setTestUsersSeedResult('Fout bij seeden testusers');
+    } finally {
+      setSeedingTestUsers(false);
+    }
+  };
+
   const filteredCertificates = certificates.filter(cert => 
     disciplineFilter === 'all' || cert.discipline === disciplineFilter
   );
@@ -287,6 +317,10 @@ export default function CertificatesManagementPage() {
             <Database className="mr-2 h-4 w-4" />
             {seeding ? 'Seeden...' : 'Seed Standaard Certificaten'}
           </Button>
+          <Button onClick={handleSeedTestUsers} variant="outline" disabled={seedingTestUsers}>
+            <Database className="mr-2 h-4 w-4" />
+            {seedingTestUsers ? 'Seeden...' : 'Seed Test Users'}
+          </Button>
           <Button onClick={openCreateDialog}>
             <Plus className="mr-2 h-4 w-4" />
             Nieuw Certificaat
@@ -298,6 +332,15 @@ export default function CertificatesManagementPage() {
           <CardContent className="pt-6">
             <p className={seedResult.includes('Fout') ? 'text-destructive' : 'text-green-600'}>
               {seedResult}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+      {testUsersSeedResult && (
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <p className={testUsersSeedResult.includes('Fout') ? 'text-destructive' : 'text-green-600'}>
+              {testUsersSeedResult}
             </p>
           </CardContent>
         </Card>
