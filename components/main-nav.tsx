@@ -11,6 +11,7 @@ import {
   Eye, 
   Map,
   FileText,
+  Award,
   Menu,
   X
 } from 'lucide-react';
@@ -64,6 +65,12 @@ const navigationItems = [
     href: '/dashboard/rapportage',
     label: 'Rapportage',
     icon: FileText,
+    module: null, // Geen module, altijd zichtbaar
+  },
+  {
+    href: '/dashboard/certificaten',
+    label: 'Certificaten',
+    icon: Award,
     module: null, // Geen module, altijd zichtbaar
   },
 ];

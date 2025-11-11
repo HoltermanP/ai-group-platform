@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { Shield, Users, Building2 } from 'lucide-react';
+import { Shield, Users, Building2, Award } from 'lucide-react';
 
 export function AdminNav() {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -63,6 +63,12 @@ export function AdminNav() {
           <Link href="/dashboard/admin/organizations" className="cursor-pointer">
             <Building2 className="mr-2 h-4 w-4" />
             Organisaties
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard/admin/certificates" className="cursor-pointer">
+            <Award className="mr-2 h-4 w-4" />
+            Certificaten
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>

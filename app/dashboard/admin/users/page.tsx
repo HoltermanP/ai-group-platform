@@ -36,6 +36,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,7 +46,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Plus, MoreVertical, Ban, Trash2, ShieldCheck, Building2, X, Key } from 'lucide-react';
+import { Plus, MoreVertical, Ban, Trash2, ShieldCheck, Building2, X, Key, Award } from 'lucide-react';
 import Link from 'next/link';
 import {
   AlertDialog,
@@ -117,6 +118,19 @@ export default function UsersManagementPage() {
     'ai-safety': false,
     'ai-schouw': false,
     'ai-toezicht': false,
+  });
+  
+  // Certificates management dialog
+  const [certificatesDialogOpen, setCertificatesDialogOpen] = useState(false);
+  const [userCertificates, setUserCertificates] = useState<any[]>([]);
+  const [availableCertificates, setAvailableCertificates] = useState<any[]>([]);
+  const [loadingCertificates, setLoadingCertificates] = useState(false);
+  const [assigningCertificate, setAssigningCertificate] = useState(false);
+  const [assignCertificateDialogOpen, setAssignCertificateDialogOpen] = useState(false);
+  const [assignFormData, setAssignFormData] = useState({
+    certificateId: '',
+    achievedDate: new Date().toISOString().split('T')[0],
+    notes: '',
   });
   
   // Form state
@@ -244,6 +258,101 @@ export default function UsersManagementPage() {
       alert('Fout bij updaten module rechten');
     } finally {
       setUpdatingPermissions(false);
+    }
+  };
+
+  const openCertificatesDialog = async (user: User) => {
+    setSelectedUser(user);
+    setCertificatesDialogOpen(true);
+    setLoadingCertificates(true);
+    
+    try {
+      // Haal certificaten van gebruiker op
+      const userCertsRes = await fetch(`/api/admin/users/${user.id}/certificates`);
+      if (userCertsRes.ok) {
+        const userCertsData = await userCertsRes.json();
+        setUserCertificates(userCertsData.certificates || []);
+      }
+      
+      // Haal beschikbare certificaten op
+      const availableCertsRes = await fetch('/api/admin/certificates');
+      if (availableCertsRes.ok) {
+        const availableCertsData = await availableCertsRes.json();
+        setAvailableCertificates(availableCertsData.certificates || []);
+      }
+    } catch (error) {
+      console.error('Error fetching certificates:', error);
+    } finally {
+      setLoadingCertificates(false);
+    }
+  };
+
+  const handleAssignCertificate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser) return;
+
+    setAssigningCertificate(true);
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/certificates`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(assignFormData),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Fout bij toekennen certificaat');
+        return;
+      }
+
+      setAssignCertificateDialogOpen(false);
+      setAssignFormData({
+        certificateId: '',
+        achievedDate: new Date().toISOString().split('T')[0],
+        notes: '',
+      });
+      
+      // Refresh certificaten
+      const userCertsRes = await fetch(`/api/admin/users/${selectedUser.id}/certificates`);
+      if (userCertsRes.ok) {
+        const userCertsData = await userCertsRes.json();
+        setUserCertificates(userCertsData.certificates || []);
+      }
+    } catch (err) {
+      console.error('Error assigning certificate:', err);
+      alert('Fout bij toekennen certificaat');
+    } finally {
+      setAssigningCertificate(false);
+    }
+  };
+
+  const handleDeleteUserCertificate = async (userCertificateId: number) => {
+    if (!selectedUser) return;
+    
+    if (!confirm('Weet je zeker dat je dit certificaat wilt verwijderen?')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/users/${selectedUser.id}/certificates/${userCertificateId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        alert(error.error || 'Fout bij verwijderen certificaat');
+        return;
+      }
+
+      // Refresh certificaten
+      const userCertsRes = await fetch(`/api/admin/users/${selectedUser.id}/certificates`);
+      if (userCertsRes.ok) {
+        const userCertsData = await userCertsRes.json();
+        setUserCertificates(userCertsData.certificates || []);
+      }
+    } catch (err) {
+      console.error('Error deleting user certificate:', err);
+      alert('Fout bij verwijderen certificaat');
     }
   };
 
@@ -756,6 +865,12 @@ export default function UsersManagementPage() {
                             <Key className="mr-2 h-4 w-4" />
                             Module rechten
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => openCertificatesDialog(user)}
+                          >
+                            <Award className="mr-2 h-4 w-4" />
+                            Certificaten
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => {
@@ -1046,6 +1161,191 @@ export default function UsersManagementPage() {
               Sluiten
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Certificates Management Dialog */}
+      <Dialog open={certificatesDialogOpen} onOpenChange={setCertificatesDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Certificaten - {selectedUser?.firstName} {selectedUser?.lastName}
+            </DialogTitle>
+            <DialogDescription>
+              Beheer de certificaten en diploma's van deze medewerker
+            </DialogDescription>
+          </DialogHeader>
+          {loadingCertificates ? (
+            <p>Laden...</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Toegekende Certificaten</h3>
+                <Button
+                  onClick={() => {
+                    setAssignFormData({
+                      certificateId: '',
+                      achievedDate: new Date().toISOString().split('T')[0],
+                      notes: '',
+                    });
+                    setAssignCertificateDialogOpen(true);
+                  }}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Certificaat Toekennen
+                </Button>
+              </div>
+              
+              {userCertificates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Deze medewerker heeft nog geen certificaten
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Certificaat</TableHead>
+                      <TableHead>Discipline</TableHead>
+                      <TableHead>Behaald</TableHead>
+                      <TableHead>Verloopt</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Acties</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userCertificates.map((uc) => (
+                      <TableRow key={uc.id}>
+                        <TableCell className="font-medium">
+                          {uc.certificate?.name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{uc.certificate?.discipline}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(uc.achievedDate).toLocaleDateString('nl-NL')}
+                        </TableCell>
+                        <TableCell>
+                          {uc.expiryDate
+                            ? new Date(uc.expiryDate).toLocaleDateString('nl-NL')
+                            : 'Verloopt niet'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              uc.status === 'active'
+                                ? 'default'
+                                : uc.status === 'expired'
+                                ? 'destructive'
+                                : 'secondary'
+                            }
+                          >
+                            {uc.status === 'active'
+                              ? 'Actief'
+                              : uc.status === 'expired'
+                              ? 'Verlopen'
+                              : 'Ingetrokken'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteUserCertificate(uc.id)}
+                            className="text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCertificatesDialogOpen(false)}
+            >
+              Sluiten
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Certificate Dialog */}
+      <Dialog open={assignCertificateDialogOpen} onOpenChange={setAssignCertificateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Certificaat Toekennen</DialogTitle>
+            <DialogDescription>
+              Ken een certificaat toe aan {selectedUser?.firstName} {selectedUser?.lastName}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleAssignCertificate}>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="certificateSelect">Certificaat *</Label>
+                <Select
+                  value={assignFormData.certificateId}
+                  onValueChange={(value) =>
+                    setAssignFormData({ ...assignFormData, certificateId: value })
+                  }
+                  required
+                >
+                  <SelectTrigger id="certificateSelect">
+                    <SelectValue placeholder="Selecteer een certificaat" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCertificates
+                      .filter((cert) => cert.status === 'active')
+                      .map((cert) => (
+                        <SelectItem key={cert.id} value={cert.id.toString()}>
+                          {cert.name} ({cert.discipline})
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="achievedDate">Datum Behaald *</Label>
+                <Input
+                  id="achievedDate"
+                  type="date"
+                  value={assignFormData.achievedDate}
+                  onChange={(e) =>
+                    setAssignFormData({ ...assignFormData, achievedDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="notes">Notities</Label>
+                <Textarea
+                  id="notes"
+                  value={assignFormData.notes}
+                  onChange={(e) =>
+                    setAssignFormData({ ...assignFormData, notes: e.target.value })
+                  }
+                  placeholder="Optionele notities..."
+                  rows={3}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setAssignCertificateDialogOpen(false)}
+              >
+                Annuleren
+              </Button>
+              <Button type="submit" disabled={assigningCertificate}>
+                {assigningCertificate ? 'Toekennen...' : 'Toekennen'}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -487,3 +487,62 @@ export const projectTasksTable = pgTable("project_tasks", {
   updatedAt: timestamp().defaultNow().notNull(),
 });
 
+// ============================================
+// CERTIFICATIONS & DIPLOMAS
+// ============================================
+
+// Certificates - catalogus van beschikbare diploma's en certificaten
+export const certificatesTable = pgTable("certificates", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  
+  // Basis informatie
+  name: varchar({ length: 255 }).notNull(), // Naam van het diploma/certificaat
+  description: text(), // Omschrijving van het diploma/certificaat
+  discipline: varchar({ length: 50 }).notNull(), // Elektra, Gas, Water, Media, Algemeen
+  
+  // Verloop instellingen
+  expires: boolean().default(false), // Of dit certificaat verloopt
+  validityYears: integer(), // Geldigheidstermijn in jaren (null als expires = false)
+  
+  // Status
+  status: varchar({ length: 50 }).default('active'), // active, inactive
+  
+  // Metadata
+  createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID van degene die het certificaat heeft aangemaakt
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  disciplineIdx: index("idx_certificates_discipline").on(table.discipline),
+  statusIdx: index("idx_certificates_status").on(table.status),
+}));
+
+// User Certificates - toekenningen van diploma's/certificaten aan medewerkers
+export const userCertificatesTable = pgTable("user_certificates", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  
+  // Koppeling naar certificaat en gebruiker
+  certificateId: integer().notNull().references(() => certificatesTable.id, { onDelete: "cascade" }),
+  clerkUserId: varchar({ length: 255 }).notNull(), // Clerk User ID van de medewerker
+  
+  // Datums
+  achievedDate: timestamp().notNull(), // Datum waarop het diploma/certificaat is behaald
+  expiryDate: timestamp(), // Verloopdatum (berekend op basis van achievedDate + validityYears, null als certificaat niet verloopt)
+  
+  // Status
+  status: varchar({ length: 50 }).default('active'), // active, expired, revoked
+  
+  // Notities
+  notes: text(), // Optionele notities bij deze toekenning
+  
+  // Metadata
+  assignedBy: varchar({ length: 255 }).notNull(), // Clerk User ID van degene die het certificaat heeft toegekend
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  certificateIdIdx: index("idx_user_certificates_certificate_id").on(table.certificateId),
+  clerkUserIdIdx: index("idx_user_certificates_clerk_user_id").on(table.clerkUserId),
+  expiryDateIdx: index("idx_user_certificates_expiry_date").on(table.expiryDate),
+  statusIdx: index("idx_user_certificates_status").on(table.status),
+  userCertIdx: index("idx_user_certificates_user_cert").on(table.clerkUserId, table.certificateId),
+}));
+
