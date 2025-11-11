@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { supervisionsTable, projectsTable } from "@/lib/db/schema";
-import { getUserOrganizationIds } from "@/lib/clerk-admin";
+import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
 import { eq, desc, or, isNull, inArray } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -94,58 +95,132 @@ export async function GET(req: Request) {
       );
     }
 
+    const userIsAdmin = await isAdmin();
     const userOrgIds = await getUserOrganizationIds(userId);
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get("projectId");
+    
+    // Paginatie parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const offset = (page - 1) * limit;
 
-    let supervisions;
-
+    // Build queries with conditional where clauses
     if (projectId) {
-      // Haal toezichten op voor een specifiek project
-      let query = db
-        .select()
-        .from(supervisionsTable)
-        .where(eq(supervisionsTable.projectId, parseInt(projectId)));
-
-      // Filter op organisatie als gebruiker geen admin is
-      if (userOrgIds.length > 0) {
+      const projectIdNum = parseInt(projectId);
+      
+      // Check toegang tot project
+      if (!userIsAdmin && userOrgIds.length > 0) {
         const project = await db
           .select({ organizationId: projectsTable.organizationId })
           .from(projectsTable)
-          .where(eq(projectsTable.id, parseInt(projectId)))
+          .where(eq(projectsTable.id, projectIdNum))
           .limit(1);
 
         if (project.length > 0 && project[0].organizationId) {
           if (!userOrgIds.includes(project[0].organizationId)) {
-            return NextResponse.json([], { status: 200 });
+            return NextResponse.json({
+              data: [],
+              pagination: {
+                page: 1,
+                limit,
+                total: 0,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPreviousPage: false,
+              },
+            });
           }
         }
       }
 
-      supervisions = await query.orderBy(desc(supervisionsTable.createdAt));
+      // Build queries with projectId filter
+      const baseQuery = db.select().from(supervisionsTable).where(eq(supervisionsTable.projectId, projectIdNum));
+      const countQuery = db.select({ count: sql<number>`cast(count(*) as integer)` }).from(supervisionsTable).where(eq(supervisionsTable.projectId, projectIdNum));
+
+      // Haal totaal aantal op
+      const totalResult = await countQuery;
+      const total = totalResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / limit);
+
+      // Haal gepagineerde data op
+      const supervisions = await baseQuery
+        .orderBy(desc(supervisionsTable.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      return NextResponse.json({
+        data: supervisions,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        },
+      });
     } else {
-      // Haal alle toezichten op met organisatie filtering
-      if (userOrgIds.length > 0) {
-        supervisions = await db
-          .select()
-          .from(supervisionsTable)
-          .where(
-            or(
-              inArray(supervisionsTable.organizationId, userOrgIds),
-              isNull(supervisionsTable.organizationId)
-            )
-          )
-          .orderBy(desc(supervisionsTable.createdAt));
+      // Build queries without projectId filter
+      if (!userIsAdmin && userOrgIds.length > 0) {
+        const whereClause = or(
+          inArray(supervisionsTable.organizationId, userOrgIds),
+          isNull(supervisionsTable.organizationId)
+        );
+        const baseQuery = db.select().from(supervisionsTable).where(whereClause);
+        const countQuery = db.select({ count: sql<number>`cast(count(*) as integer)` }).from(supervisionsTable).where(whereClause);
+
+        // Haal totaal aantal op
+        const totalResult = await countQuery;
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Haal gepagineerde data op
+        const supervisions = await baseQuery
+          .orderBy(desc(supervisionsTable.createdAt))
+          .limit(limit)
+          .offset(offset);
+
+        return NextResponse.json({
+          data: supervisions,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+          },
+        });
       } else {
-        // Admin: toon alles
-        supervisions = await db
-          .select()
-          .from(supervisionsTable)
-          .orderBy(desc(supervisionsTable.createdAt));
+        // Admin of geen org filtering nodig
+        const baseQuery = db.select().from(supervisionsTable);
+        const countQuery = db.select({ count: sql<number>`cast(count(*) as integer)` }).from(supervisionsTable);
+
+        // Haal totaal aantal op
+        const totalResult = await countQuery;
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Haal gepagineerde data op
+        const supervisions = await baseQuery
+          .orderBy(desc(supervisionsTable.createdAt))
+          .limit(limit)
+          .offset(offset);
+
+        return NextResponse.json({
+          data: supervisions,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+          },
+        });
       }
     }
-
-    return NextResponse.json(supervisions);
   } catch (error) {
     console.error("Error fetching supervisions:", error);
     return NextResponse.json(

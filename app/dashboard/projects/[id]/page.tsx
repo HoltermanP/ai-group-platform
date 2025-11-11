@@ -96,8 +96,9 @@ export default function ProjectDetailPage() {
     try {
       const response = await fetch(`/api/safety-incidents?projectId=${id}`);
       if (response.ok) {
-        const data = await response.json();
-        setSafetyIncidents(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setSafetyIncidents(result.data || result);
       }
     } catch (error) {
       console.error("Error fetching safety incidents:", error);

@@ -97,7 +97,9 @@ export default function KaartPage() {
       // Fetch projecten
       const projectsResponse = await fetch("/api/projects");
       if (projectsResponse.ok) {
-        const projectsData: ProjectFromAPI[] = await projectsResponse.json();
+        const result = await projectsResponse.json();
+        // Nieuwe API structuur: { data, pagination }
+        const projectsData: ProjectFromAPI[] = result.data || result;
         // Parse coordinates from string "lat, lng"
         const projectsWithCoords: Project[] = projectsData
           .filter((p) => p.coordinates)
@@ -120,7 +122,9 @@ export default function KaartPage() {
       // Fetch incidents
       const incidentsResponse = await fetch("/api/safety-incidents");
       if (incidentsResponse.ok) {
-        const incidentsData: IncidentFromAPI[] = await incidentsResponse.json();
+        const result = await incidentsResponse.json();
+        // Nieuwe API structuur: { data, pagination }
+        const incidentsData: IncidentFromAPI[] = result.data || result;
         // Parse coordinates from string "lat, lng"
         const incidentsWithCoords: Incident[] = incidentsData
           .filter((i) => i.coordinates)

@@ -78,7 +78,9 @@ export default function BezettingOverzichtPage() {
     try {
       const response = await fetch("/api/projects");
       if (response.ok) {
-        const data = await response.json();
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        const data = result.data || result;
         setProjects(data);
         
         // Bereken standaard view range (huidige jaar)

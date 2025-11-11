@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Inspection {
   id: number;
@@ -47,6 +48,15 @@ function AISchouwPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
   const [formData, setFormData] = useState({
     inspectionId: "",
     title: "",
@@ -99,12 +109,25 @@ function AISchouwPageContent() {
     }
   }, [showForm]);
 
-  const fetchInspections = async () => {
+  useEffect(() => {
+    fetchInspections(currentPage);
+    fetchProjects();
+  }, [currentPage]);
+
+  const fetchInspections = async (page: number = 1) => {
     try {
-      const response = await fetch("/api/inspections");
+      setIsLoading(true);
+      const url = projectIdFilter 
+        ? `/api/inspections?projectId=${projectIdFilter}&page=${page}&limit=50`
+        : `/api/inspections?page=${page}&limit=50`;
+      const response = await fetch(url);
       if (response.ok) {
-        const data = await response.json();
-        setInspections(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setInspections(result.data || result);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
       }
     } catch (error) {
       console.error("Error fetching inspections:", error);
@@ -113,12 +136,18 @@ function AISchouwPageContent() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const fetchProjects = async () => {
     try {
       const response = await fetch("/api/projects");
       if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setProjects(result.data || result);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -808,6 +837,17 @@ function AISchouwPageContent() {
                       </table>
                     </div>
                   </div>
+                  
+                  {/* Paginatie */}
+                  {pagination.totalPages > 1 && (
+                    <Pagination
+                      page={pagination.page}
+                      totalPages={pagination.totalPages}
+                      total={pagination.total}
+                      limit={pagination.limit}
+                      onPageChange={handlePageChange}
+                    />
+                  )}
                 </div>
 
                 {/* Mobile Card View - Hidden on desktop */}

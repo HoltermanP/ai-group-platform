@@ -1,4 +1,4 @@
-import { integer, pgTable, varchar, text, timestamp, boolean, unique } from "drizzle-orm/pg-core";
+import { integer, pgTable, varchar, text, timestamp, boolean, unique, index } from "drizzle-orm/pg-core";
 
 // ============================================
 // ORGANIZATIONS & USER MANAGEMENT
@@ -45,7 +45,11 @@ export const organizationMembersTable = pgTable("organization_members", {
   status: varchar({ length: 50 }).default('active'), // active, suspended, invited
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
-});
+}, (table) => ({
+  orgIdIdx: index("idx_org_members_org_id").on(table.organizationId),
+  userIdIdx: index("idx_org_members_user_id").on(table.clerkUserId),
+  orgUserIdx: index("idx_org_members_org_user").on(table.organizationId, table.clerkUserId),
+}));
 
 // User Preferences - applicatie specifieke instellingen per gebruiker
 // Gebruik Clerk User ID direct als foreign key
@@ -156,7 +160,12 @@ export const projectsTable = pgTable("projects", {
   // Metadata
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
-});
+}, (table) => ({
+  orgIdIdx: index("idx_projects_organization_id").on(table.organizationId),
+  ownerIdIdx: index("idx_projects_owner_id").on(table.ownerId),
+  statusIdx: index("idx_projects_status").on(table.status),
+  orgStatusIdx: index("idx_projects_org_status").on(table.organizationId, table.status),
+}));
 
 // Optioneel: Team members tabel voor meerdere mensen per project
 export const projectMembersTable = pgTable("project_members", {
@@ -242,7 +251,13 @@ export const safetyIncidentsTable = pgTable("safety_incidents", {
   // Metadata
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
-});
+}, (table) => ({
+  projectIdIdx: index("idx_safety_incidents_project_id").on(table.projectId),
+  orgIdIdx: index("idx_safety_incidents_organization_id").on(table.organizationId),
+  severityIdx: index("idx_safety_incidents_severity").on(table.severity),
+  projectSeverityIdx: index("idx_incidents_project_severity").on(table.projectId, table.severity),
+  statusIdx: index("idx_safety_incidents_status").on(table.status),
+}));
 
 // AI Schouwen - inspecties voor aansluitleidingen
 export const inspectionsTable = pgTable("inspections", {
@@ -286,7 +301,11 @@ export const inspectionsTable = pgTable("inspections", {
   photos: text(), // JSON array met foto URLs
   notes: text(), // Algemene notities bij de schouw
   remarks: text(), // Opmerkingen/bevindingen
-});
+}, (table) => ({
+  projectIdIdx: index("idx_inspections_project_id").on(table.projectId),
+  orgIdIdx: index("idx_inspections_organization_id").on(table.organizationId),
+  statusIdx: index("idx_inspections_status").on(table.status),
+}));
 
 // AI Toezicht - kwaliteitscontrole op projecten
 export const supervisionsTable = pgTable("supervisions", {
@@ -331,7 +350,11 @@ export const supervisionsTable = pgTable("supervisions", {
   notes: text(), // Algemene notities bij het toezicht
   findings: text(), // Bevindingen en afwijkingen
   recommendations: text(), // Aanbevelingen voor verbetering
-});
+}, (table) => ({
+  projectIdIdx: index("idx_supervisions_project_id").on(table.projectId),
+  orgIdIdx: index("idx_supervisions_organization_id").on(table.organizationId),
+  statusIdx: index("idx_supervisions_status").on(table.status),
+}));
 
 // ============================================
 // AI & TOOLBOXES

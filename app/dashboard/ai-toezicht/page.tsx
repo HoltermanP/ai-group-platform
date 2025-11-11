@@ -2,6 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Supervision {
   id: number;
@@ -75,6 +77,15 @@ function AIToezichtPageContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
   const [formData, setFormData] = useState({
     supervisionId: "",
     title: "",
@@ -105,9 +116,10 @@ function AIToezichtPageContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    fetchSupervisions();
+    fetchSupervisions(currentPage);
     fetchProjects();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   // Stel het project in als er een filter is
   useEffect(() => {
@@ -119,12 +131,20 @@ function AIToezichtPageContent() {
     }
   }, [projectIdFilter]);
 
-  const fetchSupervisions = async () => {
+  const fetchSupervisions = async (page: number = 1) => {
     try {
-      const response = await fetch("/api/supervisions");
+      setIsLoading(true);
+      const url = projectIdFilter 
+        ? `/api/supervisions?projectId=${projectIdFilter}&page=${page}&limit=50`
+        : `/api/supervisions?page=${page}&limit=50`;
+      const response = await fetch(url);
       if (response.ok) {
-        const data = await response.json();
-        setSupervisions(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setSupervisions(result.data || result);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
       }
     } catch (error) {
       console.error("Error fetching supervisions:", error);
@@ -133,12 +153,18 @@ function AIToezichtPageContent() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const fetchProjects = async () => {
     try {
       const response = await fetch("/api/projects");
       if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setProjects(result.data || result);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -174,7 +200,7 @@ function AIToezichtPageContent() {
       if (response.ok) {
         const newSupervision = await response.json();
 
-        // Als er foto's zijn, upload deze
+        // Als er foto&apos;s zijn, upload deze
         if (selectedPhotos.length > 0) {
           const photoFormData = new FormData();
           selectedPhotos.forEach((photo) => {
@@ -188,7 +214,7 @@ function AIToezichtPageContent() {
             });
           } catch (photoError) {
             console.error("Error uploading photos:", photoError);
-            alert("Toezicht aangemaakt, maar er was een probleem bij het uploaden van foto's.");
+            alert("Toezicht aangemaakt, maar er was een probleem bij het uploaden van foto&apos;s.");
           }
         }
 
@@ -383,7 +409,7 @@ function AIToezichtPageContent() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3">
-              <a
+              <Link
                 href="/dashboard/ai-toezicht/analytics"
                 className="px-3 sm:px-6 py-2 sm:py-3 rounded-md border border-border hover:bg-accent transition-colors font-medium text-foreground shadow-sm flex items-center gap-2 text-sm sm:text-base"
               >
@@ -392,7 +418,7 @@ function AIToezichtPageContent() {
                 </svg>
                 <span className="hidden sm:inline">Rapportage</span>
                 <span className="sm:hidden">Rapp.</span>
-              </a>
+              </Link>
               <button
                 onClick={() => setShowForm(!showForm)}
                 className="bg-primary text-primary-foreground px-3 sm:px-6 py-2 sm:py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm text-sm sm:text-base w-full sm:w-auto"
@@ -615,7 +641,7 @@ function AIToezichtPageContent() {
                 {/* Foto's */}
                 <div>
                   <label htmlFor="photos" className="block text-sm font-medium mb-2 text-foreground">
-                    Foto's
+                    Foto&apos;s
                   </label>
                   <input
                     type="file"
@@ -643,7 +669,7 @@ function AIToezichtPageContent() {
                     </div>
                   )}
                   <p className="text-xs text-muted-foreground mt-1">
-                    Selecteer een of meerdere foto's (max 5MB per foto)
+                    Selecteer een of meerdere foto&apos;s (max 5MB per foto)
                   </p>
                 </div>
 
@@ -902,6 +928,17 @@ function AIToezichtPageContent() {
                       </table>
                     </div>
                   </div>
+                  
+                  {/* Paginatie */}
+                  {pagination.totalPages > 1 && (
+                    <Pagination
+                      page={pagination.page}
+                      totalPages={pagination.totalPages}
+                      total={pagination.total}
+                      limit={pagination.limit}
+                      onPageChange={handlePageChange}
+                    />
+                  )}
                 </div>
 
                 {/* Mobile Card View - Hidden on desktop */}

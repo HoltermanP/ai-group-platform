@@ -29,11 +29,14 @@ export function ModuleCard({ href, iconName, title, description, module }: Modul
         const res = await fetch('/api/users/module-permissions');
         if (res.ok) {
           const data = await res.json();
-          setHasAccess(data.permissions[module] === true);
+          setHasAccess(data.permissions?.[module] === true);
         } else {
+          // Als de gebruiker niet ingelogd is, toon de card maar maak hem niet klikbaar
           setHasAccess(false);
         }
       } catch (error) {
+        // Bij network errors (zoals "Failed to fetch"), behandel als geen toegang
+        // Dit kan gebeuren als de gebruiker niet ingelogd is of de server niet beschikbaar is
         console.error('Error checking module access:', error);
         setHasAccess(false);
       }

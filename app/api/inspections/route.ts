@@ -1,9 +1,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { inspectionsTable, projectsTable } from "@/lib/db/schema";
-import { getUserOrganizationIds } from "@/lib/clerk-admin";
+import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
 import { eq, desc, or, isNull, inArray } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
@@ -90,58 +91,133 @@ export async function GET(req: Request) {
       );
     }
 
+    const userIsAdmin = await isAdmin();
     const userOrgIds = await getUserOrganizationIds(userId);
     const { searchParams } = new URL(req.url);
     const projectId = searchParams.get("projectId");
+    
+    // Paginatie parameters
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const offset = (page - 1) * limit;
 
-    let inspections;
-
+    // Build queries with conditional where clauses
     if (projectId) {
-      // Haal schouwen op voor een specifiek project
-      let query = db
-        .select()
-        .from(inspectionsTable)
-        .where(eq(inspectionsTable.projectId, parseInt(projectId)));
-
-      // Filter op organisatie als gebruiker geen admin is
-      if (userOrgIds.length > 0) {
+      const projectIdNum = parseInt(projectId);
+      
+      // Check toegang tot project
+      if (!userIsAdmin && userOrgIds.length > 0) {
         const project = await db
           .select({ organizationId: projectsTable.organizationId })
           .from(projectsTable)
-          .where(eq(projectsTable.id, parseInt(projectId)))
+          .where(eq(projectsTable.id, projectIdNum))
           .limit(1);
 
         if (project.length > 0 && project[0].organizationId) {
           if (!userOrgIds.includes(project[0].organizationId)) {
-            return NextResponse.json([], { status: 200 });
+            return NextResponse.json({
+              data: [],
+              pagination: {
+                page: 1,
+                limit,
+                total: 0,
+                totalPages: 0,
+                hasNextPage: false,
+                hasPreviousPage: false,
+              },
+            });
           }
         }
       }
 
-      inspections = await query.orderBy(desc(inspectionsTable.createdAt));
+      // Build queries with projectId filter
+      const baseQuery = db.select().from(inspectionsTable).where(eq(inspectionsTable.projectId, projectIdNum));
+      const countQuery = db.select({ count: sql<number>`cast(count(*) as integer)` }).from(inspectionsTable).where(eq(inspectionsTable.projectId, projectIdNum));
+
+      // Haal totaal aantal op
+      const totalResult = await countQuery;
+      const total = totalResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / limit);
+
+      // Haal gepagineerde data op
+      const inspections = await baseQuery
+        .orderBy(desc(inspectionsTable.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      return NextResponse.json({
+        data: inspections,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1,
+        },
+      });
     } else {
-      // Haal alle schouwen op met organisatie filtering
-      if (userOrgIds.length > 0) {
-        inspections = await db
-          .select()
-          .from(inspectionsTable)
-          .where(
-            or(
-              inArray(inspectionsTable.organizationId, userOrgIds),
-              isNull(inspectionsTable.organizationId)
-            )
-          )
-          .orderBy(desc(inspectionsTable.createdAt));
+      // Build queries without projectId filter
+      if (!userIsAdmin && userOrgIds.length > 0) {
+        const whereClause = or(
+          inArray(inspectionsTable.organizationId, userOrgIds),
+          isNull(inspectionsTable.organizationId)
+        );
+        const baseQuery = db.select().from(inspectionsTable).where(whereClause);
+        const countQuery = db.select({ count: sql<number>`cast(count(*) as integer)` }).from(inspectionsTable).where(whereClause);
+
+        // Haal totaal aantal op
+        const totalResult = await countQuery;
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Haal gepagineerde data op
+        const inspections = await baseQuery
+          .orderBy(desc(inspectionsTable.createdAt))
+          .limit(limit)
+          .offset(offset);
+
+        return NextResponse.json({
+          data: inspections,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+          },
+        });
       } else {
-        // Admin: toon alles
-        inspections = await db
-          .select()
-          .from(inspectionsTable)
-          .orderBy(desc(inspectionsTable.createdAt));
+        // Admin of geen org filtering nodig
+        const baseQuery = db.select().from(inspectionsTable);
+        const countQuery = db.select({ count: sql<number>`cast(count(*) as integer)` }).from(inspectionsTable);
+
+        // Haal totaal aantal op
+        const totalResult = await countQuery;
+        const total = totalResult[0]?.count || 0;
+        const totalPages = Math.ceil(total / limit);
+
+        // Haal gepagineerde data op
+        const inspections = await baseQuery
+          .orderBy(desc(inspectionsTable.createdAt))
+          .limit(limit)
+          .offset(offset);
+
+        return NextResponse.json({
+          data: inspections,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+          },
+        });
       }
     }
 
-    return NextResponse.json(inspections);
   } catch (error) {
     console.error("Error fetching inspections:", error);
     return NextResponse.json(

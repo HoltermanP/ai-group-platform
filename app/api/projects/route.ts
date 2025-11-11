@@ -85,7 +85,13 @@ export async function GET(req: Request) {
     // Haal organisatie IDs op voor filtering (leeg voor admins)
     const userOrgIds = await getUserOrganizationIds(userId);
 
-    // Build base query with subqueries for counts
+    // Paginatie parameters
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "50");
+    const offset = (page - 1) * limit;
+
+    // Build optimized query met JOINs in plaats van subqueries
     const baseQuery = db
       .select({
         id: projectsTable.id,
@@ -110,50 +116,81 @@ export async function GET(req: Request) {
         ownerId: projectsTable.ownerId,
         createdAt: projectsTable.createdAt,
         updatedAt: projectsTable.updatedAt,
-        safetyIncidentCount: sql<number>`(
-          SELECT cast(count(*) as integer)
-          FROM ${safetyIncidentsTable}
-          WHERE ${safetyIncidentsTable.projectId} = ${projectsTable.id}
-        )`,
-        inspectionCount: sql<number>`(
-          SELECT cast(count(*) as integer)
-          FROM ${inspectionsTable}
-          WHERE ${inspectionsTable.projectId} = ${projectsTable.id}
-        )`,
-        supervisionCount: sql<number>`(
-          SELECT cast(count(*) as integer)
-          FROM ${supervisionsTable}
-          WHERE ${supervisionsTable.projectId} = ${projectsTable.id}
-        )`,
+        // Gebruik COUNT met DISTINCT in plaats van subqueries
+        safetyIncidentCount: sql<number>`COALESCE(COUNT(DISTINCT ${safetyIncidentsTable.id}), 0)`.as('safetyIncidentCount'),
+        inspectionCount: sql<number>`COALESCE(COUNT(DISTINCT ${inspectionsTable.id}), 0)`.as('inspectionCount'),
+        supervisionCount: sql<number>`COALESCE(COUNT(DISTINCT ${supervisionsTable.id}), 0)`.as('supervisionCount'),
       })
       .from(projectsTable)
-      .leftJoin(organizationsTable, eq(projectsTable.organizationId, organizationsTable.id));
+      .leftJoin(organizationsTable, eq(projectsTable.organizationId, organizationsTable.id))
+      .leftJoin(safetyIncidentsTable, eq(projectsTable.id, safetyIncidentsTable.projectId))
+      .leftJoin(inspectionsTable, eq(projectsTable.id, inspectionsTable.projectId))
+      .leftJoin(supervisionsTable, eq(projectsTable.id, supervisionsTable.projectId))
+      .groupBy(projectsTable.id, organizationsTable.id);
 
     // Filter op organisatie als gebruiker geen admin is
-    let projects;
+    let filteredQuery;
     
     if (userIsAdmin) {
       // Admin: toon alles (geen filtering)
-      projects = await baseQuery
-        .orderBy(desc(projectsTable.createdAt));
+      filteredQuery = baseQuery;
     } else if (userOrgIds.length > 0) {
       // Gebruiker heeft organisaties: filter op organisaties + items zonder organisatie
-      projects = await baseQuery
+      filteredQuery = baseQuery.where(
+        or(
+          inArray(projectsTable.organizationId, userOrgIds),
+          isNull(projectsTable.organizationId) // Toon ook projecten zonder organisatie
+        )
+      );
+    } else {
+      // Gebruiker heeft geen organisaties en is geen admin: toon alleen items zonder organisatie
+      filteredQuery = baseQuery.where(isNull(projectsTable.organizationId));
+    }
+
+    // Haal totaal aantal op voor paginatie metadata
+    let totalCountQuery;
+    if (!userIsAdmin && userOrgIds.length > 0) {
+      totalCountQuery = db
+        .select({ count: sql<number>`cast(count(*) as integer)` })
+        .from(projectsTable)
         .where(
           or(
             inArray(projectsTable.organizationId, userOrgIds),
-            isNull(projectsTable.organizationId) // Toon ook projecten zonder organisatie
+            isNull(projectsTable.organizationId)
           )
-        )
-        .orderBy(desc(projectsTable.createdAt));
+        );
+    } else if (!userIsAdmin) {
+      totalCountQuery = db
+        .select({ count: sql<number>`cast(count(*) as integer)` })
+        .from(projectsTable)
+        .where(isNull(projectsTable.organizationId));
     } else {
-      // Gebruiker heeft geen organisaties en is geen admin: toon alleen items zonder organisatie
-      projects = await baseQuery
-        .where(isNull(projectsTable.organizationId))
-        .orderBy(desc(projectsTable.createdAt));
+      totalCountQuery = db
+        .select({ count: sql<number>`cast(count(*) as integer)` })
+        .from(projectsTable);
     }
 
-    return NextResponse.json(projects);
+    const totalResult = await totalCountQuery;
+    const total = totalResult[0]?.count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    // Voeg paginatie en sortering toe
+    const projects = await filteredQuery
+      .orderBy(desc(projectsTable.createdAt))
+      .limit(limit)
+      .offset(offset);
+
+    return NextResponse.json({
+      data: projects,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    });
   } catch (error) {
     console.error("Error fetching projects:", error);
     return NextResponse.json(

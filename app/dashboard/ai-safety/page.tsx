@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Pagination } from "@/components/ui/pagination";
 
 interface SafetyIncident {
   id: number;
@@ -73,6 +74,15 @@ function AISafetyPageContent() {
     }>;
   } | null>(null);
   const [isCreatingToolbox, setIsCreatingToolbox] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
   const [formData, setFormData] = useState({
     incidentId: "",
     title: "",
@@ -119,9 +129,9 @@ function AISafetyPageContent() {
   }, [searchParams]);
 
   useEffect(() => {
-    fetchIncidents();
+    fetchIncidents(currentPage);
     fetchProjects();
-  }, []);
+  }, [currentPage]);
 
   // Stel het project in als er een filter is
   useEffect(() => {
@@ -133,12 +143,20 @@ function AISafetyPageContent() {
     }
   }, [projectIdFilter]);
 
-  const fetchIncidents = async () => {
+  const fetchIncidents = async (page: number = 1) => {
     try {
-      const response = await fetch("/api/safety-incidents");
+      setIsLoading(true);
+      const url = projectIdFilter 
+        ? `/api/safety-incidents?projectId=${projectIdFilter}&page=${page}&limit=50`
+        : `/api/safety-incidents?page=${page}&limit=50`;
+      const response = await fetch(url);
       if (response.ok) {
-        const data = await response.json();
-        setIncidents(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setIncidents(result.data || result);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
       }
     } catch (error) {
       console.error("Error fetching incidents:", error);
@@ -147,12 +165,18 @@ function AISafetyPageContent() {
     }
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const fetchProjects = async () => {
     try {
       const response = await fetch("/api/projects");
       if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setProjects(result.data || result);
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
@@ -1318,6 +1342,17 @@ function AISafetyPageContent() {
                       </table>
                     </div>
                   </div>
+                  
+                  {/* Paginatie */}
+                  {pagination.totalPages > 1 && (
+                    <Pagination
+                      page={pagination.page}
+                      totalPages={pagination.totalPages}
+                      total={pagination.total}
+                      limit={pagination.limit}
+                      onPageChange={handlePageChange}
+                    />
+                  )}
                 </div>
 
                 {/* Mobile Card View - Hidden on desktop */}

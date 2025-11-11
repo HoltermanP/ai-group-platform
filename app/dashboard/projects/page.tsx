@@ -10,6 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Pagination } from "@/components/ui/pagination";
 
 interface Project {
   id: number;
@@ -40,6 +41,15 @@ export default function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [plaatsFilter, setPlaatsFilter] = useState<string>("all");
   const [managerFilter, setManagerFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 0,
+    hasNextPage: false,
+    hasPreviousPage: false,
+  });
   const [formData, setFormData] = useState({
     projectId: "",
     name: "",
@@ -52,21 +62,31 @@ export default function ProjectsPage() {
   });
 
   useEffect(() => {
-    fetchProjects();
-  }, []);
+    fetchProjects(currentPage);
+  }, [currentPage]);
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (page: number = 1) => {
     try {
-      const response = await fetch("/api/projects");
+      setIsLoading(true);
+      const response = await fetch(`/api/projects?page=${page}&limit=50`);
       if (response.ok) {
-        const data = await response.json();
-        setProjects(data);
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        setProjects(result.data || result);
+        if (result.pagination) {
+          setPagination(result.pagination);
+        }
       }
     } catch (error) {
       console.error("Error fetching projects:", error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,7 +113,7 @@ export default function ProjectsPage() {
           status: "active",
         });
         setShowForm(false);
-        fetchProjects();
+        fetchProjects(currentPage);
       }
     } catch (error) {
       console.error("Error creating project:", error);
@@ -762,6 +782,17 @@ export default function ProjectsPage() {
                     </table>
                     </div>
                   </div>
+                  
+                  {/* Paginatie */}
+                  {pagination.totalPages > 1 && (
+                    <Pagination
+                      page={pagination.page}
+                      totalPages={pagination.totalPages}
+                      total={pagination.total}
+                      limit={pagination.limit}
+                      onPageChange={handlePageChange}
+                    />
+                  )}
                 </div>
 
                 {/* Mobile Card View - Hidden on desktop */}

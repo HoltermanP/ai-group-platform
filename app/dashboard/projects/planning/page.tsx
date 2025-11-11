@@ -60,7 +60,9 @@ export default function ProjectsPlanningPage() {
     try {
       const response = await fetch("/api/projects");
       if (response.ok) {
-        const data = await response.json();
+        const result = await response.json();
+        // Nieuwe API structuur: { data, pagination }
+        const data = result.data || result;
         setProjects(data);
         
         // Bereken timeline range op basis van alle projecten
