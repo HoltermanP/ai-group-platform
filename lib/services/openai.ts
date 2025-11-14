@@ -23,6 +23,7 @@ export interface SafetyIncidentForAnalysis {
   affectedSystems: string | null;
   safetyMeasures: string | null;
   riskAssessment: string | null;
+  photos?: string[]; // Foto URLs voor analyse
 }
 
 export interface SuggestedToolboxTopic {
@@ -38,6 +39,14 @@ export interface AIAnalysisResult {
   suggestedToolboxTopics: SuggestedToolboxTopic[];
   riskAssessment: string;
   preventiveMeasures: string[];
+  extractedFields?: { // Geëxtraheerde velden uit foto's
+    [incidentId: string]: {
+      [key: string]: any;
+    };
+  };
+  photoAnalysis?: { // Foto analyse per incident
+    [incidentId: string]: string;
+  };
   tokensUsed?: number;
   [key: string]: any; // Allow additional fields from custom prompts
 }
@@ -428,6 +437,241 @@ function normalizeAnalysisResult(parsed: any): AIAnalysisResult {
 }
 
 /**
+ * Download en converteer foto naar base64 voor Vision API
+ */
+async function downloadImageAsBase64(imageUrl: string): Promise<string | null> {
+  try {
+    // Als het een lokale file path is (begint met /uploads/), lees direct van filesystem
+    if (imageUrl.startsWith('/uploads/')) {
+      try {
+        const { readFile } = await import('fs/promises');
+        const { join } = await import('path');
+        const filePath = join(process.cwd(), 'public', imageUrl);
+        const fileBuffer = await readFile(filePath);
+        const base64 = fileBuffer.toString('base64');
+        
+        // Bepaal content type op basis van extensie
+        const ext = imageUrl.toLowerCase().split('.').pop();
+        const contentTypeMap: { [key: string]: string } = {
+          'jpg': 'image/jpeg',
+          'jpeg': 'image/jpeg',
+          'png': 'image/png',
+          'gif': 'image/gif',
+          'webp': 'image/webp',
+          'bmp': 'image/bmp'
+        };
+        const contentType = contentTypeMap[ext || ''] || 'image/jpeg';
+        
+        console.log(`Successfully read local file: ${filePath}`);
+        return `data:${contentType};base64,${base64}`;
+      } catch (fsError) {
+        console.error(`Error reading local file ${imageUrl}:`, fsError);
+        // Fallback naar HTTP fetch
+      }
+    }
+    
+    // Voor HTTP URLs of als lokale file read faalt
+    let fullUrl = imageUrl;
+    if (!imageUrl.startsWith('http')) {
+      // Voor lokale development via HTTP
+      if (imageUrl.startsWith('/uploads/')) {
+        fullUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${imageUrl}`;
+      } else {
+        // Relatieve URL
+        fullUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      }
+    }
+    
+    console.log(`Fetching image from URL: ${fullUrl}`);
+    const response = await fetch(fullUrl);
+    if (!response.ok) {
+      console.error(`Failed to fetch image: ${fullUrl}`, response.status, response.statusText);
+      return null;
+    }
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64 = buffer.toString('base64');
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    
+    console.log(`Successfully downloaded image: ${fullUrl}, size: ${buffer.length} bytes`);
+    return `data:${contentType};base64,${base64}`;
+  } catch (error) {
+    console.error(`Error downloading image ${imageUrl}:`, error);
+    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    return null;
+  }
+}
+
+/**
+ * Analyseer foto's met Vision API en extraheer relevante informatie
+ */
+async function analyzePhotosWithVision(
+  photoUrls: string[],
+  incidentContext: SafetyIncidentForAnalysis,
+  customPrompt?: string,
+  model: string = 'gpt-4o'
+): Promise<{ extractedFields: any; photoAnalysis: string }> {
+  if (!openai || photoUrls.length === 0) {
+    return { extractedFields: {}, photoAnalysis: '' };
+  }
+
+  // Download en converteer foto's naar base64
+  const imageContents: Array<{ type: 'image_url'; image_url: { url: string } }> = [];
+  for (const photoUrl of photoUrls) {
+    const base64Image = await downloadImageAsBase64(photoUrl);
+    if (base64Image) {
+      imageContents.push({
+        type: 'image_url',
+        image_url: { url: base64Image }
+      });
+    }
+  }
+
+  if (imageContents.length === 0) {
+    console.log('No valid images could be downloaded for analysis');
+    return { extractedFields: {}, photoAnalysis: '' };
+  }
+
+  // Gebruik een vision-capable model (gpt-4o of gpt-4-vision-preview)
+  // Check welke modellen vision ondersteunen
+  const visionCapableModels = ['gpt-4o', 'gpt-4o-mini', 'gpt-4-vision-preview', 'gpt-4-turbo'];
+  const isVisionCapable = visionCapableModels.some(vm => model.toLowerCase().includes(vm.toLowerCase()));
+  
+  const visionModel = isVisionCapable
+    ? model
+    : 'gpt-4o'; // Fallback naar gpt-4o als het model geen vision ondersteunt
+  
+  console.log(`Using vision model: ${visionModel} (original model: ${model}, isVisionCapable: ${isVisionCapable})`);
+
+  const prompt = customPrompt 
+    ? `${customPrompt}\n\nAnalyseer de bijgevoegde foto's grondig en extraheer relevante informatie die kan helpen bij het invullen van lege velden en het verbeteren van de incident beschrijving.`
+    : `Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. 
+Analyseer de bijgevoegde foto's van dit veiligheidsincident grondig.
+
+Context van het incident:
+- Titel: ${incidentContext.title}
+- Beschrijving: ${incidentContext.description || 'Geen beschrijving'}
+- Categorie: ${incidentContext.category}
+- Ernst: ${incidentContext.severity}
+- Discipline: ${incidentContext.discipline || 'Niet ingevuld'}
+- Locatie: ${incidentContext.location || 'Niet ingevuld'}
+- Impact: ${incidentContext.impact || 'Niet ingevuld'}
+- Getroffen systemen: ${incidentContext.affectedSystems || 'Niet ingevuld'}
+
+Analyseer de foto's en:
+1. Identificeer wat er op de foto's te zien is (beschrijf gedetailleerd)
+2. Extraheer relevante informatie die kan helpen bij het invullen van lege velden
+3. Geef suggesties voor velden zoals: discipline, locatie details, impact, getroffen systemen, veiligheidsmaatregelen, etc.
+4. Identificeer veiligheidsrisico's die zichtbaar zijn op de foto's
+5. Geef aanbevelingen op basis van wat je ziet
+
+BELANGRIJK: 
+- Als een veld al ingevuld is, gebruik dan die informatie als context maar voeg details toe uit de foto's
+- Als een veld niet ingevuld is, probeer dit in te vullen op basis van wat je op de foto's ziet
+- Wees specifiek en gedetailleerd in je analyse
+
+Geef je antwoord terug in JSON formaat met deze EXACTE structuur:
+{
+  "photoAnalysis": "Uitgebreide beschrijving van wat er op de foto's te zien is",
+  "extractedFields": {
+    "discipline": "Suggestie voor discipline op basis van foto's (alleen als dit veld leeg was of als je meer details kunt toevoegen)",
+    "location": "Meer gedetailleerde locatie informatie uit foto's",
+    "impact": "Impact die zichtbaar is op de foto's",
+    "affectedSystems": "Systemen die zichtbaar zijn op de foto's",
+    "safetyMeasures": "Veiligheidsmaatregelen die zichtbaar zijn of nodig zijn",
+    "riskAssessment": "Risico inschatting op basis van wat zichtbaar is"
+  },
+  "photoBasedRecommendations": ["Aanbeveling 1 op basis van foto's", "Aanbeveling 2", ...]
+}
+
+Geef ALLEEN de JSON terug, zonder extra tekst of markdown.`;
+
+  try {
+    console.log(`Calling Vision API with model ${visionModel}, ${imageContents.length} images`);
+    
+    const completion = await openai.chat.completions.create({
+      model: visionModel,
+      messages: [
+        {
+          role: 'system',
+          content: 'Je bent een expert in het analyseren van veiligheidsincidenten in ondergrondse infrastructuur. Analyseer foto\'s grondig en geef gestructureerde informatie terug in JSON formaat. Geef ALLEEN geldige JSON terug, zonder markdown formatting.'
+        },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            ...imageContents
+          ]
+        }
+      ],
+      max_tokens: 2000,
+      temperature: 0.7
+    });
+
+    console.log('Vision API response received:', {
+      finishReason: completion.choices[0]?.finish_reason,
+      hasContent: !!completion.choices[0]?.message?.content,
+      contentLength: completion.choices[0]?.message?.content?.length || 0
+    });
+
+    const content = completion.choices[0]?.message?.content;
+    if (!content) {
+      console.error('No content in photo analysis response');
+      console.error('Completion object:', JSON.stringify(completion, null, 2));
+      // Als er geen content is, gooi geen error maar return lege resultaten
+      // Dit voorkomt dat de hele analyse faalt
+      return { extractedFields: {}, photoAnalysis: '' };
+    }
+
+    // Parse JSON response
+    let jsonContent = content.trim();
+    const jsonMatch = jsonContent.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+    if (jsonMatch) {
+      jsonContent = jsonMatch[1];
+    }
+
+    try {
+      const parsed = JSON.parse(jsonContent);
+      return {
+        extractedFields: parsed.extractedFields || {},
+        photoAnalysis: parsed.photoAnalysis || ''
+      };
+    } catch (error) {
+      console.error('Error parsing photo analysis JSON:', error);
+      // Fallback: probeer de eerste JSON object te vinden
+      const firstBrace = jsonContent.indexOf('{');
+      const lastBrace = jsonContent.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        try {
+          const parsed = JSON.parse(jsonContent.substring(firstBrace, lastBrace + 1));
+          return {
+            extractedFields: parsed.extractedFields || {},
+            photoAnalysis: parsed.photoAnalysis || content.substring(0, 500)
+          };
+        } catch (parseError) {
+          console.error('Error parsing extracted JSON:', parseError);
+        }
+      }
+      return {
+        extractedFields: {},
+        photoAnalysis: content.substring(0, 500) // Fallback: gebruik eerste 500 chars
+      };
+    }
+  } catch (error) {
+    console.error('Error analyzing photos with vision:', error);
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      type: error instanceof Error ? error.constructor.name : typeof error,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    // Als Vision API faalt, return lege resultaten maar gooi geen error
+    // Dit zorgt ervoor dat de tekstuele analyse nog steeds doorgaat
+    return { extractedFields: {}, photoAnalysis: '' };
+  }
+}
+
+/**
  * Analyseer veiligheidsincidenten met AI
  */
 export async function analyzeSafetyIncidents(
@@ -439,8 +683,35 @@ export async function analyzeSafetyIncidents(
     throw new Error('OpenAI API key is not configured');
   }
 
-  // Format incident data
-  const incidentsData = incidents.map((inc, idx) => `
+  // Analyseer foto's voor elk incident dat foto's heeft
+  const photoAnalyses: Array<{ extractedFields: any; photoAnalysis: string }> = [];
+  for (const incident of incidents) {
+    if (incident.photos && incident.photos.length > 0) {
+      console.log(`Analyzing ${incident.photos.length} photos for incident ${incident.incidentId}`);
+      try {
+        const photoAnalysis = await analyzePhotosWithVision(
+          incident.photos,
+          incident,
+          customPrompt,
+          model
+        );
+        photoAnalyses.push(photoAnalysis);
+        console.log(`Photo analysis completed for incident ${incident.incidentId}, extracted ${Object.keys(photoAnalysis.extractedFields).length} fields`);
+      } catch (error) {
+        console.error(`Error analyzing photos for incident ${incident.incidentId}:`, error);
+        console.error('Photo analysis error details:', error instanceof Error ? error.message : String(error));
+        // Foto analyse faalt, maar ga door met tekstuele analyse
+        photoAnalyses.push({ extractedFields: {}, photoAnalysis: '' });
+      }
+    } else {
+      photoAnalyses.push({ extractedFields: {}, photoAnalysis: '' });
+    }
+  }
+
+  // Format incident data inclusief foto analyse resultaten
+  const incidentsData = incidents.map((inc, idx) => {
+    const photoInfo = photoAnalyses[idx];
+    return `
 Melding ${idx + 1}:
 - ID: ${inc.incidentId}
 - Titel: ${inc.title}
@@ -454,7 +725,10 @@ Melding ${idx + 1}:
 - Getroffen systemen: ${inc.affectedSystems || 'Onbekend'}
 - Veiligheidsmaatregelen: ${inc.safetyMeasures || 'Geen'}
 - Risico inschatting: ${inc.riskAssessment || 'Niet gedaan'}
-`).join('\n');
+${photoInfo.photoAnalysis ? `\nFoto Analyse:\n${photoInfo.photoAnalysis}` : ''}
+${Object.keys(photoInfo.extractedFields).length > 0 ? `\nGeëxtraheerde informatie uit foto's:\n${JSON.stringify(photoInfo.extractedFields, null, 2)}` : ''}
+`;
+  }).join('\n');
 
   // Bepaal welk prompt te gebruiken
   let prompt: string;
@@ -601,10 +875,11 @@ Geef alleen de JSON terug, zonder extra tekst.`;
     };
     
     // GPT-5 modellen gebruiken max_completion_tokens in plaats van max_tokens
+    // Verhoogde limiet voor uitgebreide analyses (inclusief foto analyses)
     if (usesMaxCompletionTokens(model)) {
-      completionOptions.max_completion_tokens = 4000;
+      completionOptions.max_completion_tokens = 16000;
     } else {
-      completionOptions.max_tokens = 4000;
+      completionOptions.max_tokens = 16000;
     }
     
     // Voeg temperature alleen toe als het model dit ondersteunt
@@ -632,8 +907,22 @@ Geef alleen de JSON terug, zonder extra tekst.`;
     }, null, 2));
     
     console.log('Calling OpenAI API...');
-    const completion = await openai.chat.completions.create(completionOptions);
-    console.log('OpenAI API call completed successfully');
+    console.log('API Key present:', !!process.env.OPENAI_API_KEY);
+    console.log('API Key length:', process.env.OPENAI_API_KEY?.length || 0);
+    console.log('API Key starts with:', process.env.OPENAI_API_KEY?.substring(0, 7) || 'N/A');
+    
+    let completion;
+    try {
+      completion = await openai.chat.completions.create(completionOptions);
+      console.log('OpenAI API call completed successfully');
+    } catch (apiError) {
+      console.error('=== OPENAI API CALL FAILED ===');
+      console.error('API Error:', apiError);
+      if (apiError && typeof apiError === 'object' && 'error' in apiError) {
+        console.error('OpenAI Error Details:', JSON.stringify((apiError as any).error, null, 2));
+      }
+      throw apiError;
+    }
 
     content = completion.choices[0]?.message?.content || '';
     tokensUsed = completion.usage?.total_tokens;
@@ -651,11 +940,30 @@ Geef alleen de JSON terug, zonder extra tekst.`;
       console.warn(`⚠️ WARNING: Response was truncated due to ${tokenParam} limit!`);
     }
 
+    // Check voor specifieke finish reasons
+    if (completion.choices?.[0]?.finish_reason === 'content_filter') {
+      throw new Error('Geen response van OpenAI - content werd gefilterd door safety filters');
+    }
+    
+    // Als response was afgekapt, gebruik wat we hebben maar geef waarschuwing
+    if (completion.choices?.[0]?.finish_reason === 'length') {
+      console.warn('⚠️ Response was afgekapt door token limiet, maar we gebruiken wat we hebben');
+      if (content) {
+        // Voeg waarschuwing toe aan het begin van de content
+        content = '⚠️ WAARSCHUWING: Deze analyse is mogelijk incompleet omdat de response werd afgekapt door de token limiet.\n\n' + content;
+      }
+    }
+    
     if (!content) {
       console.error('=== OPENAI RESPONSE ERROR ===');
       console.error('No content in response');
       console.error('Completion object:', JSON.stringify(completion, null, 2));
-      throw new Error('Geen response van OpenAI - de API gaf geen content terug');
+      console.error('Finish reason:', completion.choices[0]?.finish_reason);
+      console.error('Model used:', model);
+      console.error('Has choices:', completion.choices?.length > 0);
+      console.error('First choice:', completion.choices?.[0] ? JSON.stringify(completion.choices[0], null, 2) : 'No choices');
+      
+      throw new Error('Geen response van OpenAI - de API gaf geen content terug. Check de server logs voor meer details.');
     }
   } catch (error) {
     console.error('=== ERROR CALLING OPENAI ===');
@@ -663,9 +971,31 @@ Geef alleen de JSON terug, zonder extra tekst.`;
     console.error('Error message:', error instanceof Error ? error.message : String(error));
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     
-    // Als het een OpenAI API error is, geef meer details
-    if (error && typeof error === 'object' && 'response' in error) {
-      console.error('OpenAI API error response:', (error as any).response);
+    // Check voor specifieke OpenAI API errors
+    if (error && typeof error === 'object') {
+      // OpenAI SDK errors hebben vaak een 'status' en 'response' property
+      if ('status' in error) {
+        console.error('OpenAI API HTTP status:', (error as any).status);
+      }
+      if ('response' in error) {
+        console.error('OpenAI API error response:', JSON.stringify((error as any).response, null, 2));
+      }
+      // Check voor rate limit errors
+      if ('code' in error && (error as any).code === 'rate_limit_exceeded') {
+        throw new Error('AI analyse mislukt: Rate limit bereikt. Probeer het over een paar minuten opnieuw.');
+      }
+      // Check voor invalid API key
+      if ('code' in error && (error as any).code === 'invalid_api_key') {
+        throw new Error('AI analyse mislukt: Ongeldige OpenAI API key. Check je environment variabelen.');
+      }
+      // Check voor model not found
+      if ('code' in error && (error as any).code === 'model_not_found') {
+        throw new Error(`AI analyse mislukt: Model "${model}" niet gevonden. Check of het model beschikbaar is.`);
+      }
+      // Check voor andere OpenAI error codes
+      if ('code' in error) {
+        console.error('OpenAI error code:', (error as any).code);
+      }
     }
     
     throw new Error(`AI analyse mislukt: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
@@ -739,12 +1069,47 @@ Geef alleen de JSON terug, zonder extra tekst.`;
     result.preventiveMeasures = [];
   }
 
+  // Voeg extractedFields en photoAnalysis toe aan result
+  const allExtractedFields: { [incidentId: string]: { [key: string]: any } } = {};
+  const allPhotoAnalysis: { [incidentId: string]: string } = {};
+  
+  photoAnalyses.forEach((analysis, idx) => {
+    const incidentId = incidents[idx].incidentId;
+    if (Object.keys(analysis.extractedFields).length > 0) {
+      allExtractedFields[incidentId] = analysis.extractedFields;
+    }
+    if (analysis.photoAnalysis && analysis.photoAnalysis.trim().length > 0) {
+      allPhotoAnalysis[incidentId] = analysis.photoAnalysis;
+    }
+  });
+
+  if (Object.keys(allExtractedFields).length > 0) {
+    result.extractedFields = allExtractedFields;
+  }
+  if (Object.keys(allPhotoAnalysis).length > 0) {
+    result.photoAnalysis = allPhotoAnalysis;
+  }
+
+  // Combineer photo-based recommendations met bestaande recommendations
+  // (deze kunnen worden geëxtraheerd uit de photo analysis response als die aanwezig is)
+  const photoRecommendations: string[] = [];
+  photoAnalyses.forEach(analysis => {
+    // Als de photo analysis recommendations bevat, voeg deze toe
+    // Dit zou kunnen worden toegevoegd aan de analyzePhotosWithVision response structuur
+  });
+
+  if (photoRecommendations.length > 0) {
+    result.recommendations = [...(result.recommendations || []), ...photoRecommendations];
+  }
+
   console.log('Analysis completed successfully:', {
     hasSummary: !!result.summary,
     recommendationsCount: result.recommendations.length,
     toolboxTopicsCount: result.suggestedToolboxTopics.length,
     hasRiskAssessment: !!result.riskAssessment,
     preventiveMeasuresCount: result.preventiveMeasures.length,
+    hasExtractedFields: !!result.extractedFields && Object.keys(result.extractedFields).length > 0,
+    hasPhotoAnalysis: !!result.photoAnalysis && Object.keys(result.photoAnalysis).length > 0,
   });
 
   return result;

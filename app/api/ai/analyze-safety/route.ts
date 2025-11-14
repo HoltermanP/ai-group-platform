@@ -83,7 +83,7 @@ export async function POST(req: Request) {
     }
     console.log('Selected model:', selectedModel);
 
-    // Analyseer met AI
+    // Analyseer met AI (inclusief foto's)
     const analysis = await analyzeSafetyIncidents(incidents.map(inc => ({
       incidentId: inc.incidentId,
       title: inc.title,
@@ -97,6 +97,7 @@ export async function POST(req: Request) {
       affectedSystems: inc.affectedSystems,
       safetyMeasures: inc.safetyMeasures,
       riskAssessment: inc.riskAssessment,
+      photos: inc.photos ? JSON.parse(inc.photos) : [], // Parse foto URLs uit JSON string
     })), customPrompt || undefined, selectedModel);
 
     // Valideer dat alle vereiste velden aanwezig zijn
@@ -106,6 +107,8 @@ export async function POST(req: Request) {
     console.log('Has suggestedToolboxTopics:', !!analysis.suggestedToolboxTopics, Array.isArray(analysis.suggestedToolboxTopics) ? `(${analysis.suggestedToolboxTopics.length} items)` : '');
     console.log('Has preventiveMeasures:', !!analysis.preventiveMeasures, Array.isArray(analysis.preventiveMeasures) ? `(${analysis.preventiveMeasures.length} items)` : '');
     console.log('Has riskAssessment:', !!analysis.riskAssessment, analysis.riskAssessment ? `(${analysis.riskAssessment.length} chars)` : '');
+    console.log('Has extractedFields:', !!analysis.extractedFields, analysis.extractedFields ? `(${Object.keys(analysis.extractedFields).length} incidents)` : '');
+    console.log('Has photoAnalysis:', !!analysis.photoAnalysis, analysis.photoAnalysis ? `(${Object.keys(analysis.photoAnalysis).length} incidents)` : '');
     
     if (!analysis.summary || !analysis.recommendations || !analysis.suggestedToolboxTopics || !analysis.preventiveMeasures) {
       console.error('=== AI ANALYSIS MISSING REQUIRED FIELDS ===');
