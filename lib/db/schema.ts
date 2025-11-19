@@ -546,3 +546,78 @@ export const userCertificatesTable = pgTable("user_certificates", {
   userCertIdx: index("idx_user_certificates_user_cert").on(table.clerkUserId, table.certificateId),
 }));
 
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+// Critical Incident Recipients - gebruikers die notificaties ontvangen bij kritieke incidenten
+export const criticalIncidentRecipientsTable = pgTable("critical_incident_recipients", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  clerkUserId: varchar({ length: 255 }).notNull().unique(), // Clerk User ID
+  phoneNumber: varchar({ length: 50 }), // WhatsApp telefoonnummer in E.164 formaat (bijv. +31612345678)
+  enabled: boolean().default(true), // Of deze gebruiker notificaties moet ontvangen
+  addedBy: varchar({ length: 255 }), // Clerk User ID van degene die deze gebruiker heeft toegevoegd
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("idx_critical_recipients_user_id").on(table.clerkUserId),
+  enabledIdx: index("idx_critical_recipients_enabled").on(table.enabled),
+}));
+
+// Notifications - notificaties voor gebruikers in de app
+export const notificationsTable = pgTable("notifications", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  clerkUserId: varchar({ length: 255 }).notNull(), // Clerk User ID van ontvanger
+  type: varchar({ length: 50 }).notNull(), // 'critical_incident', 'info', 'warning'
+  title: varchar({ length: 255 }).notNull(),
+  message: text().notNull(),
+  incidentId: integer().references(() => safetyIncidentsTable.id, { onDelete: "cascade" }), // Link naar incident
+  read: boolean().default(false), // Of de notificatie is gelezen
+  createdAt: timestamp().defaultNow().notNull(),
+  readAt: timestamp(), // Wanneer is de notificatie gelezen
+}, (table) => ({
+  userIdIdx: index("idx_notifications_user_id").on(table.clerkUserId),
+  readIdx: index("idx_notifications_read").on(table.read),
+  typeIdx: index("idx_notifications_type").on(table.type),
+  createdAtIdx: index("idx_notifications_created_at").on(table.createdAt),
+}));
+
+// Notification Rules - flexibele regels voor wanneer notificaties worden verstuurd
+export const notificationRulesTable = pgTable("notification_rules", {
+  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  name: varchar({ length: 255 }).notNull(), // Bijv. "Kritieke Graafschade Meldingen"
+  description: text(), // Beschrijving van de regel
+  
+  // Recipient Type: 'user', 'team', 'organization'
+  recipientType: varchar({ length: 50 }).notNull(),
+  
+  // Recipient ID - afhankelijk van type:
+  // - user: clerkUserId
+  // - team: projectId (project members)
+  // - organization: organizationId
+  recipientId: varchar({ length: 255 }).notNull(),
+  
+  // Notification Channels (JSON array): ['email', 'whatsapp', 'in_app']
+  channels: text().notNull(), // JSON: ["email", "whatsapp"]
+  
+  // Filters (JSON object) - wanneer moet deze regel actief zijn?
+  // Voorbeelden:
+  // { severity: ['critical', 'high'], category: ['graafschade'] }
+  // { severity: ['critical'], organizationId: 123 }
+  // { category: ['lekkage'], discipline: ['Gas'] }
+  filters: text().notNull(), // JSON object met filter criteria
+  
+  // Organisatie scope (optioneel - voor organisatie-specifieke regels)
+  organizationId: integer().references(() => organizationsTable.id, { onDelete: "cascade" }),
+  
+  enabled: boolean().default(true),
+  createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID
+  createdAt: timestamp().defaultNow().notNull(),
+  updatedAt: timestamp().defaultNow().notNull(),
+}, (table) => ({
+  recipientTypeIdx: index("idx_notification_rules_recipient_type").on(table.recipientType),
+  recipientIdIdx: index("idx_notification_rules_recipient_id").on(table.recipientId),
+  organizationIdIdx: index("idx_notification_rules_organization_id").on(table.organizationId),
+  enabledIdx: index("idx_notification_rules_enabled").on(table.enabled),
+}));
+

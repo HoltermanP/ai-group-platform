@@ -5,6 +5,7 @@ import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";
 import { eq, desc, or, isNull, inArray, and } from "drizzle-orm";
 import { sql } from "drizzle-orm";
+import { notifyIncident } from "@/lib/services/notifications-v2";
 
 export async function POST(req: Request) {
   try {
@@ -76,6 +77,30 @@ export async function POST(req: Request) {
       tags: tags || null,
       externalReference: externalReference || null,
     }).returning();
+
+    // Stuur notificaties op basis van notification rules
+    console.log('🔍 === INCIDENT AANGEMAAKT ===');
+    console.log('🔍 Severity:', severity);
+    console.log('🔍 Incident ID:', newIncident[0].incidentId);
+    console.log('🔍 Titel:', newIncident[0].title);
+    
+    // Stuur notificaties asynchroon (niet blokkerend) op basis van notification rules
+    notifyIncident({
+      id: newIncident[0].id,
+      incidentId: newIncident[0].incidentId,
+      title: newIncident[0].title,
+      description: newIncident[0].description,
+      category: newIncident[0].category,
+      severity: newIncident[0].severity,
+      discipline: newIncident[0].discipline,
+      location: newIncident[0].location,
+      organizationId: newIncident[0].organizationId,
+      projectId: newIncident[0].projectId,
+    }).catch(error => {
+      console.error('❌ Error sending notifications:', error);
+      console.error('Stack trace:', error instanceof Error ? error.stack : 'N/A');
+      // Log maar blokkeer niet de response
+    });
 
     return NextResponse.json(newIncident[0], { status: 201 });
   } catch (error) {
