@@ -84,6 +84,8 @@ export async function PUT(req: Request) {
       compactMode,
       autoRefresh,
       autoRefreshInterval,
+      // Projectenoverzicht kolom voorkeuren
+      projectColumns,
     } = body;
 
     // Check of preferences al bestaan
@@ -137,6 +139,9 @@ export async function PUT(req: Request) {
     if (compactMode !== undefined) updateData.compactMode = compactMode;
     if (autoRefresh !== undefined) updateData.autoRefresh = autoRefresh;
     if (autoRefreshInterval !== undefined) updateData.autoRefreshInterval = autoRefreshInterval;
+
+    // Projectenoverzicht kolom voorkeuren
+    if (projectColumns !== undefined) updateData.projectColumns = typeof projectColumns === 'string' ? projectColumns : JSON.stringify(projectColumns);
 
     if (existing.length === 0) {
       // Creëer nieuwe preferences met defaults

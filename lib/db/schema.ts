@@ -97,6 +97,9 @@ export const userPreferencesTable = pgTable("user_preferences", {
   autoRefresh: boolean().default(true),
   autoRefreshInterval: integer().default(30000), // In milliseconden (30 seconden default)
   
+  // Projectenoverzicht kolom voorkeuren (JSON)
+  projectColumns: text(), // JSON: { visible: ['projectId', 'name', 'plaats', 'status'], order: ['projectId', 'name', 'plaats', 'status', 'projectManager', 'startDate', 'budget'] }
+  
   createdAt: timestamp().defaultNow().notNull(),
   updatedAt: timestamp().defaultNow().notNull(),
 });

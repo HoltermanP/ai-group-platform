@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useTheme } from 'next-themes';
 import { Settings, Save, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface UserPreferences {
   // Algemene voorkeuren
@@ -44,6 +45,8 @@ interface UserPreferences {
   compactMode?: boolean;
   autoRefresh?: boolean;
   autoRefreshInterval?: number;
+  // Projectenoverzicht kolom voorkeuren
+  projectColumns?: string;
 }
 
 const themes = [
@@ -123,6 +126,15 @@ export default function InstellingenPage() {
     criticalAlerts: true,
   });
 
+  // Project columns state
+  const [projectColumns, setProjectColumns] = useState<{
+    visible: string[];
+    order: string[];
+  }>({
+    visible: ['projectId', 'name', 'plaats', 'status', 'projectManager', 'startDate', 'budget'],
+    order: ['projectId', 'name', 'plaats', 'status', 'projectManager', 'startDate', 'plannedEndDate', 'budget'],
+  });
+
   useEffect(() => {
     if (isLoaded && user) {
       loadPreferences();
@@ -153,6 +165,14 @@ export default function InstellingenPage() {
         if (prefs.notificationPreferences) {
           try {
             setNotificationPrefs(JSON.parse(prefs.notificationPreferences));
+          } catch (e) {
+            // Use defaults
+          }
+        }
+
+        if (prefs.projectColumns) {
+          try {
+            setProjectColumns(JSON.parse(prefs.projectColumns));
           } catch (e) {
             // Use defaults
           }
@@ -193,6 +213,7 @@ export default function InstellingenPage() {
         compactMode: preferences?.compactMode ?? false,
         autoRefresh: preferences?.autoRefresh ?? true,
         autoRefreshInterval: preferences?.autoRefreshInterval || 30000,
+        projectColumns: JSON.stringify(projectColumns),
       };
 
       const res = await fetch('/api/users', {
@@ -705,6 +726,67 @@ export default function InstellingenPage() {
             {/* Projecten & Meldingen Tab */}
             {activeTab === 'projecten' && (
               <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Projectenoverzicht Kolommen</CardTitle>
+                    <CardDescription>Selecteer welke kolommen getoond worden in het projectenoverzicht</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      {[
+                        { key: 'projectId', label: 'Project ID' },
+                        { key: 'name', label: 'Naam' },
+                        { key: 'description', label: 'Beschrijving' },
+                        { key: 'plaats', label: 'Plaats' },
+                        { key: 'gemeente', label: 'Gemeente' },
+                        { key: 'projectManager', label: 'Project Manager' },
+                        { key: 'status', label: 'Status' },
+                        { key: 'startDate', label: 'Startdatum' },
+                        { key: 'plannedEndDate', label: 'Geplande einddatum' },
+                        { key: 'budget', label: 'Budget' },
+                        { key: 'category', label: 'Categorie' },
+                        { key: 'discipline', label: 'Discipline' },
+                        { key: 'organization', label: 'Organisatie' },
+                        { key: 'safetyIncidentCount', label: 'Veiligheidsmeldingen' },
+                        { key: 'inspectionCount', label: 'AI Schouwen' },
+                        { key: 'supervisionCount', label: 'AI Toezicht' },
+                      ].map((column) => (
+                        <div key={column.key} className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`column-${column.key}`}
+                            checked={projectColumns.visible.includes(column.key)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setProjectColumns({
+                                  ...projectColumns,
+                                  visible: [...projectColumns.visible, column.key],
+                                  order: projectColumns.order.includes(column.key)
+                                    ? projectColumns.order
+                                    : [...projectColumns.order, column.key],
+                                });
+                              } else {
+                                setProjectColumns({
+                                  ...projectColumns,
+                                  visible: projectColumns.visible.filter((c) => c !== column.key),
+                                });
+                              }
+                            }}
+                          />
+                          <Label
+                            htmlFor={`column-${column.key}`}
+                            className="text-sm font-normal cursor-pointer flex-1"
+                          >
+                            {column.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-4">
+                      💡 Alleen geselecteerde kolommen worden getoond in het projectenoverzicht. De volgorde kan worden aangepast door de kolommen te slepen (binnenkort beschikbaar).
+                    </p>
+                  </CardContent>
+                </Card>
+
                 <Card>
                   <CardHeader>
                     <CardTitle>Standaard Filters</CardTitle>

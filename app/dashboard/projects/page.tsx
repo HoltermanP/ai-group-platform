@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Pagination } from "@/components/ui/pagination";
+import { ExcelImportDialog } from "@/components/projects/ExcelImportDialog";
 
 interface Project {
   id: number;
@@ -60,10 +61,37 @@ export default function ProjectsPage() {
     budget: "",
     status: "active",
   });
+  const [projectColumns, setProjectColumns] = useState<{
+    visible: string[];
+    order: string[];
+  }>({
+    visible: ['projectId', 'name', 'plaats', 'status', 'projectManager', 'startDate', 'budget'],
+    order: ['projectId', 'name', 'plaats', 'status', 'projectManager', 'startDate', 'plannedEndDate', 'budget'],
+  });
 
   useEffect(() => {
     fetchProjects(currentPage);
+    fetchUserPreferences();
   }, [currentPage]);
+
+  const fetchUserPreferences = async () => {
+    try {
+      const response = await fetch("/api/users");
+      if (response.ok) {
+        const data = await response.json();
+        if (data.preferences?.projectColumns) {
+          try {
+            const columns = JSON.parse(data.preferences.projectColumns);
+            setProjectColumns(columns);
+          } catch (e) {
+            // Use defaults
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user preferences:", error);
+    }
+  };
 
   const fetchProjects = async (page: number = 1) => {
     try {
@@ -164,6 +192,215 @@ export default function ProjectsPage() {
     return colors[status] || "bg-muted text-muted-foreground";
   };
 
+  // Kolom definities
+  const columnDefinitions = {
+    projectId: { label: "Project", render: (project: Project) => (
+      <td key="projectId" className="px-3 py-3">
+        <div className="text-xs text-muted-foreground mb-0.5">
+          {project.projectId}
+        </div>
+        <div className="text-sm font-medium text-foreground">
+          {project.name}
+        </div>
+      </td>
+    )},
+    name: { label: "Naam", render: (project: Project) => (
+      <td key="name" className="px-3 py-3">
+        <div className="text-sm font-medium text-foreground">
+          {project.name}
+        </div>
+      </td>
+    )},
+    description: { label: "Beschrijving", render: (project: Project) => (
+      <td key="description" className="px-3 py-3">
+        <div className="text-sm text-foreground max-w-xs truncate">
+          {project.description || "-"}
+        </div>
+      </td>
+    )},
+    plaats: { label: "Locatie", render: (project: Project) => (
+      <td key="plaats" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {project.plaats || "-"}
+        </div>
+        {project.gemeente && (
+          <div className="text-xs text-muted-foreground">
+            {project.gemeente}
+          </div>
+        )}
+      </td>
+    )},
+    gemeente: { label: "Gemeente", render: (project: Project) => (
+      <td key="gemeente" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {project.gemeente || "-"}
+        </div>
+      </td>
+    )},
+    projectManager: { label: "Manager", render: (project: Project) => (
+      <td key="projectManager" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {project.projectManager || "-"}
+        </div>
+        {project.organization && (
+          <div className="text-xs text-muted-foreground">
+            {project.organization}
+          </div>
+        )}
+      </td>
+    )},
+    status: { label: "Status", render: (project: Project) => (
+      <td key="status" className="px-3 py-3 whitespace-nowrap">
+        <span
+          className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(project.status)}`}
+        >
+          {getStatusLabel(project.status)}
+        </span>
+      </td>
+    )},
+    startDate: { label: "Startdatum", render: (project: Project) => (
+      <td key="startDate" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {formatDate(project.startDate)}
+        </div>
+      </td>
+    )},
+    plannedEndDate: { label: "Planning", render: (project: Project) => (
+      <td key="plannedEndDate" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {formatDate(project.startDate)}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          → {formatDate(project.plannedEndDate)}
+        </div>
+      </td>
+    )},
+    budget: { label: "Budget", render: (project: Project) => (
+      <td key="budget" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground font-medium">
+          {formatBudget(project.budget)}
+        </div>
+      </td>
+    )},
+    category: { label: "Categorie", render: (project: Project) => (
+      <td key="category" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {(project as any).category || "-"}
+        </div>
+      </td>
+    )},
+    discipline: { label: "Discipline", render: (project: Project) => (
+      <td key="discipline" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {(project as any).discipline || "-"}
+        </div>
+      </td>
+    )},
+    organization: { label: "Organisatie", render: (project: Project) => (
+      <td key="organization" className="px-3 py-3 whitespace-nowrap">
+        <div className="text-sm text-foreground">
+          {project.organization || "-"}
+        </div>
+      </td>
+    )},
+    safetyIncidentCount: { label: "Veiligheidsmeldingen", render: (project: Project) => (
+      <td 
+        key="safetyIncidentCount"
+        className="px-3 py-3 whitespace-nowrap"
+        onClick={(e) => {
+          e.stopPropagation();
+          router.push(`/dashboard/ai-safety?projectId=${project.id}`);
+        }}
+      >
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-center cursor-pointer">
+                <span 
+                  className={`text-sm font-semibold ${
+                    project.safetyIncidentCount > 0 
+                      ? "text-destructive" 
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {project.safetyIncidentCount}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Veiligheidsmeldingen</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </td>
+    )},
+    inspectionCount: { label: "AI Schouwen", render: (project: Project) => (
+      <td 
+        key="inspectionCount"
+        className="px-3 py-3 whitespace-nowrap"
+        onClick={(e) => {
+          e.stopPropagation();
+          router.push(`/dashboard/ai-schouw?projectId=${project.id}`);
+        }}
+      >
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-center cursor-pointer">
+                <span 
+                  className={`text-sm font-semibold ${
+                    project.inspectionCount > 0 
+                      ? "text-primary" 
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {project.inspectionCount}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>AI Schouwen</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </td>
+    )},
+    supervisionCount: { label: "AI Toezicht", render: (project: Project) => (
+      <td 
+        key="supervisionCount"
+        className="px-3 py-3 whitespace-nowrap"
+        onClick={(e) => {
+          e.stopPropagation();
+          router.push(`/dashboard/ai-toezicht?projectId=${project.id}`);
+        }}
+      >
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center justify-center cursor-pointer">
+                <span 
+                  className={`text-sm font-semibold ${
+                    project.supervisionCount > 0 
+                      ? "text-primary" 
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {project.supervisionCount}
+                </span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>AI Toezicht</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </td>
+    )},
+  };
+
+  // Get visible columns in order
+  const visibleColumns = projectColumns.order.filter(col => projectColumns.visible.includes(col));
+
   // Filtering logic
   const filteredProjects = projects.filter((project) => {
     // Search query
@@ -236,7 +473,7 @@ export default function ProjectsPage() {
                 Beheer en maak nieuwe projecten aan
               </p>
             </div>
-            <div className="flex gap-2 shrink-0 w-full sm:w-auto">
+            <div className="flex gap-2 shrink-0 w-full sm:w-auto flex-wrap">
               <Link
                 href="/dashboard/projects/planning"
                 className="bg-chart-3 text-primary-foreground px-6 py-3 rounded-md hover:bg-chart-3/90 transition-colors font-medium shadow-sm flex items-center justify-center gap-2"
@@ -251,6 +488,7 @@ export default function ProjectsPage() {
                 <Calendar className="h-4 w-4" />
                 Bezettingsoverzicht
               </Link>
+              <ExcelImportDialog onImportComplete={fetchProjects} />
               <button
                 onClick={() => setShowForm(!showForm)}
                 className="bg-primary text-primary-foreground px-6 py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm flex-1 sm:flex-none"
@@ -591,33 +829,31 @@ export default function ProjectsPage() {
                       <table className="w-full min-w-[1100px]">
                         <thead className="bg-muted/50 border-b border-border">
                           <tr>
-                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              Project
-                            </th>
-                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              Locatie
-                            </th>
-                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              Manager
-                            </th>
-                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              Planning
-                            </th>
-                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              Budget
-                            </th>
-                            <th className="px-3 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              Status
-                            </th>
-                            <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              <ShieldAlert className="h-4 w-4 mx-auto" />
-                            </th>
-                            <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              <Search className="h-4 w-4 mx-auto" />
-                            </th>
-                            <th className="px-3 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap">
-                              <Eye className="h-4 w-4 mx-auto" />
-                            </th>
+                            {visibleColumns.map((colKey) => {
+                              const colDef = columnDefinitions[colKey as keyof typeof columnDefinitions];
+                              if (!colDef) return null;
+                              const isIconColumn = ['safetyIncidentCount', 'inspectionCount', 'supervisionCount'].includes(colKey);
+                              return (
+                                <th
+                                  key={colKey}
+                                  className={`px-3 py-3 text-xs font-medium text-muted-foreground uppercase tracking-wider whitespace-nowrap ${
+                                    isIconColumn ? 'text-center' : 'text-left'
+                                  }`}
+                                >
+                                  {isIconColumn ? (
+                                    colKey === 'safetyIncidentCount' ? (
+                                      <ShieldAlert className="h-4 w-4 mx-auto" />
+                                    ) : colKey === 'inspectionCount' ? (
+                                      <Search className="h-4 w-4 mx-auto" />
+                                    ) : (
+                                      <Eye className="h-4 w-4 mx-auto" />
+                                    )
+                                  ) : (
+                                    colDef.label
+                                  )}
+                                </th>
+                              );
+                            })}
                           </tr>
                         </thead>
                       <tbody className="divide-y divide-border">
@@ -627,155 +863,10 @@ export default function ProjectsPage() {
                             onClick={() => router.push(`/dashboard/projects/${project.id}`)}
                             className="hover:bg-muted/30 transition-colors cursor-pointer"
                           >
-                            {/* Project ID + Naam */}
-                            <td className="px-3 py-3">
-                              <div className="text-xs text-muted-foreground mb-0.5">
-                                {project.projectId}
-                              </div>
-                              <div className="text-sm font-medium text-foreground">
-                                {project.name}
-                              </div>
-                            </td>
-                            
-                            {/* Locatie */}
-                            <td className="px-3 py-3 whitespace-nowrap">
-                              <div className="text-sm text-foreground">
-                                {project.plaats || "-"}
-                              </div>
-                              {project.gemeente && (
-                                <div className="text-xs text-muted-foreground">
-                                  {project.gemeente}
-                                </div>
-                              )}
-                            </td>
-                            
-                            {/* Manager */}
-                            <td className="px-3 py-3 whitespace-nowrap">
-                              <div className="text-sm text-foreground">
-                                {project.projectManager || "-"}
-                              </div>
-                              {project.organization && (
-                                <div className="text-xs text-muted-foreground">
-                                  {project.organization}
-                                </div>
-                              )}
-                            </td>
-                            
-                            {/* Planning */}
-                            <td className="px-3 py-3 whitespace-nowrap">
-                              <div className="text-sm text-foreground">
-                                {formatDate(project.startDate)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                → {formatDate(project.plannedEndDate)}
-                              </div>
-                            </td>
-                            
-                            {/* Budget */}
-                            <td className="px-3 py-3 whitespace-nowrap">
-                              <div className="text-sm text-foreground font-medium">
-                                {formatBudget(project.budget)}
-                              </div>
-                            </td>
-                            
-                            {/* Status */}
-                            <td className="px-3 py-3 whitespace-nowrap">
-                              <span
-                                className={`inline-flex px-2 py-1 rounded text-xs font-medium border ${getStatusColor(project.status)}`}
-                              >
-                                {getStatusLabel(project.status)}
-                              </span>
-                            </td>
-                            
-                            {/* Meldingen */}
-                            <td 
-                              className="px-3 py-3 whitespace-nowrap"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/dashboard/ai-safety?projectId=${project.id}`);
-                              }}
-                            >
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex items-center justify-center cursor-pointer">
-                                      <span 
-                                        className={`text-sm font-semibold ${
-                                          project.safetyIncidentCount > 0 
-                                            ? "text-destructive" 
-                                            : "text-muted-foreground"
-                                        }`}
-                                      >
-                                        {project.safetyIncidentCount}
-                                      </span>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>Veiligheidsmeldingen</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </td>
-                            
-                            {/* Schouwen */}
-                            <td 
-                              className="px-3 py-3 whitespace-nowrap"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/dashboard/ai-schouw?projectId=${project.id}`);
-                              }}
-                            >
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex items-center justify-center cursor-pointer">
-                                      <span 
-                                        className={`text-sm font-semibold ${
-                                          project.inspectionCount > 0 
-                                            ? "text-primary" 
-                                            : "text-muted-foreground"
-                                        }`}
-                                      >
-                                        {project.inspectionCount}
-                                      </span>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>AI Schouwen</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </td>
-                            
-                            {/* Toezicht */}
-                            <td 
-                              className="px-3 py-3 whitespace-nowrap"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                router.push(`/dashboard/ai-toezicht?projectId=${project.id}`);
-                              }}
-                            >
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex items-center justify-center cursor-pointer">
-                                      <span 
-                                        className={`text-sm font-semibold ${
-                                          project.supervisionCount > 0 
-                                            ? "text-primary" 
-                                            : "text-muted-foreground"
-                                        }`}
-                                      >
-                                        {project.supervisionCount}
-                                      </span>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    <p>AI Toezicht</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            </td>
+                            {visibleColumns.map((colKey) => {
+                              const colDef = columnDefinitions[colKey as keyof typeof columnDefinitions];
+                              return colDef ? colDef.render(project) : null;
+                            })}
                           </tr>
                         ))}
                       </tbody>
