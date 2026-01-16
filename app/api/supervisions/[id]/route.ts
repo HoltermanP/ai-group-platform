@@ -116,7 +116,7 @@ export async function PATCH(
     }
     
     // Update het toezicht - zorg dat qualityStandards als JSON string wordt opgeslagen
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...body,
       updatedAt: new Date(),
     };

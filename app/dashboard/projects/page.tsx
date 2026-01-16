@@ -30,6 +30,8 @@ interface Project {
   safetyIncidentCount: number;
   inspectionCount: number;
   supervisionCount: number;
+  category?: string;
+  discipline?: string;
 }
 
 export default function ProjectsPage() {
@@ -285,14 +287,14 @@ export default function ProjectsPage() {
     category: { label: "Categorie", render: (project: Project) => (
       <td key="category" className="px-3 py-3 whitespace-nowrap">
         <div className="text-sm text-foreground">
-          {(project as any).category || "-"}
+          {project.category || "-"}
         </div>
       </td>
     )},
     discipline: { label: "Discipline", render: (project: Project) => (
       <td key="discipline" className="px-3 py-3 whitespace-nowrap">
         <div className="text-sm text-foreground">
-          {(project as any).discipline || "-"}
+          {project.discipline || "-"}
         </div>
       </td>
     )},
@@ -746,7 +748,7 @@ export default function ProjectsPage() {
                   <div className="flex flex-wrap gap-2">
                     {searchQuery && (
                       <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                        Zoeken: "{searchQuery}"
+                        Zoeken: &quot;{searchQuery}&quot;
                         <button
                           onClick={() => setSearchQuery("")}
                           className="hover:bg-primary/20 rounded-full p-0.5"

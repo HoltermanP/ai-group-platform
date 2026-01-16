@@ -165,7 +165,7 @@ export async function GET(req: Request) {
               acc[monthKey][status]++;
             }
             return acc;
-          }, {} as Record<string, any>);
+          }, {} as Record<string, {month: string, open: number, investigating: number, resolved: number, closed: number}>);
       })(),
 
       // Kritieke incidents details

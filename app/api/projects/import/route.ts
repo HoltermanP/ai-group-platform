@@ -159,8 +159,8 @@ export async function POST(req: Request) {
         }
 
         projectsToInsert.push(projectData);
-      } catch (error: any) {
-        errors.push(`Rij ${i + 2}: ${error.message || "Onbekende fout"}`);
+      } catch (error: unknown) {
+        errors.push(`Rij ${i + 2}: ${error instanceof Error ? error.message : "Onbekende fout"}`);
       }
     }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
+import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -123,7 +124,7 @@ export default function SetupPage() {
                 <a href="/dashboard/admin/users">Gebruikers Beheren</a>
               </Button>
               <Button asChild variant="outline">
-                <a href="/dashboard/admin/organizations">Organisaties Beheren</a>
+                <Link href="/dashboard/admin/organizations">Organisaties Beheren</Link>
               </Button>
             </div>
           </CardContent>

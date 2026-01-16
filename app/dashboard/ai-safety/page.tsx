@@ -920,7 +920,7 @@ function AISafetyPageContent() {
                   {/* Foto's */}
                   <div className="md:col-span-2">
                     <label htmlFor="photos" className="block text-sm font-medium mb-2 text-foreground">
-                      Foto's
+                      Foto&apos;s
                     </label>
                     <input
                       type="file"
@@ -1061,7 +1061,7 @@ function AISafetyPageContent() {
                 {searchQuery && (
                   <span className="inline-flex items-center gap-2 px-3 py-1 bg-background border border-primary/30 rounded-md text-sm">
                     <span className="font-medium">Zoeken:</span>
-                    <span className="text-primary">"{searchQuery}"</span>
+                    <span className="text-primary">&quot;{searchQuery}&quot;</span>
                     <button
                       onClick={() => setSearchQuery("")}
                       className="text-primary hover:text-primary/80"

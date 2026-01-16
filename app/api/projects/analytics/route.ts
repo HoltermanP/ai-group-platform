@@ -256,7 +256,7 @@ export async function GET(req: Request) {
         // Lid: filter alleen op eigen organisaties
         byOrganizationQuery = byOrganizationQuery.where(
           inArray(projectsTable.organizationId, userOrgIds)
-        ) as any;
+        ) as unknown as typeof byOrganizationQuery;
       }
       // Admin: geen filtering (toon alle organisaties)
 

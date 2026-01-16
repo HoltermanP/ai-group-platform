@@ -309,7 +309,7 @@ export default function CertificatesManagementPage() {
         <div>
           <h1 className="text-3xl font-bold">Certificaten Beheer</h1>
           <p className="text-muted-foreground mt-1">
-            Beheer de catalogus van beschikbare diploma's en certificaten
+            Beheer de catalogus van beschikbare diploma&apos;s en certificaten
           </p>
         </div>
         <div className="flex gap-2">
@@ -352,7 +352,7 @@ export default function CertificatesManagementPage() {
             <div>
               <CardTitle>Certificaten</CardTitle>
               <CardDescription>
-                Overzicht van alle beschikbare certificaten en diploma's
+                Overzicht van alle beschikbare certificaten en diploma&apos;s
               </CardDescription>
             </div>
             <Select value={disciplineFilter} onValueChange={setDisciplineFilter}>

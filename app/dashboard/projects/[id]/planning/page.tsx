@@ -444,7 +444,7 @@ export default function ProjectPlanningPage() {
                 <div className="text-center py-12 text-muted-foreground">
                   <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Nog geen taken aangemaakt</p>
-                  <p className="text-sm mt-2">Klik op "Nieuwe Taak" om te beginnen</p>
+                  <p className="text-sm mt-2">Klik op &quot;Nieuwe Taak&quot; om te beginnen</p>
                 </div>
               ) : (
                 <div className="space-y-4">

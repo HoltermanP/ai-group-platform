@@ -96,7 +96,7 @@ export async function PUT(req: Request) {
       .limit(1);
 
     // Bereid update object voor - alleen velden die zijn opgegeven worden bijgewerkt
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 

@@ -78,7 +78,7 @@ export async function POST(req: Request) {
           organizationId,
           organizationRole || 'member'
         );
-      } catch (orgError: any) {
+      } catch (orgError: unknown) {
         // Als het toevoegen aan organisatie faalt, log maar verwijder de gebruiker niet
         // (gebruiker is al aangemaakt in Clerk)
         console.error('Error adding user to organization:', orgError);
@@ -97,16 +97,19 @@ export async function POST(req: Request) {
         ? `Gebruiker succesvol aangemaakt${organizationId ? ' en toegevoegd aan organisatie' : ''}` 
         : `Gebruiker succesvol aangemaakt${organizationId ? ' en toegevoegd aan organisatie' : ''}. Er is een email verstuurd om het wachtwoord in te stellen.`,
     }, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error creating user:', error);
-    
+
     // Clerk specifieke errors
-    if (error.errors) {
-      const firstError = error.errors[0];
-      return NextResponse.json(
-        { error: firstError.message || 'Fout bij aanmaken gebruiker' },
-        { status: 400 }
-      );
+    if (typeof error === 'object' && error !== null && 'errors' in error) {
+      const clerkError = error as { errors: { message: string }[] };
+      if (clerkError.errors && clerkError.errors.length > 0) {
+        const firstError = clerkError.errors[0];
+        return NextResponse.json(
+          { error: firstError.message || 'Fout bij aanmaken gebruiker' },
+          { status: 400 }
+        );
+      }
     }
 
     return NextResponse.json(

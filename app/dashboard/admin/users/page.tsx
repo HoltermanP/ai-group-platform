@@ -122,8 +122,42 @@ export default function UsersManagementPage() {
   
   // Certificates management dialog
   const [certificatesDialogOpen, setCertificatesDialogOpen] = useState(false);
-  const [userCertificates, setUserCertificates] = useState<any[]>([]);
-  const [availableCertificates, setAvailableCertificates] = useState<any[]>([]);
+  const [userCertificates, setUserCertificates] = useState<{
+    id: number;
+    certificateId: number;
+    clerkUserId: string;
+    achievedDate: Date;
+    expiryDate: Date | null;
+    status: string;
+    notes: string | null;
+    assignedBy: string;
+    createdAt: Date;
+    updatedAt: Date;
+    certificate?: {
+      id: number;
+      name: string;
+      description: string | null;
+      discipline: string;
+      expires: boolean;
+      validityYears: number | null;
+      status: string;
+      createdBy: string;
+      createdAt: Date;
+      updatedAt: Date;
+    };
+  }[]>([]);
+  const [availableCertificates, setAvailableCertificates] = useState<{
+    id: number;
+    name: string;
+    description: string | null;
+    discipline: string;
+    expires: boolean;
+    validityYears: number | null;
+    status: string;
+    createdBy: string;
+    createdAt: Date;
+    updatedAt: Date;
+  }[]>([]);
   const [loadingCertificates, setLoadingCertificates] = useState(false);
   const [assigningCertificate, setAssigningCertificate] = useState(false);
   const [assignCertificateDialogOpen, setAssignCertificateDialogOpen] = useState(false);
@@ -1172,7 +1206,7 @@ export default function UsersManagementPage() {
               Certificaten - {selectedUser?.firstName} {selectedUser?.lastName}
             </DialogTitle>
             <DialogDescription>
-              Beheer de certificaten en diploma's van deze medewerker
+              Beheer de certificaten en diploma&apos;s van deze medewerker
             </DialogDescription>
           </DialogHeader>
           {loadingCertificates ? (

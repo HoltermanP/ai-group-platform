@@ -116,7 +116,7 @@ export async function PATCH(
     }
     
     // Update de schouw - zorg dat connectionTypes als JSON string wordt opgeslagen
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       ...body,
       updatedAt: new Date(),
     };

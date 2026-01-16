@@ -3,6 +3,8 @@
  * Gebruikt SMTP voor het versturen van emails
  */
 
+import nodemailer from 'nodemailer';
+
 interface EmailOptions {
   to: string;
   subject: string;
@@ -37,7 +39,6 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
 
     // Gebruik Node.js built-in modules voor SMTP
     // In productie kan dit vervangen worden door een library zoals nodemailer
-    const nodemailer = require('nodemailer');
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -81,12 +82,19 @@ export async function sendEmail({ to, subject, html, text }: EmailOptions): Prom
     console.log('   Message ID:', info.messageId);
     console.log('   Response:', info.response);
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('❌ Error sending email:', error);
-    console.error('   Error code:', error.code);
-    console.error('   Error message:', error.message);
-    if (error.response) {
-      console.error('   SMTP Response:', error.response);
+    if (error instanceof Error) {
+      console.error('   Error message:', error.message);
+    }
+    if (typeof error === 'object' && error !== null) {
+      const errorObj = error as Record<string, unknown>;
+      if ('code' in errorObj) {
+        console.error('   Error code:', errorObj.code);
+      }
+      if ('response' in errorObj) {
+        console.error('   SMTP Response:', errorObj.response);
+      }
     }
     return false;
   }

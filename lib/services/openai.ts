@@ -41,14 +41,14 @@ export interface AIAnalysisResult {
   preventiveMeasures: string[];
   extractedFields?: { // Geëxtraheerde velden uit foto's
     [incidentId: string]: {
-      [key: string]: any;
+      [key: string]: unknown;
     };
   };
   photoAnalysis?: { // Foto analyse per incident
     [incidentId: string]: string;
   };
   tokensUsed?: number;
-  [key: string]: any; // Allow additional fields from custom prompts
+  [key: string]: unknown; // Allow additional fields from custom prompts
 }
 
 export interface SuggestedAction {
@@ -124,8 +124,15 @@ Geef ALLEEN het prompt terug, zonder extra uitleg.`;
 
   try {
     const temperature = getTemperatureForModel(model);
-    const completionOptions: any = {
+    const completionOptions: {
+      model: string;
+      messages: { role: string; content: string }[];
+      temperature?: number;
+      max_tokens?: number;
+      response_format?: { type: string };
+    } = {
       model: model,
+      temperature: temperature,
       messages: [
         {
           role: 'system',
@@ -234,7 +241,7 @@ Geef ALLEEN de gestructureerde JSON terug, zonder extra tekst of markdown.`;
     const baseTemperature = getTemperatureForModel(model);
     const temperature = baseTemperature !== undefined ? 0.3 : undefined; // Lagere temperature voor meer consistente output
     
-    const completionOptions: any = {
+    const completionOptions: unknown = {
       model: model,
       messages: [
         {
@@ -291,7 +298,7 @@ Geef ALLEEN de gestructureerde JSON terug, zonder extra tekst of markdown.`;
 /**
  * Parse AI output flexibel - probeer verschillende formaten
  */
-function parseAIOutput(content: string): any {
+function parseAIOutput(content: string): unknown {
   let jsonContent = content.trim();
   
   console.log('=== PARSING AI OUTPUT ===');
@@ -339,7 +346,7 @@ function parseAIOutput(content: string): any {
 /**
  * Valideer en normaliseer AI analyse resultaat naar standaard structuur
  */
-function normalizeAnalysisResult(parsed: any): AIAnalysisResult {
+function normalizeAnalysisResult(parsed: unknown): AIAnalysisResult {
   const result: AIAnalysisResult = {
     summary: '',
     recommendations: [],
@@ -400,14 +407,14 @@ function normalizeAnalysisResult(parsed: any): AIAnalysisResult {
 
   // Extract recommendations
   if (Array.isArray(parsed.recommendations)) {
-    result.recommendations = parsed.recommendations.filter((r: any) => typeof r === 'string');
+    result.recommendations = parsed.recommendations.filter((r: unknown) => typeof r === 'string');
   } else if (parsed.recommendations && typeof parsed.recommendations === 'string') {
     result.recommendations = [parsed.recommendations];
   }
 
   // Extract suggestedToolboxTopics
   if (Array.isArray(parsed.suggestedToolboxTopics)) {
-    result.suggestedToolboxTopics = parsed.suggestedToolboxTopics.filter((t: any) => 
+    result.suggestedToolboxTopics = parsed.suggestedToolboxTopics.filter((t: unknown) => 
       t && typeof t === 'object' && t.topic
     );
   }
@@ -421,7 +428,7 @@ function normalizeAnalysisResult(parsed: any): AIAnalysisResult {
 
   // Extract preventiveMeasures
   if (Array.isArray(parsed.preventiveMeasures)) {
-    result.preventiveMeasures = parsed.preventiveMeasures.filter((m: any) => typeof m === 'string');
+    result.preventiveMeasures = parsed.preventiveMeasures.filter((m: unknown) => typeof m === 'string');
   } else if (parsed.preventiveMeasures && typeof parsed.preventiveMeasures === 'string') {
     result.preventiveMeasures = [parsed.preventiveMeasures];
   }
@@ -511,7 +518,7 @@ async function analyzePhotosWithVision(
   incidentContext: SafetyIncidentForAnalysis,
   customPrompt?: string,
   model: string = 'gpt-4o'
-): Promise<{ extractedFields: any; photoAnalysis: string }> {
+): Promise<{ extractedFields: unknown; photoAnalysis: string }> {
   if (!openai || photoUrls.length === 0) {
     return { extractedFields: {}, photoAnalysis: '' };
   }
@@ -684,7 +691,7 @@ export async function analyzeSafetyIncidents(
   }
 
   // Analyseer foto's voor elk incident dat foto's heeft
-  const photoAnalyses: Array<{ extractedFields: any; photoAnalysis: string }> = [];
+  const photoAnalyses: Array<{ extractedFields: unknown; photoAnalysis: string }> = [];
   for (const incident of incidents) {
     if (incident.photos && incident.photos.length > 0) {
       console.log(`Analyzing ${incident.photos.length} photos for incident ${incident.incidentId}`);
@@ -860,7 +867,7 @@ Geef alleen de JSON terug, zonder extra tekst.`;
 
   try {
     const temperature = getTemperatureForModel(model);
-    const completionOptions: any = {
+    const completionOptions: unknown = {
       model: model,
       messages: [
         {
@@ -919,7 +926,7 @@ Geef alleen de JSON terug, zonder extra tekst.`;
       console.error('=== OPENAI API CALL FAILED ===');
       console.error('API Error:', apiError);
       if (apiError && typeof apiError === 'object' && 'error' in apiError) {
-        console.error('OpenAI Error Details:', JSON.stringify((apiError as any).error, null, 2));
+        console.error('OpenAI Error Details:', JSON.stringify((apiError as { error: unknown }).error, null, 2));
       }
       throw apiError;
     }
@@ -975,26 +982,26 @@ Geef alleen de JSON terug, zonder extra tekst.`;
     if (error && typeof error === 'object') {
       // OpenAI SDK errors hebben vaak een 'status' en 'response' property
       if ('status' in error) {
-        console.error('OpenAI API HTTP status:', (error as any).status);
+        console.error('OpenAI API HTTP status:', (error as { status?: number }).status);
       }
       if ('response' in error) {
-        console.error('OpenAI API error response:', JSON.stringify((error as any).response, null, 2));
+        console.error('OpenAI API error response:', JSON.stringify((error as { response?: unknown }).response, null, 2));
       }
       // Check voor rate limit errors
-      if ('code' in error && (error as any).code === 'rate_limit_exceeded') {
+      if ('code' in error && (error as { code?: string }).code === 'rate_limit_exceeded') {
         throw new Error('AI analyse mislukt: Rate limit bereikt. Probeer het over een paar minuten opnieuw.');
       }
       // Check voor invalid API key
-      if ('code' in error && (error as any).code === 'invalid_api_key') {
+      if ('code' in error && (error as { code?: string }).code === 'invalid_api_key') {
         throw new Error('AI analyse mislukt: Ongeldige OpenAI API key. Check je environment variabelen.');
       }
       // Check voor model not found
-      if ('code' in error && (error as any).code === 'model_not_found') {
+      if ('code' in error && (error as { code?: string }).code === 'model_not_found') {
         throw new Error(`AI analyse mislukt: Model "${model}" niet gevonden. Check of het model beschikbaar is.`);
       }
       // Check voor andere OpenAI error codes
       if ('code' in error) {
-        console.error('OpenAI error code:', (error as any).code);
+        console.error('OpenAI error code:', (error as { code?: string }).code);
       }
     }
     
@@ -1002,7 +1009,7 @@ Geef alleen de JSON terug, zonder extra tekst.`;
   }
 
   // Parse de output
-  let parsed: any;
+  let parsed: unknown;
   try {
     console.log('=== PARSING AI OUTPUT ===');
     parsed = parseAIOutput(content);
@@ -1070,7 +1077,7 @@ Geef alleen de JSON terug, zonder extra tekst.`;
   }
 
   // Voeg extractedFields en photoAnalysis toe aan result
-  const allExtractedFields: { [incidentId: string]: { [key: string]: any } } = {};
+  const allExtractedFields: { [incidentId: string]: { [key: string]: unknown } } = {};
   const allPhotoAnalysis: { [incidentId: string]: string } = {};
   
   photoAnalyses.forEach((analysis, idx) => {
@@ -1154,7 +1161,7 @@ Geef ALLEEN de JSON terug in dit exacte formaat (zonder extra tekst of markdown)
 }`;
 
   const temperature = getTemperatureForModel(model);
-  const completionOptions: any = {
+  const completionOptions: unknown = {
     model: model,
     messages: [
       {
@@ -1285,7 +1292,7 @@ BELANGRIJK:
 - Geef ALLEEN geldige JSON terug, zonder markdown code blocks`;
 
   const temperature = getTemperatureForModel(model);
-  const completionOptions: any = {
+  const completionOptions: unknown = {
     model: model,
     messages: [
       {

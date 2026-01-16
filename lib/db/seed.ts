@@ -246,7 +246,7 @@ async function seed() {
   try {
     // Stap 0: Haal organisaties op (of maak ze aan als ze niet bestaan)
     console.log("\n🏢 Fetching organizations...");
-    let organizations = await db.select().from(organizationsTable);
+    const organizations = await db.select().from(organizationsTable);
     
     if (organizations.length === 0) {
       console.log("   ⚠️  Geen organisaties gevonden. Voer eerst 'npm run db:seed-orgs' uit, of koppel projecten later met 'npm run db:fix-orgs'");

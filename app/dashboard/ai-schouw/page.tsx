@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { Pagination } from "@/components/ui/pagination";
 
 interface Inspection {
@@ -374,7 +375,7 @@ function AISchouwPageContent() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2 sm:gap-3">
-              <a
+              <Link
                 href="/dashboard/ai-schouw/analytics"
                 className="px-3 sm:px-6 py-2 sm:py-3 rounded-md border border-border hover:bg-accent transition-colors font-medium text-foreground shadow-sm flex items-center gap-2 text-sm sm:text-base"
               >
@@ -383,7 +384,7 @@ function AISchouwPageContent() {
                 </svg>
                 <span className="hidden sm:inline">Rapportage</span>
                 <span className="sm:hidden">Rapp.</span>
-              </a>
+              </Link>
               <button
                 onClick={() => setShowForm(!showForm)}
                 className="bg-primary text-primary-foreground px-3 sm:px-6 py-2 sm:py-3 rounded-md hover:bg-primary/90 transition-colors font-medium shadow-sm text-sm sm:text-base w-full sm:w-auto"
@@ -527,7 +528,7 @@ function AISchouwPageContent() {
                   {/* Foto's */}
                   <div className="md:col-span-2">
                     <label htmlFor="photos" className="block text-sm font-medium mb-2 text-foreground">
-                      Foto's
+                      Foto&apos;s
                     </label>
                     <input
                       type="file"
@@ -555,7 +556,7 @@ function AISchouwPageContent() {
                       </div>
                     )}
                     <p className="text-xs text-muted-foreground mt-1">
-                      Selecteer een of meerdere foto's (max 5MB per foto)
+                      Selecteer een of meerdere foto&apos;s (max 5MB per foto)
                     </p>
                   </div>
                 </div>

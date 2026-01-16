@@ -26,16 +26,17 @@ async function finalVerify() {
     let totalProjects = 0;
     let totalIncidents = 0;
 
-    result.rows.forEach((row: any) => {
-      console.log(`┌─ ${row.name}`);
-      console.log(`│  ID: ${row.id}`);
-      console.log(`│  Slug: ${row.slug}`);
-      console.log(`│  Projecten: ${row.project_count}`);
-      console.log(`│  Veiligheidsmeldingen: ${row.incident_count}`);
+    result.rows.forEach((row) => {
+      const typedRow = row as { id: number; name: string; slug: string; project_count: number; incident_count: number };
+      console.log(`┌─ ${typedRow.name}`);
+      console.log(`│  ID: ${typedRow.id}`);
+      console.log(`│  Slug: ${typedRow.slug}`);
+      console.log(`│  Projecten: ${typedRow.project_count}`);
+      console.log(`│  Veiligheidsmeldingen: ${typedRow.incident_count}`);
       console.log(`└─────────────────────────────────────\n`);
       
-      totalProjects += parseInt(row.project_count);
-      totalIncidents += parseInt(row.incident_count);
+      totalProjects += parseInt(String(typedRow.project_count));
+      totalIncidents += parseInt(String(typedRow.incident_count));
     });
 
     console.log("=".repeat(50));

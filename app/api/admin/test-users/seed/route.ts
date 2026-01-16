@@ -383,8 +383,8 @@ export async function POST() {
         if (detail) {
           detail.certificates = assignedCerts;
         }
-      } catch (error: any) {
-        results.errors.push(`${testUser.email}: ${error.message || 'Onbekende fout'}`);
+      } catch (error: unknown) {
+        results.errors.push(`${testUser.email}: ${error instanceof Error ? error.message : 'Onbekende fout'}`);
       }
     }
 

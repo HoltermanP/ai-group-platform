@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 interface Supervision {
   id: number;
@@ -498,7 +499,7 @@ export default function SupervisionDetailPage() {
               <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              Foto's
+              Foto&apos;s
             </h2>
             <div className="space-y-4">
               {/* Upload Input */}
@@ -550,7 +551,7 @@ export default function SupervisionDetailPage() {
                     disabled={uploadingPhotos}
                     className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50 transition-colors"
                   >
-                    {uploadingPhotos ? "Uploaden..." : "Foto's Uploaden"}
+                    {uploadingPhotos ? "Uploaden..." : "Foto&apos;s Uploaden"}
                   </button>
                 )}
               </div>
@@ -561,11 +562,13 @@ export default function SupervisionDetailPage() {
                 if (photos.length > 0) {
                   return (
                     <div className="mt-6">
-                      <h3 className="text-lg font-medium mb-4 text-foreground">Geüploade Foto's</h3>
+                      <h3 className="text-lg font-medium mb-4 text-foreground">Geüploade Foto&apos;s</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {photos.map((photoUrl, index) => (
                           <div key={index} className="relative group">
-                            <img
+                            <Image
+                              width={400}
+                              height={192}
                               src={photoUrl}
                               alt={`Foto ${index + 1} van toezicht ${supervision.supervisionId}`}
                               className="w-full h-48 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
@@ -593,7 +596,7 @@ export default function SupervisionDetailPage() {
                 }
                 return (
                   <p className="text-muted-foreground text-sm">
-                    Nog geen foto's toegevoegd. Upload foto's hierboven.
+                    Nog geen foto&apos;s toegevoegd. Upload foto&apos;s hierboven.
                   </p>
                 );
               })()}

@@ -190,7 +190,7 @@ export default function InstellingenPage() {
     setSaveStatus('idle');
 
     try {
-      const updateData: any = {
+      const updateData: Record<string, unknown> = {
         theme: preferences?.theme || theme,
         language: preferences?.language || 'nl',
         timezone: preferences?.timezone || 'Europe/Amsterdam',
@@ -230,7 +230,7 @@ export default function InstellingenPage() {
         setPreferences(updated);
         
         // Update theme if changed
-        if (updateData.theme && updateData.theme !== theme) {
+        if (updateData.theme && typeof updateData.theme === 'string' && updateData.theme !== theme) {
           setTheme(updateData.theme);
         }
 
@@ -248,7 +248,7 @@ export default function InstellingenPage() {
     }
   };
 
-  const updatePreference = (key: keyof UserPreferences, value: any) => {
+  const updatePreference = (key: keyof UserPreferences, value: unknown) => {
     setPreferences((prev) => ({
       ...prev,
       [key]: value,
@@ -293,7 +293,7 @@ export default function InstellingenPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
                   className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
                     activeTab === tab.id
                       ? 'border-primary text-primary'

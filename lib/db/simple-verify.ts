@@ -18,8 +18,9 @@ async function simpleVerify() {
     `);
     console.log("📊 Organizations:");
     console.log(`   Total: ${orgs.rows.length}`);
-    orgs.rows.forEach((org: any) => {
-      console.log(`   - ${org.name} (id: ${org.id})`);
+    orgs.rows.forEach((org) => {
+      const typedOrg = org as { id: number; name: string; slug: string };
+      console.log(`   - ${typedOrg.name} (id: ${typedOrg.id})`);
     });
 
     // Projects met organization
@@ -31,10 +32,15 @@ async function simpleVerify() {
       FROM projects
     `);
     console.log("\n📊 Projects:");
-    const p = projects.rows[0] as any;
-    console.log(`   Total: ${p.total}`);
-    console.log(`   With organizationId: ${p.with_org_id}`);
-    console.log(`   With organization name: ${p.with_org_name}`);
+    const p = projects.rows[0] as Record<string, unknown>;
+    const typedP = {
+      total: p.total as number,
+      with_org_id: p.with_org_id as number,
+      with_org_name: p.with_org_name as number
+    };
+    console.log(`   Total: ${typedP.total}`);
+    console.log(`   With organizationId: ${typedP.with_org_id}`);
+    console.log(`   With organization name: ${typedP.with_org_name}`);
 
     // Projects per org
     const projectsPerOrg = await db.execute(sql`
@@ -47,8 +53,9 @@ async function simpleVerify() {
       ORDER BY o.id
     `);
     console.log("\n📊 Projects per Organization:");
-    projectsPerOrg.rows.forEach((row: any) => {
-      console.log(`   ${row.org_name}: ${row.project_count} projects`);
+    projectsPerOrg.rows.forEach((row) => {
+      const typedRow = row as { org_name: string; project_count: number };
+      console.log(`   ${typedRow.org_name}: ${typedRow.project_count} projects`);
     });
 
     // Safety incidents
@@ -58,10 +65,14 @@ async function simpleVerify() {
         COUNT(organizationId) as with_org
       FROM safety_incidents
     `);
-    const i = incidents.rows[0] as any;
+    const i = incidents.rows[0] as Record<string, unknown>;
+    const typedI = {
+      total: i.total as number,
+      with_org: i.with_org as number
+    };
     console.log("\n📊 Safety Incidents:");
-    console.log(`   Total: ${i.total}`);
-    console.log(`   With organizationId: ${i.with_org}`);
+    console.log(`   Total: ${typedI.total}`);
+    console.log(`   With organizationId: ${typedI.with_org}`);
 
     // User roles
     const roles = await db.execute(sql`
@@ -73,8 +84,9 @@ async function simpleVerify() {
     if (roles.rows.length === 0) {
       console.log(`   No users with roles yet`);
     } else {
-      roles.rows.forEach((row: any) => {
-        console.log(`   ${row.role}: ${row.count} user(s)`);
+      roles.rows.forEach((row) => {
+        const typedRow = row as { role: string; count: number };
+        console.log(`   ${typedRow.role}: ${typedRow.count} user(s)`);
       });
     }
 

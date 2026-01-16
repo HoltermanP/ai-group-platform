@@ -403,7 +403,7 @@ async function updateInfraData() {
       
       for (let i = 0; i < numIncidents; i++) {
         incidentCount++;
-        const incident = generateInfraIncident(project as any, incidentCount);
+        const incident = generateInfraIncident(project as { discipline?: string }, incidentCount);
         
         await db.execute(sql`
           INSERT INTO safety_incidents (
@@ -452,8 +452,9 @@ async function updateInfraData() {
     `);
 
     console.log("📊 Project Summary:");
-    summary.rows.forEach((row: any) => {
-      console.log(`   ${row.category} - ${row.discipline}: ${row.count} projecten`);
+    summary.rows.forEach((row) => {
+      const typedRow = row as { category: string; discipline: string; count: number };
+      console.log(`   ${typedRow.category} - ${typedRow.discipline}: ${typedRow.count} projecten`);
     });
 
     console.log("\n✅ Database updated successfully!");
@@ -467,10 +468,10 @@ async function updateInfraData() {
   }
 }
 
-function generateInfraIncident(project: any, incidentNumber: number) {
+function generateInfraIncident(project: { discipline?: string; id?: number; organizationId?: number }, incidentNumber: number) {
   const infra = project.discipline || project.discipline;
   
-  const incidentTypes: Record<string, any[]> = {
+  const incidentTypes: Record<string, { title: string; category: string }[]> = {
     Elektra: [
       { title: "Kabelbreuk tijdens graafwerkzaamheden", category: "graafschade" },
       { title: "Kortsluiting in kabelverbinding", category: "elektrisch" },
@@ -501,7 +502,7 @@ function generateInfraIncident(project: any, incidentNumber: number) {
     ],
   };
 
-  const types = incidentTypes[infra] || incidentTypes.Elektra;
+  const types = incidentTypes[infra || 'Elektra'] || incidentTypes.Elektra;
   const incident = types[Math.floor(Math.random() * types.length)];
   
   const severities = ["low", "medium", "high", "critical"];
@@ -531,7 +532,7 @@ function generateInfraIncident(project: any, incidentNumber: number) {
   return {
     incidentId: `VM-2024-${String(incidentNumber).padStart(4, '0')}`,
     title: incident.title,
-    description: `${incident.title} geconstateerd tijdens ${project.category} werkzaamheden. Situatie vereist directe actie volgens CROW richtlijnen.`,
+    description: `${incident.title} geconstateerd tijdens infrastructurele werkzaamheden. Situatie vereist directe actie volgens CROW richtlijnen.`,
     category: incident.category,
     severity: severities[Math.floor(Math.random() * severities.length)],
     status: statuses[Math.floor(Math.random() * statuses.length)],

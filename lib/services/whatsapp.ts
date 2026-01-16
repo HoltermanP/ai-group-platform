@@ -34,7 +34,7 @@ export async function sendWhatsAppMessage({ to, message }: WhatsAppMessage): Pro
     // Dynamisch importeren van Twilio (optioneel dependency)
     let twilio;
     try {
-      twilio = require('twilio');
+      twilio = await import('twilio');
     } catch (error) {
       console.warn('Twilio package niet geïnstalleerd. Installeer met: npm install twilio');
       return false;
@@ -64,11 +64,14 @@ export async function sendWhatsAppMessage({ to, message }: WhatsAppMessage): Pro
 
     console.log('WhatsApp bericht verstuurd:', result.sid);
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error sending WhatsApp message:', error);
     // Log specifieke Twilio errors
-    if (error.code) {
-      console.error(`Twilio error code: ${error.code}, message: ${error.message}`);
+    if (typeof error === 'object' && error !== null) {
+      const errorObj = error as Record<string, unknown>;
+      if ('code' in errorObj && 'message' in errorObj) {
+        console.error(`Twilio error code: ${errorObj.code}, message: ${errorObj.message}`);
+      }
     }
     return false;
   }

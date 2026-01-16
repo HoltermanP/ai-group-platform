@@ -52,7 +52,7 @@ export async function PUT(
     }
 
     // Update velden
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
