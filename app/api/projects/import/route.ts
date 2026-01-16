@@ -3,24 +3,7 @@ import { db } from "@/lib/db";
 import { projectsTable } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx";
-
-// Beschikbare velden voor mapping
-export const AVAILABLE_FIELDS = {
-  projectId: "Project ID",
-  name: "Naam",
-  description: "Beschrijving",
-  status: "Status",
-  plaats: "Plaats",
-  gemeente: "Gemeente",
-  projectManager: "Project Manager",
-  category: "Categorie",
-  discipline: "Discipline",
-  startDate: "Startdatum",
-  endDate: "Einddatum",
-  plannedEndDate: "Geplande einddatum",
-  budget: "Budget",
-  organizationId: "Organisatie ID",
-} as const;
+import { AVAILABLE_PROJECT_FIELDS } from "@/lib/constants/project-import";
 
 export async function POST(req: Request) {
   try {
@@ -318,7 +301,7 @@ function parseBudget(value: unknown): number | null {
 // GET endpoint om beschikbare velden op te halen
 export async function GET() {
   return NextResponse.json({
-    fields: AVAILABLE_FIELDS,
+    fields: AVAILABLE_PROJECT_FIELDS,
   });
 }
 
