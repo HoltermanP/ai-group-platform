@@ -58,7 +58,7 @@ Geef een beknopte, praktische samenvatting terug.`;
     const temperature = modelsWithFixedTemperature.includes(model.toLowerCase()) ? undefined : 0.7;
     const usesMaxCompletionTokens = modelsWithFixedTemperature.includes(model.toLowerCase());
     
-    const completionOptions: unknown = {
+    const completionOptions: any = {
       model: model,
       messages: [
         {

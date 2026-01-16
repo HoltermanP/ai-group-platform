@@ -124,13 +124,8 @@ Geef ALLEEN het prompt terug, zonder extra uitleg.`;
 
   try {
     const temperature = getTemperatureForModel(model);
-    const completionOptions: {
-      model: string;
-      messages: { role: string; content: string }[];
-      temperature?: number;
-      max_tokens?: number;
-      response_format?: { type: string };
-    } = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const completionOptions: any = {
       model: model,
       temperature: temperature,
       messages: [
@@ -241,7 +236,8 @@ Geef ALLEEN de gestructureerde JSON terug, zonder extra tekst of markdown.`;
     const baseTemperature = getTemperatureForModel(model);
     const temperature = baseTemperature !== undefined ? 0.3 : undefined; // Lagere temperature voor meer consistente output
     
-    const completionOptions: unknown = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const completionOptions: any = {
       model: model,
       messages: [
         {
@@ -356,17 +352,17 @@ function normalizeAnalysisResult(parsed: unknown): AIAnalysisResult {
   };
 
   // Als er een extracted_fields structuur is, converteer deze naar de standaard structuur
-  if (parsed.extracted_fields && typeof parsed.extracted_fields === 'object') {
+  if (typeof parsed === 'object' && parsed !== null && 'extracted_fields' in parsed && parsed.extracted_fields && typeof parsed.extracted_fields === 'object') {
     console.log('Found extracted_fields structure, converting to standard structure...');
-    const extracted = parsed.extracted_fields;
+    const extracted = parsed.extracted_fields as Record<string, unknown>;
     
     // Maak samenvatting van extracted fields
     const summaryParts: string[] = [];
-    if (extracted.beschrijving) summaryParts.push(`Beschrijving: ${extracted.beschrijving}`);
-    if (extracted.aard_incident) summaryParts.push(`Aard incident: ${extracted.aard_incident}`);
-    if (extracted.categorie) summaryParts.push(`Categorie: ${extracted.categorie}`);
-    if (extracted.ernst) summaryParts.push(`Ernst: ${extracted.ernst}`);
-    if (extracted.genomen_maatregelen) summaryParts.push(`Genomen maatregelen: ${extracted.genomen_maatregelen}`);
+    if (extracted.beschrijving) summaryParts.push(`Beschrijving: ${String(extracted.beschrijving)}`);
+    if (extracted.aard_incident) summaryParts.push(`Aard incident: ${String(extracted.aard_incident)}`);
+    if (extracted.categorie) summaryParts.push(`Categorie: ${String(extracted.categorie)}`);
+    if (extracted.ernst) summaryParts.push(`Ernst: ${String(extracted.ernst)}`);
+    if (extracted.genomen_maatregelen) summaryParts.push(`Genomen maatregelen: ${String(extracted.genomen_maatregelen)}`);
     
     result.summary = summaryParts.length > 0 
       ? summaryParts.join('\n\n')
@@ -388,57 +384,62 @@ function normalizeAnalysisResult(parsed: unknown): AIAnalysisResult {
     
     // Risk assessment
     if (extracted.ernst) {
-      result.riskAssessment = `Ernst niveau: ${extracted.ernst}. ${extracted.aard_incident || extracted.beschrijving || 'Risico inschatting op basis van beschikbare informatie.'}`;
+      result.riskAssessment = `Ernst niveau: ${String(extracted.ernst)}. ${String(extracted.aard_incident || extracted.beschrijving || 'Risico inschatting op basis van beschikbare informatie.')}`;
     } else {
-      result.riskAssessment = extracted.aard_incident || extracted.beschrijving || 'Geen risico inschatting beschikbaar.';
+      result.riskAssessment = String(extracted.aard_incident || extracted.beschrijving || 'Geen risico inschatting beschikbaar.');
     }
     
     return result;
   }
 
   // Extract summary
-  if (parsed.summary && typeof parsed.summary === 'string') {
+  if (typeof parsed === 'object' && parsed !== null && 'summary' in parsed && typeof parsed.summary === 'string') {
     result.summary = parsed.summary;
-  } else if (parsed.rawContent) {
-    result.summary = parsed.rawContent.substring(0, 500);
+  } else if (typeof parsed === 'object' && parsed !== null && 'rawContent' in parsed) {
+    result.summary = String(parsed.rawContent).substring(0, 500);
   } else {
     result.summary = 'Geen samenvatting beschikbaar.';
   }
 
   // Extract recommendations
-  if (Array.isArray(parsed.recommendations)) {
-    result.recommendations = parsed.recommendations.filter((r: unknown) => typeof r === 'string');
-  } else if (parsed.recommendations && typeof parsed.recommendations === 'string') {
-    result.recommendations = [parsed.recommendations];
+  if (typeof parsed === 'object' && parsed !== null && 'recommendations' in parsed) {
+    if (Array.isArray(parsed.recommendations)) {
+      result.recommendations = parsed.recommendations.filter((r: unknown) => typeof r === 'string') as string[];
+    } else if (typeof parsed.recommendations === 'string') {
+      result.recommendations = [parsed.recommendations];
+    }
   }
 
   // Extract suggestedToolboxTopics
-  if (Array.isArray(parsed.suggestedToolboxTopics)) {
-    result.suggestedToolboxTopics = parsed.suggestedToolboxTopics.filter((t: unknown) => 
-      t && typeof t === 'object' && t.topic
+  if (typeof parsed === 'object' && parsed !== null && 'suggestedToolboxTopics' in parsed && Array.isArray(parsed.suggestedToolboxTopics)) {
+    result.suggestedToolboxTopics = parsed.suggestedToolboxTopics.filter((t: unknown) =>
+      t && typeof t === 'object' && t !== null && 'topic' in t
     );
   }
 
   // Extract riskAssessment
-  if (parsed.riskAssessment && typeof parsed.riskAssessment === 'string') {
+  if (typeof parsed === 'object' && parsed !== null && 'riskAssessment' in parsed && typeof parsed.riskAssessment === 'string') {
     result.riskAssessment = parsed.riskAssessment;
   } else {
     result.riskAssessment = 'Geen risico inschatting beschikbaar.';
   }
 
   // Extract preventiveMeasures
-  if (Array.isArray(parsed.preventiveMeasures)) {
-    result.preventiveMeasures = parsed.preventiveMeasures.filter((m: unknown) => typeof m === 'string');
-  } else if (parsed.preventiveMeasures && typeof parsed.preventiveMeasures === 'string') {
+  if (typeof parsed === 'object' && parsed !== null && 'preventiveMeasures' in parsed && Array.isArray(parsed.preventiveMeasures)) {
+    result.preventiveMeasures = parsed.preventiveMeasures.filter((m: unknown) => typeof m === 'string') as string[];
+  } else if (typeof parsed === 'object' && parsed !== null && 'preventiveMeasures' in parsed && typeof parsed.preventiveMeasures === 'string') {
     result.preventiveMeasures = [parsed.preventiveMeasures];
   }
 
   // Copy any additional fields
-  Object.keys(parsed).forEach(key => {
-    if (!['summary', 'recommendations', 'suggestedToolboxTopics', 'riskAssessment', 'preventiveMeasures', 'rawContent'].includes(key)) {
-      result[key] = parsed[key];
-    }
-  });
+  if (typeof parsed === 'object' && parsed !== null) {
+    Object.keys(parsed).forEach(key => {
+      if (!['summary', 'recommendations', 'suggestedToolboxTopics', 'riskAssessment', 'preventiveMeasures', 'rawContent'].includes(key)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (result as any)[key] = (parsed as any)[key];
+      }
+    });
+  }
 
   return result;
 }
@@ -703,7 +704,7 @@ export async function analyzeSafetyIncidents(
           model
         );
         photoAnalyses.push(photoAnalysis);
-        console.log(`Photo analysis completed for incident ${incident.incidentId}, extracted ${Object.keys(photoAnalysis.extractedFields).length} fields`);
+        console.log(`Photo analysis completed for incident ${incident.incidentId}, extracted ${photoAnalysis.extractedFields && typeof photoAnalysis.extractedFields === 'object' ? Object.keys(photoAnalysis.extractedFields).length : 0} fields`);
       } catch (error) {
         console.error(`Error analyzing photos for incident ${incident.incidentId}:`, error);
         console.error('Photo analysis error details:', error instanceof Error ? error.message : String(error));
@@ -733,7 +734,7 @@ Melding ${idx + 1}:
 - Veiligheidsmaatregelen: ${inc.safetyMeasures || 'Geen'}
 - Risico inschatting: ${inc.riskAssessment || 'Niet gedaan'}
 ${photoInfo.photoAnalysis ? `\nFoto Analyse:\n${photoInfo.photoAnalysis}` : ''}
-${Object.keys(photoInfo.extractedFields).length > 0 ? `\nGeëxtraheerde informatie uit foto's:\n${JSON.stringify(photoInfo.extractedFields, null, 2)}` : ''}
+${photoInfo.extractedFields && typeof photoInfo.extractedFields === 'object' && Object.keys(photoInfo.extractedFields).length > 0 ? `\nGeëxtraheerde informatie uit foto's:\n${JSON.stringify(photoInfo.extractedFields, null, 2)}` : ''}
 `;
   }).join('\n');
 
@@ -867,7 +868,8 @@ Geef alleen de JSON terug, zonder extra tekst.`;
 
   try {
     const temperature = getTemperatureForModel(model);
-    const completionOptions: unknown = {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const completionOptions: any = {
       model: model,
       messages: [
         {
@@ -1013,7 +1015,7 @@ Geef alleen de JSON terug, zonder extra tekst.`;
   try {
     console.log('=== PARSING AI OUTPUT ===');
     parsed = parseAIOutput(content);
-    console.log('Parsed output keys:', Object.keys(parsed));
+    console.log('Parsed output keys:', typeof parsed === 'object' && parsed !== null ? Object.keys(parsed) : []);
     console.log('Parsed output preview:', JSON.stringify(parsed).substring(0, 500));
   } catch (error) {
     console.error('Error parsing AI output:', error);
@@ -1025,10 +1027,10 @@ Geef alleen de JSON terug, zonder extra tekst.`;
   
   // Check of de output de verwachte structuur heeft
   // Accepteer zowel de standaard structuur als extracted_fields structuur
-  const hasValidStructure = parsed && 
-    typeof parsed === 'object' && 
-    !parsed.rawContent &&
-    (parsed.summary || parsed.recommendations || parsed.riskAssessment || parsed.extracted_fields);
+  const hasValidStructure = parsed &&
+    typeof parsed === 'object' &&
+    !('rawContent' in parsed) &&
+    (('summary' in parsed && parsed.summary) || ('recommendations' in parsed && parsed.recommendations) || ('riskAssessment' in parsed && parsed.riskAssessment) || ('extracted_fields' in parsed && parsed.extracted_fields));
 
   if (hasValidStructure) {
     console.log('=== AI OUTPUT HAS VALID STRUCTURE ===');
@@ -1038,11 +1040,11 @@ Geef alleen de JSON terug, zonder extra tekst.`;
   } else {
     console.log('=== AI OUTPUT DOES NOT HAVE EXPECTED STRUCTURE ===');
     console.log('Parsed structure:', {
-      hasSummary: !!parsed.summary,
-      hasRecommendations: !!parsed.recommendations,
-      hasRiskAssessment: !!parsed.riskAssessment,
-      hasRawContent: !!parsed.rawContent,
-      allKeys: Object.keys(parsed)
+      hasSummary: typeof parsed === 'object' && parsed !== null && 'summary' in parsed && !!parsed.summary,
+      hasRecommendations: typeof parsed === 'object' && parsed !== null && 'recommendations' in parsed && !!parsed.recommendations,
+      hasRiskAssessment: typeof parsed === 'object' && parsed !== null && 'riskAssessment' in parsed && !!parsed.riskAssessment,
+      hasRawContent: typeof parsed === 'object' && parsed !== null && 'rawContent' in parsed && !!parsed.rawContent,
+      allKeys: typeof parsed === 'object' && parsed !== null ? Object.keys(parsed) : []
     });
     console.log('Using AI to structure output...');
     // Gebruik AI om de output te structureren
@@ -1077,13 +1079,13 @@ Geef alleen de JSON terug, zonder extra tekst.`;
   }
 
   // Voeg extractedFields en photoAnalysis toe aan result
-  const allExtractedFields: { [incidentId: string]: { [key: string]: unknown } } = {};
-  const allPhotoAnalysis: { [incidentId: string]: string } = {};
+  const allExtractedFields: Record<string, Record<string, unknown>> = {};
+  const allPhotoAnalysis: Record<string, string> = {};
   
   photoAnalyses.forEach((analysis, idx) => {
     const incidentId = incidents[idx].incidentId;
-    if (Object.keys(analysis.extractedFields).length > 0) {
-      allExtractedFields[incidentId] = analysis.extractedFields;
+    if (analysis.extractedFields && typeof analysis.extractedFields === 'object' && Object.keys(analysis.extractedFields).length > 0) {
+      allExtractedFields[incidentId] = analysis.extractedFields as Record<string, unknown>;
     }
     if (analysis.photoAnalysis && analysis.photoAnalysis.trim().length > 0) {
       allPhotoAnalysis[incidentId] = analysis.photoAnalysis;
@@ -1161,7 +1163,7 @@ Geef ALLEEN de JSON terug in dit exacte formaat (zonder extra tekst of markdown)
 }`;
 
   const temperature = getTemperatureForModel(model);
-  const completionOptions: unknown = {
+  const completionOptions: any = {
     model: model,
     messages: [
       {
@@ -1292,7 +1294,7 @@ BELANGRIJK:
 - Geef ALLEEN geldige JSON terug, zonder markdown code blocks`;
 
   const temperature = getTemperatureForModel(model);
-  const completionOptions: unknown = {
+  const completionOptions: any = {
     model: model,
     messages: [
       {

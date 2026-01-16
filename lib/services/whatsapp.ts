@@ -40,7 +40,7 @@ export async function sendWhatsAppMessage({ to, message }: WhatsAppMessage): Pro
       return false;
     }
 
-    const client = twilio(
+    const client = twilio.default(
       process.env.TWILIO_ACCOUNT_SID,
       process.env.TWILIO_AUTH_TOKEN
     );
