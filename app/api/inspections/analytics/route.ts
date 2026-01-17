@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const { inspectionsTable, projectsTable } = await import('@/lib/db/schema');
     const { or } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

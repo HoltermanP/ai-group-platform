@@ -8,7 +8,7 @@ import { getUserOrganizationIds, isAdmin } from "@/lib/clerk-admin";
 // GET - Haal alle acties op met filters en joins naar incidenten
 export async function GET(req: Request) {
   try {
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

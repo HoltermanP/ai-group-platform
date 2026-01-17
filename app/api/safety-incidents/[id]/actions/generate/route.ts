@@ -21,7 +21,7 @@ export async function POST(
       );
     }
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     const { projectsTable } = await import('@/lib/db/schema');
     const {} = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

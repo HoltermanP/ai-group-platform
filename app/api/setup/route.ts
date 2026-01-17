@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { safeAuth } from '@/lib/auth-wrapper';
 
 /**
  * POST /api/setup
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const { organizationsTable, userRolesTable, organizationMembersTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

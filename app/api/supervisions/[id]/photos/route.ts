@@ -10,7 +10,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     if (!userId) {
       return NextResponse.json({ error: "Niet geautoriseerd" }, { status: 401 });
     }

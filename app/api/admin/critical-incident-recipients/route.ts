@@ -12,7 +12,7 @@ export async function GET() {
     const { criticalIncidentRecipientsTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId || !(await isAdmin())) {
       return NextResponse.json({ error: "Geen toegang" }, { status: 403 });
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const { criticalIncidentRecipientsTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId || !(await isAdmin())) {
       return NextResponse.json({ error: "Geen toegang" }, { status: 403 });
@@ -120,7 +120,7 @@ export async function DELETE(req: Request) {
     const { criticalIncidentRecipientsTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId || !(await isAdmin())) {
       return NextResponse.json({ error: "Geen toegang" }, { status: 403 });

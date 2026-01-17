@@ -1,13 +1,13 @@
 // Prevent static generation for this page
 
-import { auth } from '@clerk/nextjs/server';
+import { safeAuth } from '@/lib/auth-wrapper';
 import { redirect } from 'next/navigation';
 
 // Schakel static generation uit voor deze pagina
 export const dynamic = 'force-dynamic';
 
 export default async function InstellingenPage() {
-  const { userId } = await auth();
+  const { userId } = await safeAuth();
 
   if (!userId) {
     redirect('/');

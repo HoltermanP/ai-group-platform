@@ -15,7 +15,7 @@ export async function DELETE(
     const { userCertificatesTable, certificatesTable } = await import('@/lib/db/schema');
     const { and, eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -89,7 +89,7 @@ export async function PUT(
     const { userCertificatesTable, certificatesTable } = await import('@/lib/db/schema');
     const { and, eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

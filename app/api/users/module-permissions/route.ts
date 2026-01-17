@@ -8,7 +8,7 @@ import { getUserModulePermissions } from '@/lib/clerk-admin';
  */
 export async function GET() {
   try {
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

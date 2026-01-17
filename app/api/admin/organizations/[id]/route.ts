@@ -15,7 +15,7 @@ export async function GET(
     const { organizationsTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -64,7 +64,7 @@ export async function PATCH(
     const { organizationsTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -138,7 +138,7 @@ export async function DELETE(
     const { organizationsTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

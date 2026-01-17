@@ -1,7 +1,7 @@
 // Prevent static generation for this page
 
 
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { safeAuth, safeCurrentUser } from "@/lib/auth-wrapper";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -15,13 +15,13 @@ export const dynamic = 'force-dynamic';
 // Voorkom static generation
 
 export default async function DashboardPage() {
-  const { userId } = await auth();
-  
+  const { userId } = await safeAuth();
+
   if (!userId) {
     redirect("/");
   }
 
-  const user = await currentUser();
+  const user = await safeCurrentUser();
   
   // Haal module rechten op
   const modulePermissions = await getUserModulePermissions(userId);

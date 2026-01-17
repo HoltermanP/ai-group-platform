@@ -15,7 +15,7 @@ export async function GET(
     const { userCertificatesTable, certificatesTable } = await import('@/lib/db/schema');
     const { eq, desc } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -90,7 +90,7 @@ export async function POST(
     const { userCertificatesTable, certificatesTable } = await import('@/lib/db/schema');
     const { eq, and } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

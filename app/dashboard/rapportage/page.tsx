@@ -1,7 +1,7 @@
 // Prevent static generation for this page
 
 
-import { auth } from "@clerk/nextjs/server";
+import { safeAuth } from "@/lib/auth-wrapper";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FileText, BarChart3, TrendingUp, Download } from "lucide-react";
@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 // Voorkom static generation
 
 export default async function RapportagePage() {
-  const { userId } = await auth();
+  const { userId } = await safeAuth();
   
   if (!userId) {
     redirect("/");

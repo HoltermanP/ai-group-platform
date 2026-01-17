@@ -10,7 +10,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -96,7 +96,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; taskId: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

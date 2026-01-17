@@ -1,4 +1,4 @@
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { redirect } from 'next/navigation';
 import { SetupClient } from './setup-client';
 
@@ -6,13 +6,13 @@ import { SetupClient } from './setup-client';
 export const dynamic = 'force-dynamic';
 
 export default async function SetupPage() {
-  const { userId } = await auth();
+  const { userId } = await safeAuth();
 
   if (!userId) {
     redirect('/');
   }
 
-  const user = await currentUser();
+  const user = await safeCurrentUser();
 
   return <SetupClient user={user} />;
 }

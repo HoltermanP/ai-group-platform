@@ -11,7 +11,7 @@ export async function GET(req: Request) {
     const { notificationsTable } = await import('@/lib/db/schema');
     const { and, eq, desc } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json({ error: "Niet geautoriseerd" }, { status: 401 });
@@ -52,7 +52,7 @@ export async function PUT(req: Request) {
     const { notificationsTable } = await import('@/lib/db/schema');
     const { and, eq, desc } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json({ error: "Niet geautoriseerd" }, { status: 401 });

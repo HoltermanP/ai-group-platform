@@ -1,0 +1,107 @@
+# =================================================================
+# AI GROUP PLATFORM - Environment Variables Setup
+# =================================================================
+# Dit bestand bevat alle benodigde environment variabelen.
+# Kopieer deze inhoud naar je .env.local bestand en vervang de placeholders
+# met je echte API keys en configuratie.
+# =================================================================
+
+# =================================================================
+# 1. OPENAI API KEY (Voor AI-analyse van veiligheidsincidenten)
+# =================================================================
+# Haal op van: https://platform.openai.com/api-keys
+OPENAI_API_KEY=sk-your-openai-api-key-here
+
+# =================================================================
+# 2. CLERK AUTHENTICATION (Voor gebruikersauthenticatie)
+# =================================================================
+# Haal op van: https://dashboard.clerk.com
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_your-clerk-publishable-key-here
+CLERK_SECRET_KEY=sk_test_your-clerk-secret-key-here
+
+# =================================================================
+# 3. DATABASE CONNECTION (Voor database connectiviteit)
+# =================================================================
+# Voor lokale PostgreSQL database:
+DATABASE_URL=postgresql://username:password@localhost:5432/ai_group_platform?sslmode=prefer
+
+# Of voor Neon serverless (gebruik één van beide):
+NEON_DATABASE_URL=postgresql://username:password@hostname/database?sslmode=require
+
+# =================================================================
+# 4. EMAIL NOTIFICATIES (Voor email notificaties bij incidenten)
+# =================================================================
+# Voor Gmail (App Password vereist):
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-gmail-app-password
+SMTP_FROM=your-email@gmail.com
+SMTP_FROM_NAME=AI Group Platform
+
+# Alternatieve email providers:
+# SendGrid: smtp.sendgrid.net:587
+# Mailgun: smtp.mailgun.org:587
+# Outlook: smtp-mail.outlook.com:587
+
+# =================================================================
+# 5. WHATSAPP NOTIFICATIES (Optioneel - voor WhatsApp berichten)
+# =================================================================
+# Haal op van: https://console.twilio.com/
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+TWILIO_WHATSAPP_NUMBER=+14155238886
+
+# =================================================================
+# 6. APP URL (Optioneel - voor notificatie links)
+# =================================================================
+# Voor productie gebruik (automatisch gedetecteerd op Vercel):
+NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
+
+# =================================================================
+# STAPPEN OM IN TE STELLEN:
+# =================================================================
+#
+# STAP 1: Kopieer deze inhoud naar .env.local
+# ------------------------------------------
+# Maak een nieuw bestand aan genaamd .env.local in de root van je project
+# en plak deze inhoud erin.
+#
+# STAP 2: Haal je API keys op
+# ---------------------------
+# 1. OPENAI API KEY:
+#    - Ga naar https://platform.openai.com/api-keys
+#    - Maak een nieuwe API key aan
+#    - Kopieer de key (begint met 'sk-')
+#
+# 2. CLERK KEYS:
+#    - Ga naar https://dashboard.clerk.com
+#    - Selecteer je applicatie
+#    - Ga naar API Keys tab
+#    - Kopieer zowel Publishable key als Secret key
+#
+# 3. DATABASE URL:
+#    - Voor lokale development: gebruik PostgreSQL
+#    - Voor productie: gebruik Neon of andere PostgreSQL provider
+#    - Zorg voor juiste connection string
+#
+# STAP 3: Database opzetten
+# -------------------------
+# 1. Zorg dat je database draait (lokale PostgreSQL of Neon)
+# 2. Voer uit: npm run db:push
+# 3. Dit maakt alle benodigde tabellen aan
+#
+# STAP 4: Applicatie starten
+# --------------------------
+# 1. npm run dev
+# 2. Ga naar http://localhost:3000/setup
+# 3. Maak je eerste admin account aan
+# 4. Begin met het gebruiken van de applicatie!
+#
+# =================================================================
+# BELANGRIJK:
+# - Herstart altijd de development server na het wijzigen van .env.local
+# - Gebruik geen quotes rondom de waarden
+# - Houd je API keys geheim en deel ze niet met anderen
+# =================================================================

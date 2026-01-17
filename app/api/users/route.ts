@@ -8,14 +8,14 @@ export async function GET() {
     const { userPreferencesTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Haal user info van Clerk
-    const user = await currentUser();
+    const user = await safeCurrentUser();
 
     // Haal preferences uit database
     const preferences = await db
@@ -50,7 +50,7 @@ export async function PUT(req: Request) {
     const { userPreferencesTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

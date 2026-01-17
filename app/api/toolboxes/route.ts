@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     const { toolboxesTable, userPreferencesTable } = await import('@/lib/db/schema');
     const { eq, and, or, desc } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -114,7 +114,7 @@ export async function GET(req: Request) {
     const { toolboxesTable, userPreferencesTable } = await import('@/lib/db/schema');
     const { eq, and, or, desc } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(

@@ -15,7 +15,7 @@ export async function GET(
     const { organizationMembersTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -89,7 +89,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -144,7 +144,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId: currentUserId } = await auth();
+    const { userId: currentUserId } = await safeAuth();
     
     if (!currentUserId) {
       return NextResponse.json(
@@ -199,7 +199,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { userId: currentUserId } = await auth();
+    const { userId: currentUserId } = await safeAuth();
     
     if (!currentUserId) {
       return NextResponse.json(

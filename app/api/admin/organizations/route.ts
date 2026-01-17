@@ -13,7 +13,7 @@ export async function GET() {
     const { organizationsTable, organizationMembersTable } = await import('@/lib/db/schema');
     const { eq, desc, sql } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     const { organizationsTable, organizationMembersTable, userRolesTable } = await import('@/lib/db/schema');
     const { eq } = await import('drizzle-orm');
 
-    const { userId } = await auth();
+    const { userId } = await safeAuth();
     
     if (!userId) {
       return NextResponse.json(
