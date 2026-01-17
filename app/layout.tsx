@@ -17,6 +17,26 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 
+// Check if we're in build time or if Clerk keys are missing
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
+const hasClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY;
+
+// Create fallback components for when Clerk is not available
+const FallbackClerkProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const FallbackSignInButton = ({ children }: { children: React.ReactNode }) => <button>Inloggen</button>;
+const FallbackSignUpButton = ({ children }: { children: React.ReactNode }) => <button>Registreren</button>;
+const FallbackSignedIn = ({ children }: { children: React.ReactNode }) => null;
+const FallbackSignedOut = ({ children }: { children: React.ReactNode }) => <>{children}</>;
+const FallbackUserButton = () => null;
+
+// Use fallback components during build time or when Clerk is not configured
+const ActualClerkProvider = isBuildTime || !hasClerkKeys ? FallbackClerkProvider : ClerkProvider;
+const ActualSignInButton = isBuildTime || !hasClerkKeys ? FallbackSignInButton : SignInButton;
+const ActualSignUpButton = isBuildTime || !hasClerkKeys ? FallbackSignUpButton : SignUpButton;
+const ActualSignedIn = isBuildTime || !hasClerkKeys ? FallbackSignedIn : SignedIn;
+const ActualSignedOut = isBuildTime || !hasClerkKeys ? FallbackSignedOut : SignedOut;
+const ActualUserButton = isBuildTime || !hasClerkKeys ? FallbackUserButton : UserButton;
+
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -34,8 +54,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ClerkProvider
-      appearance={{
+    <ActualClerkProvider
+      appearance={hasClerkKeys && !isBuildTime ? {
         variables: {
           colorPrimary: "hsl(var(--primary))",
           colorBackground: "hsl(var(--card))",
@@ -111,7 +131,7 @@ export default function RootLayout({
           otpCodeFieldInput: "bg-background border-border text-foreground",
           formResendCodeLink: "text-primary hover:text-primary/80",
         },
-      }}
+      } : undefined}
     >
       <html lang="en" suppressHydrationWarning>
         <body
@@ -130,27 +150,27 @@ export default function RootLayout({
                     <Link href="/" className="text-lg sm:text-xl font-bold text-foreground hover:text-primary transition-colors truncate">
                       AI Group Platform
                     </Link>
-                    <SignedIn>
+                    <ActualSignedIn>
                       <MainNav />
-                    </SignedIn>
+                    </ActualSignedIn>
                   </div>
                   <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
                     <ThemeSwitcher />
-                    <SignedOut>
-                      <SignInButton mode="modal">
+                    <ActualSignedOut>
+                      <ActualSignInButton mode="modal">
                         <button className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md text-sm sm:text-base">
                           <span className="hidden sm:inline">Inloggen</span>
                           <span className="sm:hidden">In</span>
                         </button>
-                      </SignInButton>
-                      <SignUpButton mode="modal">
+                      </ActualSignInButton>
+                      <ActualSignUpButton mode="modal">
                         <button className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-md font-medium text-sm sm:text-base">
                           <span className="hidden sm:inline">Registreren</span>
                           <span className="sm:hidden">Reg</span>
                         </button>
-                      </SignUpButton>
-                    </SignedOut>
-                    <SignedIn>
+                      </ActualSignUpButton>
+                    </ActualSignedOut>
+                    <ActualSignedIn>
                       <Link
                         href="/dashboard/instellingen"
                         className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
@@ -162,8 +182,8 @@ export default function RootLayout({
                         </svg>
                       </Link>
                       <AdminNav />
-                      <ProfileLink />
-                    </SignedIn>
+                      <ActualUserButton />
+                    </ActualSignedIn>
                   </div>
                 </div>
               </div>
@@ -174,6 +194,6 @@ export default function RootLayout({
           </ThemeProvider>
         </body>
       </html>
-    </ClerkProvider>
+    </ActualClerkProvider>
   );
 }
