@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { userCertificatesTable, certificatesTable } from '@/lib/db/schema';
 import { getAllUsers, isAdmin } from '@/lib/clerk-admin';
-import { eq, and, sql } from 'drizzle-orm';
 
 /**
  * GET /api/certificates/users
@@ -12,6 +9,10 @@ import { eq, and, sql } from 'drizzle-orm';
  */
 export async function GET() {
   try {
+    const { db } = await import('@/lib/db');
+    const { userCertificatesTable, certificatesTable } = await import('@/lib/db/schema');
+    const { eq, and, sql } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

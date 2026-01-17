@@ -7,6 +7,10 @@ import { sql, or, isNull, inArray } from "drizzle-orm";
 
 export async function GET(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { safetyIncidentsTable } = await import('@/lib/db/schema');
+    const { or } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

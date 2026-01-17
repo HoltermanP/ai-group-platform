@@ -9,6 +9,10 @@ import { nanoid } from "nanoid";
 
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { toolboxesTable, userPreferencesTable } = await import('@/lib/db/schema');
+    const { eq, and, or, desc } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -106,6 +110,10 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { toolboxesTable, userPreferencesTable } = await import('@/lib/db/schema');
+    const { eq, and, or, desc } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

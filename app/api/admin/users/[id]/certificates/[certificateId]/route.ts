@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { userCertificatesTable } from '@/lib/db/schema';
 import { isAdmin } from '@/lib/clerk-admin';
-import { eq, and } from 'drizzle-orm';
 
 /**
  * DELETE /api/admin/users/[id]/certificates/[certificateId]
@@ -14,6 +11,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; certificateId: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { userCertificatesTable, certificatesTable } = await import('@/lib/db/schema');
+    const { and, eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -84,6 +85,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; certificateId: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { userCertificatesTable, certificatesTable } = await import('@/lib/db/schema');
+    const { and, eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -134,7 +139,6 @@ export async function PUT(
     }
 
     // Haal certificaat op om expiryDate te herberekenen als achievedDate is gewijzigd
-    const { certificatesTable } = await import('@/lib/db/schema');
     const [certificate] = await db
       .select()
       .from(certificatesTable)

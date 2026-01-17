@@ -13,6 +13,10 @@ import { eq, sql, and, inArray, or, isNull } from "drizzle-orm";
 
 export async function GET(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { projectsTable, safetyIncidentsTable, organizationsTable, inspectionsTable, supervisionsTable } = await import('@/lib/db/schema');
+    const { and, eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

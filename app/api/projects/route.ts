@@ -7,6 +7,10 @@ import { eq, desc, sql, and, inArray, or, isNull } from "drizzle-orm";
 
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { projectsTable, safetyIncidentsTable, organizationsTable, inspectionsTable, supervisionsTable } = await import('@/lib/db/schema');
+    const { eq, or, desc } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -70,6 +74,10 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { projectsTable, safetyIncidentsTable, organizationsTable, inspectionsTable, supervisionsTable } = await import('@/lib/db/schema');
+    const { eq, or, desc } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

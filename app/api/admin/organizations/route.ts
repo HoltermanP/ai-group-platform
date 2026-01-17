@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { organizationsTable, organizationMembersTable } from '@/lib/db/schema';
 import { isAdmin } from '@/lib/clerk-admin';
-import { desc, eq, sql } from 'drizzle-orm';
 
 /**
  * GET /api/admin/organizations
@@ -12,6 +9,10 @@ import { desc, eq, sql } from 'drizzle-orm';
  */
 export async function GET() {
   try {
+    const { db } = await import('@/lib/db');
+    const { organizationsTable, organizationMembersTable } = await import('@/lib/db/schema');
+    const { eq, desc, sql } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -93,6 +94,10 @@ export async function GET() {
  */
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { organizationsTable, organizationMembersTable, userRolesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

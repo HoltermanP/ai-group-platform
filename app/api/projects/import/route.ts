@@ -7,6 +7,10 @@ import { AVAILABLE_PROJECT_FIELDS } from "@/lib/constants/project-import";
 
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { projectsTable } = await import('@/lib/db/schema');
+    const {} = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

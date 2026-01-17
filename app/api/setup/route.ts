@@ -1,8 +1,5 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { organizationsTable, userRolesTable, organizationMembersTable } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 /**
  * POST /api/setup
@@ -11,6 +8,10 @@ import { eq } from 'drizzle-orm';
  */
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { organizationsTable, userRolesTable, organizationMembersTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -108,6 +109,10 @@ export async function POST(req: Request) {
  */
 export async function GET() {
   try {
+    const { db } = await import('@/lib/db');
+    const { userRolesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     // Check of er al een super_admin bestaat
     const existingAdmins = await db
       .select()

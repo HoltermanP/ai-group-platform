@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { organizationsTable } from '@/lib/db/schema';
 import { isAdmin, isOrganizationAdmin } from '@/lib/clerk-admin';
-import { eq } from 'drizzle-orm';
 
 /**
  * GET /api/admin/organizations/[id]
@@ -14,6 +11,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { organizationsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -59,6 +60,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { organizationsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -129,6 +134,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { organizationsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { userPreferencesTable } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
 
 // GET /api/users/preferences - Haal user preferences op
 export async function GET() {
   try {
+    const { db } = await import('@/lib/db');
+    const { userPreferencesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -45,6 +46,10 @@ export async function GET() {
 // PUT /api/users/preferences - Update user preferences
 export async function PUT(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { userPreferencesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

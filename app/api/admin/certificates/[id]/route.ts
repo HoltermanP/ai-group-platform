@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { certificatesTable } from '@/lib/db/schema';
 import { isAdmin } from '@/lib/clerk-admin';
-import { eq } from 'drizzle-orm';
 
 /**
  * GET /api/admin/certificates/[id]
@@ -14,6 +11,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { certificatesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -72,6 +73,10 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { certificatesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -185,6 +190,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { certificatesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

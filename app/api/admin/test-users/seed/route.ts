@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { clerkClient } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { certificatesTable, userCertificatesTable } from '@/lib/db/schema';
 import { isAdmin } from '@/lib/clerk-admin';
-import { eq, and } from 'drizzle-orm';
 
 /**
  * POST /api/admin/test-users/seed
@@ -13,6 +10,10 @@ import { eq, and } from 'drizzle-orm';
  */
 export async function POST() {
   try {
+    const { db } = await import('@/lib/db');
+    const { certificatesTable, userCertificatesTable } = await import('@/lib/db/schema');
+    const { eq, and } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

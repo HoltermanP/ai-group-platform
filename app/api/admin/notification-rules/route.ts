@@ -8,6 +8,10 @@ import { eq, and } from "drizzle-orm";
 // GET - Haal alle notification rules op
 export async function GET() {
   try {
+    const { db } = await import('@/lib/db');
+    const { notificationRulesTable, projectsTable, organizationsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId || !(await isAdmin())) {
@@ -39,6 +43,10 @@ export async function GET() {
 // POST - Maak nieuwe notification rule aan
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { notificationRulesTable, projectsTable, organizationsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId || !(await isAdmin())) {
@@ -164,6 +172,10 @@ export async function POST(req: Request) {
 // PUT - Update notification rule
 export async function PUT(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { notificationRulesTable, projectsTable, organizationsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId || !(await isAdmin())) {
@@ -228,6 +240,10 @@ export async function PUT(req: Request) {
 // DELETE - Verwijder notification rule
 export async function DELETE(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { notificationRulesTable, projectsTable, organizationsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId || !(await isAdmin())) {

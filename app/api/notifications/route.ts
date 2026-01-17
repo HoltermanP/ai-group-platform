@@ -7,6 +7,10 @@ import { eq, desc, and } from "drizzle-orm";
 // GET - Haal notificaties op voor ingelogde gebruiker
 export async function GET(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { notificationsTable } = await import('@/lib/db/schema');
+    const { and, eq, desc } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
@@ -44,6 +48,10 @@ export async function GET(req: Request) {
 // PUT - Markeer notificatie(s) als gelezen
 export async function PUT(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { notificationsTable } = await import('@/lib/db/schema');
+    const { and, eq, desc } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

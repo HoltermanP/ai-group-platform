@@ -8,6 +8,10 @@ import { eq } from "drizzle-orm";
 // GET - Haal alle ontvangers op
 export async function GET() {
   try {
+    const { db } = await import('@/lib/db');
+    const { criticalIncidentRecipientsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId || !(await isAdmin())) {
@@ -46,6 +50,10 @@ export async function GET() {
 // POST - Voeg ontvanger toe of update bestaande
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { criticalIncidentRecipientsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId || !(await isAdmin())) {
@@ -108,6 +116,10 @@ export async function POST(req: Request) {
 // DELETE - Verwijder ontvanger
 export async function DELETE(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { criticalIncidentRecipientsTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId || !(await isAdmin())) {

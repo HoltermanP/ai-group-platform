@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth, clerkClient } from '@clerk/nextjs/server';
-import { db } from '@/lib/db';
-import { organizationMembersTable } from '@/lib/db/schema';
 import { isAdmin, isOrganizationAdmin, addUserToOrganization, removeUserFromOrganization, updateUserOrganizationRole, type OrganizationRole } from '@/lib/clerk-admin';
-import { eq, and } from 'drizzle-orm';
 
 /**
  * GET /api/admin/organizations/[id]/members
@@ -14,6 +11,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { db } = await import('@/lib/db');
+    const { organizationMembersTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {

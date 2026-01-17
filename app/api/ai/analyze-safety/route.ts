@@ -11,6 +11,10 @@ export const maxDuration = 120; // 2 minuten
 
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { safetyIncidentsTable, aiAnalysesTable, userPreferencesTable } = await import('@/lib/db/schema');
+    const { eq } = await import('drizzle-orm');
+
     // Check of OpenAI API key is geconfigureerd
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(

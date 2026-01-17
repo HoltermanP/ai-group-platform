@@ -6,6 +6,10 @@ import { nanoid } from "nanoid";
 
 export async function POST(req: Request) {
   try {
+    const { db } = await import('@/lib/db');
+    const { aiAnalysesTable } = await import('@/lib/db/schema');
+    const {} = await import('drizzle-orm');
+
     const { userId } = await auth();
     
     if (!userId) {
