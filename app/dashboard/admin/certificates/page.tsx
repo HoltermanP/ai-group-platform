@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -70,6 +73,8 @@ interface Certificate {
 }
 
 const DISCIPLINES = ['Elektra', 'Gas', 'Water', 'Media', 'Algemeen'];
+
+// Prevent static generation for this page
 
 export default function CertificatesManagementPage() {
   const [certificates, setCertificates] = useState<Certificate[]>([]);

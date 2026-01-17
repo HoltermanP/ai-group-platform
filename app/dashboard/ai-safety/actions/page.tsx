@@ -49,6 +49,8 @@ interface ActionWithIncident {
   };
 }
 
+// Prevent static generation for this page
+
 export default function ActionsOverviewPage() {
   const router = useRouter();
   const [actions, setActions] = useState<ActionWithIncident[]>([]);

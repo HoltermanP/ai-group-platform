@@ -36,6 +36,8 @@ interface Task {
   dependencies: string | null;
 }
 
+// Prevent static generation for this page
+
 export default function ProjectPlanningPage() {
   const router = useRouter();
   const params = useParams();

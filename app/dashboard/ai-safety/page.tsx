@@ -1548,6 +1548,8 @@ function AISafetyPageContent() {
   );
 }
 
+// Prevent static generation for this page
+
 export default function AISafetyPage() {
   return (
     <Suspense fallback={

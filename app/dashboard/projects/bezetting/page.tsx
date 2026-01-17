@@ -47,6 +47,8 @@ interface WeekOccupancy {
   activeProjects?: Project[];
 }
 
+// Prevent static generation for this page
+
 export default function BezettingOverzichtPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);

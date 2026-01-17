@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -123,6 +126,8 @@ const DISCIPLINE_OPTIONS = [
   'Media',
   'Overig',
 ];
+
+// Prevent static generation for this page
 
 export default function NotificationRulesPage() {
   const [rules, setRules] = useState<NotificationRule[]>([]);

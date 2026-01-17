@@ -16,6 +16,10 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 
+// Check of we in een build omgeving zijn
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' ||
+                   (process.env.NODE_ENV === 'production' && !process.env.VERCEL && typeof window === 'undefined');
+
 const poppins = Poppins({
   variable: "--font-poppins",
   subsets: ["latin"],
@@ -32,6 +36,35 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Tijdens build time, render een minimal layout zonder Clerk
+  if (isBuildTime) {
+    return (
+      <html lang="en" suppressHydrationWarning>
+        <body className={`${poppins.variable} font-sans antialiased`}>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="theme-slate"
+            enableSystem={false}
+            storageKey="ai-group-theme"
+          >
+            <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+                <div className="flex justify-between items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4 md:gap-8 min-w-0 flex-1">
+                    <Link href="/" className="text-lg sm:text-xl font-bold text-foreground hover:text-primary transition-colors truncate">
+                      AI Group Platform
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </header>
+            {children}
+          </ThemeProvider>
+        </body>
+      </html>
+    );
+  }
+
   return (
     <ClerkProvider
       appearance={{
@@ -53,36 +86,36 @@ export default function RootLayout({
           // Root & Layout
           rootBox: "bg-background/80 backdrop-blur-sm",
           card: "bg-card border-border shadow-xl",
-          
+
           // Headers
           headerTitle: "text-card-foreground font-semibold",
           headerSubtitle: "text-muted-foreground",
-          
+
           // Social buttons
           socialButtonsBlockButton: "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80 transition-colors font-medium",
           socialButtonsBlockButtonText: "text-secondary-foreground",
           socialButtonsBlockButtonArrow: "text-secondary-foreground",
-          
+
           // Form elements
           formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-semibold shadow-sm",
           formFieldInput: "bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary focus:border-primary",
           formFieldLabel: "text-card-foreground font-medium",
           formFieldInputShowPasswordButton: "text-muted-foreground hover:text-foreground",
-          
-          // Text & Links  
+
+          // Text & Links
           formHeaderTitle: "text-card-foreground",
           formHeaderSubtitle: "text-muted-foreground",
           footerActionLink: "text-primary hover:text-primary/80 transition-colors font-medium",
           footerActionText: "text-muted-foreground",
-          
+
           // Dividers
           dividerLine: "bg-border",
           dividerText: "text-muted-foreground",
-          
+
           // Identity
           identityPreviewText: "text-card-foreground",
           identityPreviewEditButton: "text-muted-foreground hover:text-foreground border-border",
-          
+
           // User button
           userButtonBox: "shadow-none",
           userButtonPopoverCard: "bg-popover border-border shadow-xl",
@@ -90,22 +123,22 @@ export default function RootLayout({
           userButtonPopoverActionButtonText: "text-popover-foreground",
           userButtonPopoverActionButtonIcon: "text-muted-foreground",
           userButtonPopoverFooter: "border-border",
-          
+
           // Badge & Alert
           badge: "bg-primary/10 text-primary border-primary/20",
           alert: "bg-destructive/10 border-destructive/20 text-destructive",
           alertText: "text-destructive",
-          
+
           // Form field states
           formFieldSuccessText: "text-chart-2",
           formFieldErrorText: "text-destructive",
           formFieldWarningText: "text-chart-4",
           formFieldHintText: "text-muted-foreground",
-          
+
           // Modal
           modalContent: "bg-card",
           modalCloseButton: "text-muted-foreground hover:text-foreground transition-colors",
-          
+
           // Other
           otpCodeFieldInput: "bg-background border-border text-foreground",
           formResendCodeLink: "text-primary hover:text-primary/80",

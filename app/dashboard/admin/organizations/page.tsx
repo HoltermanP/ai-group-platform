@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -41,6 +44,8 @@ interface Organization {
   memberCount: number;
   createdAt: string;
 }
+
+// Prevent static generation for this page
 
 export default function OrganizationsPage() {
   const [organizations, setOrganizations] = useState<Organization[]>([]);

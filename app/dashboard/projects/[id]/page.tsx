@@ -52,6 +52,8 @@ interface ProjectDocument {
   uploadedBy: string;
 }
 
+// Prevent static generation for this page
+
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();

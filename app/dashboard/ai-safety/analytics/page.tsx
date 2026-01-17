@@ -64,6 +64,8 @@ const SEVERITY_COLORS = {
   critical: COLORS.destructive,
 };
 
+// Prevent static generation for this page
+
 export default function SafetyAnalyticsPage() {
   const router = useRouter();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);

@@ -45,6 +45,8 @@ interface Incident extends IncidentFromAPI {
   longitude: number;
 }
 
+// Prevent static generation for this page
+
 export default function KaartPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);

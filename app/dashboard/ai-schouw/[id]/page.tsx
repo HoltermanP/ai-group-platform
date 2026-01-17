@@ -33,6 +33,8 @@ interface Project {
   name: string;
 }
 
+// Prevent static generation for this page
+
 export default function InspectionDetailPage() {
   const router = useRouter();
   const params = useParams();

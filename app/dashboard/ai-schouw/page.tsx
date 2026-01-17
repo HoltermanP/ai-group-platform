@@ -935,6 +935,8 @@ function AISchouwPageContent() {
   );
 }
 
+// Prevent static generation for this page
+
 export default function AISchouwPage() {
   return (
     <Suspense fallback={<div className="min-h-[calc(100vh-73px)] bg-background flex items-center justify-center">Laden...</div>}>

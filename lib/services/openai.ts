@@ -1,14 +1,18 @@
 import OpenAI from 'openai';
 
-if (!process.env.OPENAI_API_KEY) {
+// Check of we in een build omgeving zijn
+const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' ||
+                   (process.env.NODE_ENV === 'production' && !process.env.VERCEL && typeof window === 'undefined');
+
+if (!process.env.OPENAI_API_KEY && !isBuildTime) {
   console.warn('OPENAI_API_KEY is not set in environment variables');
 }
 
-export const openai = process.env.OPENAI_API_KEY
+export const openai = isBuildTime ? null : (process.env.OPENAI_API_KEY
   ? new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     })
-  : null;
+  : null);
 
 export interface SafetyIncidentForAnalysis {
   incidentId: string;

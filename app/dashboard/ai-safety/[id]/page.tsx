@@ -129,6 +129,8 @@ interface IncidentAction {
   completedAt: string | null;
 }
 
+// Prevent static generation for this page
+
 export default function SafetyIncidentDetailPage() {
   const router = useRouter();
   const params = useParams();

@@ -1,9 +1,17 @@
+// Prevent static generation for this page
+
+
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FileText, BarChart3, TrendingUp, Download } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { getUserModulePermissions } from "@/lib/clerk-admin";
+
+// Schakel static generation uit voor deze pagina
+export const dynamic = 'force-dynamic';
+
+// Voorkom static generation
 
 export default async function RapportagePage() {
   const { userId } = await auth();

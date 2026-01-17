@@ -74,6 +74,8 @@ const READINESS_COLORS = {
   geen_status: COLORS.chart4,
 };
 
+// Prevent static generation for this page
+
 export default function SchouwAnalyticsPage() {
   const router = useRouter();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);

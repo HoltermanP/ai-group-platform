@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -72,6 +75,8 @@ interface User {
   lastName: string | null;
   imageUrl: string;
 }
+
+// Prevent static generation for this page
 
 export default function CriticalIncidentRecipientsPage() {
   const [recipients, setRecipients] = useState<Recipient[]>([]);

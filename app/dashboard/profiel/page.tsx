@@ -1,12 +1,27 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { UserProfile } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
+// Prevent static generation for this page
 
 export default function ProfielPage() {
   const router = useRouter();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-[calc(100vh-73px)] bg-background">

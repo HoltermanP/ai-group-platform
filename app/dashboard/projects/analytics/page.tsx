@@ -100,6 +100,8 @@ const STATUS_COLORS = {
   cancelled: COLORS.destructive,
 };
 
+// Prevent static generation for this page
+
 export default function ProjectAnalyticsPage() {
   const router = useRouter();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);

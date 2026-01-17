@@ -31,6 +31,8 @@ interface Project {
   discipline: string | null;
 }
 
+// Prevent static generation for this page
+
 export default function ProjectsPlanningPage() {
   const router = useRouter();
   const [projects, setProjects] = useState<Project[]>([]);

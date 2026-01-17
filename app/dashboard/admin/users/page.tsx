@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -88,6 +91,8 @@ interface OrganizationOption {
   id: number;
   name: string;
 }
+
+// Prevent static generation for this page
 
 export default function UsersManagementPage() {
   const [users, setUsers] = useState<User[]>([]);

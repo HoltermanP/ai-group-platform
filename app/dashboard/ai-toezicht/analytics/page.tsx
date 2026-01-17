@@ -78,6 +78,8 @@ const QUALITY_COLORS = {
   geen_beoordeling: COLORS.chart3,
 };
 
+// Prevent static generation for this page
+
 export default function ToezichtAnalyticsPage() {
   const router = useRouter();
   const [analytics, setAnalytics] = useState<Analytics | null>(null);

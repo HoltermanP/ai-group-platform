@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -5,6 +8,11 @@ import { db } from "@/lib/db";
 import { projectsTable, safetyIncidentsTable, inspectionsTable, supervisionsTable } from "@/lib/db/schema";
 import { getUserOrganizationIds, isAdmin, getUserModulePermissions } from "@/lib/clerk-admin";
 import { eq, sql, or, isNull, inArray } from "drizzle-orm";
+
+// Schakel static generation uit voor deze pagina
+export const dynamic = 'force-dynamic';
+
+// Voorkom static generation
 
 export default async function DashboardPage() {
   const { userId } = await auth();

@@ -34,6 +34,8 @@ interface Project {
   discipline?: string;
 }
 
+// Prevent static generation for this page
+
 export default function ProjectsPage() {
   const router = useRouter();
   const [isCreating, setIsCreating] = useState(false);

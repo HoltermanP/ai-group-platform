@@ -65,6 +65,8 @@ function getQualityStandardLabel(key: string, value: string): string {
   return value;
 }
 
+// Prevent static generation for this page
+
 export default function SupervisionDetailPage() {
   const router = useRouter();
   const params = useParams();

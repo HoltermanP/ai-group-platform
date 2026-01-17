@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -49,6 +52,8 @@ interface User {
   imageUrl: string;
   certificates: UserCertificate[];
 }
+
+// Prevent static generation for this page
 
 export default function VerlopenCertificatenPage() {
   const [users, setUsers] = useState<User[]>([]);

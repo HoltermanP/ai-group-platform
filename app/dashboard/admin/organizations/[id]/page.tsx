@@ -1,3 +1,6 @@
+// Prevent static generation for this page
+
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -60,6 +63,8 @@ interface Member {
   status: string;
   joinedAt: string;
 }
+
+// Prevent static generation for this page
 
 export default function OrganizationDetailPage() {
   const params = useParams();
