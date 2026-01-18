@@ -1,5 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { projectTasksTable } from "@/lib/db/schema";
 import { NextResponse } from "next/server";
 import { eq, and } from "drizzle-orm";

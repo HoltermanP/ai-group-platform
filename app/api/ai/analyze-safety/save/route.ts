@@ -1,5 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { db } from "@/lib/db";
 import { aiAnalysesTable } from "@/lib/db/schema";
 import { nanoid } from "nanoid";

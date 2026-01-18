@@ -3,39 +3,8 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeSwitcher } from "@/components/theme-switcher";
-import { AdminNav } from "@/components/admin-nav";
-import { MainNav } from "@/components/main-nav";
-import { ProfileLink } from "@/components/profile-link";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Link from "next/link";
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from "@clerk/nextjs";
-
-// Check if we're in build time or if Clerk keys are missing
-const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build';
-const hasClerkKeys = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY && process.env.CLERK_SECRET_KEY;
-
-// Create fallback components for when Clerk is not available
-const FallbackClerkProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-const FallbackSignInButton = ({ children }: { children: React.ReactNode }) => <button>Inloggen</button>;
-const FallbackSignUpButton = ({ children }: { children: React.ReactNode }) => <button>Registreren</button>;
-const FallbackSignedIn = ({ children }: { children: React.ReactNode }) => null;
-const FallbackSignedOut = ({ children }: { children: React.ReactNode }) => <>{children}</>;
-const FallbackUserButton = () => null;
-
-// Use fallback components during build time or when Clerk is not configured
-const ActualClerkProvider = isBuildTime || !hasClerkKeys ? FallbackClerkProvider : ClerkProvider;
-const ActualSignInButton = isBuildTime || !hasClerkKeys ? FallbackSignInButton : SignInButton;
-const ActualSignUpButton = isBuildTime || !hasClerkKeys ? FallbackSignUpButton : SignUpButton;
-const ActualSignedIn = isBuildTime || !hasClerkKeys ? FallbackSignedIn : SignedIn;
-const ActualSignedOut = isBuildTime || !hasClerkKeys ? FallbackSignedOut : SignedOut;
-const ActualUserButton = isBuildTime || !hasClerkKeys ? FallbackUserButton : UserButton;
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -54,146 +23,39 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <ActualClerkProvider
-      appearance={hasClerkKeys && !isBuildTime ? {
-        variables: {
-          colorPrimary: "hsl(var(--primary))",
-          colorBackground: "hsl(var(--card))",
-          colorInputBackground: "hsl(var(--background))",
-          colorInputText: "hsl(var(--foreground))",
-          colorText: "hsl(var(--card-foreground))",
-          colorTextSecondary: "hsl(var(--muted-foreground))",
-          colorDanger: "hsl(var(--destructive))",
-          colorSuccess: "hsl(var(--chart-2))",
-          colorWarning: "hsl(var(--chart-4))",
-          colorTextOnPrimaryBackground: "hsl(var(--primary-foreground))",
-          fontSize: "1rem",
-          borderRadius: "var(--radius)",
-        },
-        elements: {
-          // Root & Layout
-          rootBox: "bg-background/80 backdrop-blur-sm",
-          card: "bg-card border-border shadow-xl",
-
-          // Headers
-          headerTitle: "text-card-foreground font-semibold",
-          headerSubtitle: "text-muted-foreground",
-
-          // Social buttons
-          socialButtonsBlockButton: "bg-secondary text-secondary-foreground border-border hover:bg-secondary/80 transition-colors font-medium",
-          socialButtonsBlockButtonText: "text-secondary-foreground",
-          socialButtonsBlockButtonArrow: "text-secondary-foreground",
-
-          // Form elements
-          formButtonPrimary: "bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-semibold shadow-sm",
-          formFieldInput: "bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-primary focus:border-primary",
-          formFieldLabel: "text-card-foreground font-medium",
-          formFieldInputShowPasswordButton: "text-muted-foreground hover:text-foreground",
-
-          // Text & Links
-          formHeaderTitle: "text-card-foreground",
-          formHeaderSubtitle: "text-muted-foreground",
-          footerActionLink: "text-primary hover:text-primary/80 transition-colors font-medium",
-          footerActionText: "text-muted-foreground",
-
-          // Dividers
-          dividerLine: "bg-border",
-          dividerText: "text-muted-foreground",
-
-          // Identity
-          identityPreviewText: "text-card-foreground",
-          identityPreviewEditButton: "text-muted-foreground hover:text-foreground border-border",
-
-          // User button
-          userButtonBox: "shadow-none",
-          userButtonPopoverCard: "bg-popover border-border shadow-xl",
-          userButtonPopoverActionButton: "text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
-          userButtonPopoverActionButtonText: "text-popover-foreground",
-          userButtonPopoverActionButtonIcon: "text-muted-foreground",
-          userButtonPopoverFooter: "border-border",
-
-          // Badge & Alert
-          badge: "bg-primary/10 text-primary border-primary/20",
-          alert: "bg-destructive/10 border-destructive/20 text-destructive",
-          alertText: "text-destructive",
-
-          // Form field states
-          formFieldSuccessText: "text-chart-2",
-          formFieldErrorText: "text-destructive",
-          formFieldWarningText: "text-chart-4",
-          formFieldHintText: "text-muted-foreground",
-
-          // Modal
-          modalContent: "bg-card",
-          modalCloseButton: "text-muted-foreground hover:text-foreground transition-colors",
-
-          // Other
-          otpCodeFieldInput: "bg-background border-border text-foreground",
-          formResendCodeLink: "text-primary hover:text-primary/80",
-        },
-      } : undefined}
-    >
-      <html lang="en" suppressHydrationWarning>
-        <body
-          className={`${poppins.variable} font-sans antialiased`}
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${poppins.variable} font-sans antialiased`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="theme-slate"
+          enableSystem={false}
+          storageKey="ai-group-theme"
         >
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="theme-slate"
-            enableSystem={false}
-            storageKey="ai-group-theme"
-          >
-            <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
-                <div className="flex justify-between items-center gap-2 sm:gap-4">
-                  <div className="flex items-center gap-2 sm:gap-4 md:gap-8 min-w-0 flex-1">
-                    <Link href="/" className="text-lg sm:text-xl font-bold text-foreground hover:text-primary transition-colors truncate">
-                      AI Group Platform
-                    </Link>
-                    <ActualSignedIn>
-                      <MainNav />
-                    </ActualSignedIn>
-                  </div>
-                  <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
-                    <ThemeSwitcher />
-                    <ActualSignedOut>
-                      <ActualSignInButton mode="modal">
-                        <button className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md text-sm sm:text-base">
-                          <span className="hidden sm:inline">Inloggen</span>
-                          <span className="sm:hidden">In</span>
-                        </button>
-                      </ActualSignInButton>
-                      <ActualSignUpButton mode="modal">
-                        <button className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all hover:shadow-md font-medium text-sm sm:text-base">
-                          <span className="hidden sm:inline">Registreren</span>
-                          <span className="sm:hidden">Reg</span>
-                        </button>
-                      </ActualSignUpButton>
-                    </ActualSignedOut>
-                    <ActualSignedIn>
-                      <Link
-                        href="/dashboard/instellingen"
-                        className="p-1.5 sm:p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-                        title="Instellingen"
-                      >
-                        <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                      </Link>
-                      <AdminNav />
-                      <ActualUserButton />
-                    </ActualSignedIn>
-                  </div>
+          <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+              <div className="flex justify-between items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 md:gap-8 min-w-0 flex-1">
+                  <Link href="/" className="text-lg sm:text-xl font-bold text-foreground hover:text-primary transition-colors truncate">
+                    AI Group Platform
+                  </Link>
+                </div>
+                <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
+                  <ThemeSwitcher />
+                  <Link
+                    href="/setup"
+                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md text-sm sm:text-base"
+                  >
+                    Setup
+                  </Link>
                 </div>
               </div>
-            </header>
-            <ErrorBoundary>
-              {children}
-            </ErrorBoundary>
-          </ThemeProvider>
-        </body>
-      </html>
-    </ActualClerkProvider>
+            </div>
+          </header>
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </ThemeProvider>
+      </body>
+    </html>
   );
 }

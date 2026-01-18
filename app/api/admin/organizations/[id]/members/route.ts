@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { auth, clerkClient } from '@clerk/nextjs/server';
 import { isAdmin, isOrganizationAdmin, addUserToOrganization, removeUserFromOrganization, updateUserOrganizationRole, type OrganizationRole } from '@/lib/clerk-admin';
 

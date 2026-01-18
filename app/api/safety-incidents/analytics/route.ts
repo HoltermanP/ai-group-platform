@@ -1,5 +1,5 @@
-import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { safetyIncidentsTable } from "@/lib/db/schema";
 import { getUserOrganizationIds } from "@/lib/clerk-admin";
 import { NextResponse } from "next/server";

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { auth } from '@clerk/nextjs/server';
 import { setModulePermission, getUserModulePermissions, ModuleType } from '@/lib/clerk-admin';
 

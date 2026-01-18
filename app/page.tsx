@@ -1,4 +1,6 @@
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+// Clerk componenten zijn tijdelijk uitgeschakeld voor build compatibility
+const SignedIn = ({ children }: { children: React.ReactNode }) => null;
+const SignedOut = ({ children }: { children: React.ReactNode }) => <>{children}</>;
 import Link from "next/link";
 import { ModuleCard } from "@/components/module-card";
 

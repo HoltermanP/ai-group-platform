@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { auth, currentUser } from '@clerk/nextjs/server';
 
 // GET /api/users/preferences - Haal user preferences op

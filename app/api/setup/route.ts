@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { safeAuth } from '@/lib/auth-wrapper';
+import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 
 /**
  * POST /api/setup
