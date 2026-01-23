@@ -100,10 +100,10 @@ export function SetupClient({ user }: SetupClientProps) {
             </div>
             <div className="flex gap-2">
               <Button asChild>
-                <a href="/dashboard">Naar Dashboard</a>
+                <Link href="/dashboard">Naar Dashboard</Link>
               </Button>
               <Button asChild variant="outline">
-                <a href="/dashboard/admin/users">Gebruikers Beheren</a>
+                <Link href="/dashboard/admin/users">Gebruikers Beheren</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href="/dashboard/admin/organizations">Organisaties Beheren</Link>
