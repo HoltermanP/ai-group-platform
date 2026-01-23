@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { LogIn, User } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 
 // Dynamically import Clerk components to prevent SSR issues
 const SignedIn = dynamic(() =>
@@ -21,38 +22,15 @@ const UserButton = dynamic(() =>
 
 export function AuthButtons() {
   const [mounted, setMounted] = useState(false);
-  const [clerkLoaded, setClerkLoaded] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-
-    // Check if Clerk is available
-    if (typeof window !== 'undefined' && window.Clerk) {
-      setClerkLoaded(true);
-    }
   }, []);
 
   // Show loading state until mounted
   if (!mounted) {
     return (
       <div className="h-8 w-8 bg-muted rounded-full animate-pulse" />
-    );
-  }
-
-  // If Clerk is not loaded, show basic login button that redirects to sign-in page
-  if (!clerkLoaded) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        className="gap-2"
-        asChild
-      >
-        <a href="/sign-in">
-          <LogIn className="h-4 w-4" />
-          Inloggen
-        </a>
-      </Button>
     );
   }
 
