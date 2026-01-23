@@ -44,6 +44,22 @@ export function ClerkProviderWrapper({ children }: { children: React.ReactNode }
           colorInputText: 'hsl(var(--foreground))',
           colorText: 'hsl(var(--foreground))',
         },
+        elements: {
+          modalContent: {
+            backgroundColor: 'hsl(var(--background))',
+            border: '1px solid hsl(var(--border))',
+          },
+          card: {
+            backgroundColor: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border))',
+          },
+          headerTitle: {
+            color: 'hsl(var(--foreground))',
+          },
+          headerSubtitle: {
+            color: 'hsl(var(--muted-foreground))',
+          },
+        },
       }}
     >
       {children}

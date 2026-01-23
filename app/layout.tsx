@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { AuthButtons } from "@/components/auth-buttons";
 import Link from "next/link";
 import { ClerkProviderWrapper } from "@/components/clerk-provider-wrapper";
 
@@ -41,6 +42,7 @@ export default function RootLayout({
                   </Link>
                 </div>
                 <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
+                  <AuthButtons />
                   <ThemeSwitcher />
                   <Link
                     href="/setup"
