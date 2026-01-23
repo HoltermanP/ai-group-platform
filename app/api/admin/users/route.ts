@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { clerkClient } from '@clerk/nextjs/server';
 import { getAllUsers, isAdmin, addUserToOrganization } from '@/lib/clerk-admin';
 
 /**
@@ -58,6 +57,7 @@ export async function POST(req: Request) {
       );
     }
 
+    const { clerkClient } = await import('@clerk/nextjs/server');
     const client = await clerkClient();
 
     // Maak gebruiker aan via Clerk

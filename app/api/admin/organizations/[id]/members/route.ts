@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
-import { auth, clerkClient } from '@clerk/nextjs/server';
+import { safeAuth } from '@/lib/auth-wrapper';
 import { isAdmin, isOrganizationAdmin, addUserToOrganization, removeUserFromOrganization, updateUserOrganizationRole, type OrganizationRole } from '@/lib/clerk-admin';
 
 /**
@@ -35,6 +34,7 @@ export async function GET(
       .where(eq(organizationMembersTable.organizationId, orgId));
 
     // Haal Clerk user data op voor elk lid
+    const { clerkClient } = await import('@clerk/nextjs/server');
     const client = await clerkClient();
     const membersWithUserData = await Promise.all(
       members.map(async (member) => {

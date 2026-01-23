@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
-import { auth } from '@clerk/nextjs/server';
-import { clerkClient } from '@clerk/nextjs/server';
+import { safeAuth } from '@/lib/auth-wrapper';
 import { isAdmin } from '@/lib/clerk-admin';
 
 /**
@@ -267,6 +265,7 @@ export async function POST() {
       },
     ];
 
+    const { clerkClient } = await import('@clerk/nextjs/server');
     const client = await clerkClient();
 
     // Haal alle certificaten op

@@ -1,7 +1,8 @@
-import { auth, clerkClient } from '@clerk/nextjs/server';
+// Dynamische imports om keyless module bundling problemen te voorkomen
 import { db } from './db';
 import { userRolesTable, organizationMembersTable, organizationsTable, userPreferencesTable, userModulePermissionsTable } from './db/schema';
 import { eq, and } from 'drizzle-orm';
+import { safeAuth } from './auth-wrapper';
 
 export type ModuleType = 'ai-safety' | 'ai-schouw' | 'ai-toezicht';
 
@@ -37,7 +38,7 @@ export interface UserWithRole {
  * Check of de huidige gebruiker een super admin is
  */
 export async function isSuperAdmin(): Promise<boolean> {
-  const { userId } = await auth();
+  const { userId } = await safeAuth();
   if (!userId) return false;
 
   const role = await db
@@ -53,29 +54,41 @@ export async function isSuperAdmin(): Promise<boolean> {
  * Check of de huidige gebruiker een admin is (super_admin of admin)
  */
 export async function isAdmin(): Promise<boolean> {
-  const { userId } = await auth();
+  const { userId } = await safeAuth();
   if (!userId) return false;
 
-  const role = await db
-    .select()
-    .from(userRolesTable)
-    .where(eq(userRolesTable.clerkUserId, userId))
-    .limit(1);
+  try {
+    const role = await db
+      .select()
+      .from(userRolesTable)
+      .where(eq(userRolesTable.clerkUserId, userId))
+      .limit(1);
 
-  return role[0]?.role === 'super_admin' || role[0]?.role === 'admin';
+    return role[0]?.role === 'super_admin' || role[0]?.role === 'admin';
+  } catch (error) {
+    console.warn('Database query failed for isAdmin, using fallback:', error);
+    // Fallback: return false if database is not available
+    return false;
+  }
 }
 
 /**
  * Haal de globale rol van een gebruiker op
  */
 export async function getUserGlobalRole(userId: string): Promise<GlobalRole> {
-  const role = await db
-    .select()
-    .from(userRolesTable)
-    .where(eq(userRolesTable.clerkUserId, userId))
-    .limit(1);
+  try {
+    const role = await db
+      .select()
+      .from(userRolesTable)
+      .where(eq(userRolesTable.clerkUserId, userId))
+      .limit(1);
 
-  return (role[0]?.role as GlobalRole) || 'user';
+    return (role[0]?.role as GlobalRole) || 'user';
+  } catch (error) {
+    console.warn('Database query failed for getUserGlobalRole, using fallback:', error);
+    // Fallback: return 'user' role if database is not available
+    return 'user';
+  }
 }
 
 // ============================================
@@ -149,23 +162,29 @@ export async function getUserOrganizationRole(
  * Haal alle organisaties van een gebruiker op met hun rollen
  */
 export async function getUserOrganizations(userId: string) {
-  const memberships = await db
-    .select({
-      organizationId: organizationMembersTable.organizationId,
-      role: organizationMembersTable.role,
-      status: organizationMembersTable.status,
-      organizationName: organizationsTable.name,
-      organizationSlug: organizationsTable.slug,
-      organizationStatus: organizationsTable.status,
-    })
-    .from(organizationMembersTable)
-    .innerJoin(
-      organizationsTable,
-      eq(organizationMembersTable.organizationId, organizationsTable.id)
-    )
-    .where(eq(organizationMembersTable.clerkUserId, userId));
+  try {
+    const memberships = await db
+      .select({
+        organizationId: organizationMembersTable.organizationId,
+        role: organizationMembersTable.role,
+        status: organizationMembersTable.status,
+        organizationName: organizationsTable.name,
+        organizationSlug: organizationsTable.slug,
+        organizationStatus: organizationsTable.status,
+      })
+      .from(organizationMembersTable)
+      .innerJoin(
+        organizationsTable,
+        eq(organizationMembersTable.organizationId, organizationsTable.id)
+      )
+      .where(eq(organizationMembersTable.clerkUserId, userId));
 
-  return memberships.filter(m => m.status === 'active' && m.organizationStatus === 'active');
+    return memberships.filter(m => m.status === 'active' && m.organizationStatus === 'active');
+  } catch (error) {
+    console.warn('Database query failed for getUserOrganizations, using fallback:', error);
+    // Fallback: return empty array if database is not available
+    return [];
+  }
 }
 
 // ============================================
@@ -176,6 +195,7 @@ export async function getUserOrganizations(userId: string) {
  * Haal alle gebruikers op via Clerk met hun rollen
  */
 export async function getAllUsers(): Promise<UserWithRole[]> {
+  const { clerkClient } = await import('@clerk/nextjs/server');
   const client = await clerkClient();
 
   // Haal alle Clerk gebruikers op (max 500)
@@ -237,7 +257,7 @@ export async function updateUserGlobalRole(
   targetUserId: string,
   newRole: GlobalRole
 ): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId || !(await isAdmin())) {
     throw new Error('Unauthorized: alleen admins kunnen rollen updaten');
   }
@@ -280,7 +300,7 @@ export async function updateUserOrganizationRole(
   organizationId: number,
   newRole: OrganizationRole
 ): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId) {
     throw new Error('Unauthorized: niet ingelogd');
   }
@@ -316,7 +336,7 @@ export async function addUserToOrganization(
   organizationId: number,
   role: OrganizationRole = 'member'
 ): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId) {
     throw new Error('Unauthorized: niet ingelogd');
   }
@@ -362,7 +382,7 @@ export async function removeUserFromOrganization(
   targetUserId: string,
   organizationId: number
 ): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId) {
     throw new Error('Unauthorized: niet ingelogd');
   }
@@ -390,7 +410,7 @@ export async function removeUserFromOrganization(
  * Blokkeer een gebruiker (ban via Clerk)
  */
 export async function banUser(userId: string): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId || !(await isAdmin())) {
     throw new Error('Unauthorized: alleen admins kunnen gebruikers blokkeren');
   }
@@ -401,6 +421,7 @@ export async function banUser(userId: string): Promise<void> {
     throw new Error('Unauthorized: alleen super admins kunnen super admin gebruikers blokkeren');
   }
 
+  const { clerkClient } = await import('@clerk/nextjs/server');
   const client = await clerkClient();
   await client.users.banUser(userId);
 }
@@ -409,11 +430,12 @@ export async function banUser(userId: string): Promise<void> {
  * Deblokkeer een gebruiker (unban via Clerk)
  */
 export async function unbanUser(userId: string): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId || !(await isAdmin())) {
     throw new Error('Unauthorized: alleen admins kunnen gebruikers deblokkeren');
   }
 
+  const { clerkClient } = await import('@clerk/nextjs/server');
   const client = await clerkClient();
   await client.users.unbanUser(userId);
 }
@@ -422,7 +444,7 @@ export async function unbanUser(userId: string): Promise<void> {
  * Verwijder een gebruiker permanent (delete via Clerk)
  */
 export async function deleteUser(userId: string): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId || !(await isAdmin())) {
     throw new Error('Unauthorized: alleen admins kunnen gebruikers verwijderen');
   }
@@ -439,6 +461,7 @@ export async function deleteUser(userId: string): Promise<void> {
   await db.delete(userPreferencesTable).where(eq(userPreferencesTable.clerkUserId, userId));
 
   // Verwijder daarna de gebruiker uit Clerk
+  const { clerkClient } = await import('@clerk/nextjs/server');
   const client = await clerkClient();
   await client.users.deleteUser(userId);
 }
@@ -590,7 +613,7 @@ export async function setModulePermission(
   granted: boolean,
   notes?: string
 ): Promise<void> {
-  const { userId: adminUserId } = await auth();
+  const { userId: adminUserId } = await safeAuth();
   if (!adminUserId || !(await isAdmin())) {
     throw new Error('Unauthorized: alleen admins kunnen module rechten wijzigen');
   }

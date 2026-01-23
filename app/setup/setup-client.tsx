@@ -9,7 +9,9 @@ import { Label } from '@/components/ui/label';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 interface SetupClientProps {
-  user: any; // Clerk user object
+  user: {
+    emailAddress?: string;
+  } | null;
 }
 
 export function SetupClient({ user }: SetupClientProps) {
@@ -20,10 +22,10 @@ export function SetupClient({ user }: SetupClientProps) {
   const [orgSlug, setOrgSlug] = useState('');
 
   useEffect(() => {
-    if (user) {
+    if (user?.emailAddress) {
       checkSetup();
     }
-  }, [user]);
+  }, [user?.emailAddress]);
 
   const checkSetup = async () => {
     try {
@@ -45,7 +47,7 @@ export function SetupClient({ user }: SetupClientProps) {
 
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    if (!user?.emailAddress) return;
 
     setLoading(true);
     setError(null);
@@ -129,7 +131,7 @@ export function SetupClient({ user }: SetupClientProps) {
                 <Label htmlFor="email">Je Account</Label>
                 <Input
                   id="email"
-                  value={user.emailAddresses[0]?.emailAddress || ''}
+                  value={user?.emailAddress || ''}
                   disabled
                 />
                 <p className="text-xs text-muted-foreground mt-1">

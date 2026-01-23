@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
-import { auth } from '@clerk/nextjs/server';
+import { safeAuth } from '@/lib/auth-wrapper';
 import { getAllUsers, isAdmin } from '@/lib/clerk-admin';
 
 /**

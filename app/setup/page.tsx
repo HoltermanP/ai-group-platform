@@ -14,5 +14,10 @@ export default async function SetupPage() {
 
   const user = await safeCurrentUser();
 
-  return <SetupClient user={user} />;
+  // Extraheer alleen de benodigde user data voor serialisatie
+  const userData = user ? {
+    emailAddress: user.emailAddresses?.[0]?.emailAddress,
+  } : null;
+
+  return <SetupClient user={userData} />;
 }

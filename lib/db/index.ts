@@ -13,26 +13,35 @@ export function preventBuildTimeExecution() {
 }
 
 // Neon serverless driver gebruikt HTTP en verwacht een specifiek URL formaat
-// Parse de DATABASE_URL en reconstrueer zonder query parameters en zonder -pooler
+// Voor Neon databases behouden we de volledige URL inclusief SSL parameters
 function cleanNeonUrl(url: string): string {
   try {
-    // Verwijder eerst alle query parameters
-    const baseUrl = url.split('?')[0];
+    // Controleer of dit een Neon database URL is (bevat 'neon.tech')
+    if (url.includes('neon.tech')) {
+      // Voor Neon databases behouden we de volledige URL inclusief query parameters
+      const urlObj = new URL(url);
 
-    // Parse de URL
-    const urlObj = new URL(baseUrl);
+      // Verwijder -pooler uit hostname voor serverless gebruik
+      if (urlObj.hostname.includes('-pooler.')) {
+        urlObj.hostname = urlObj.hostname.replace('-pooler.', '.');
+      }
 
-    // Verwijder -pooler uit hostname voor serverless gebruik
-    if (urlObj.hostname.includes('-pooler.')) {
-      urlObj.hostname = urlObj.hostname.replace('-pooler.', '.');
+      return urlObj.href;
+    } else {
+      // Voor andere databases verwijderen we query parameters
+      const baseUrl = url.split('?')[0];
+      const urlObj = new URL(baseUrl);
+
+      if (urlObj.hostname.includes('-pooler.')) {
+        urlObj.hostname = urlObj.hostname.replace('-pooler.', '.');
+      }
+
+      return urlObj.href;
     }
-
-    // Retourneer de schone URL (URL object zorgt automatisch voor correcte encoding)
-    return urlObj.href;
   } catch (error) {
     console.error('Error parsing DATABASE_URL:', error);
-    // Fallback naar simple string replacement
-    return url.split('?')[0].replace('-pooler.', '.');
+    // Fallback: behoud de volledige URL als parsing faalt
+    return url;
   }
 }
 

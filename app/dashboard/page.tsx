@@ -22,13 +22,22 @@ export default async function DashboardPage() {
   }
 
   const user = await safeCurrentUser();
-  
+
+  // Extraheer alleen de benodigde user data voor serialisatie
+  const userData = user ? {
+    firstName: user.firstName,
+    lastName: user.lastName,
+    emailAddress: user.emailAddresses?.[0]?.emailAddress,
+  } : null;
+
   // Haal module rechten op
   const modulePermissions = await getUserModulePermissions(userId);
-  
+
   // Haal organisatie IDs op voor filtering
   const userIsAdmin = await isAdmin();
   const userOrgIds = await getUserOrganizationIds(userId);
+
+  try {
   
   // Haal project statistieken op
   const projectsQuery = db
@@ -159,7 +168,7 @@ export default async function DashboardPage() {
           <div className="mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-foreground">Dashboard</h1>
             <p className="text-sm sm:text-base text-muted-foreground">
-              Welkom terug, {user?.firstName || user?.emailAddresses[0]?.emailAddress}!
+              Welkom terug, {userData?.firstName || userData?.emailAddress || 'Gebruiker'}!
             </p>
           </div>
 
@@ -373,5 +382,75 @@ export default async function DashboardPage() {
       </div>
     </div>
   );
+  } catch (error) {
+    console.error('Database error in dashboard:', error);
+
+    // Fallback dashboard met lege statistieken
+    return (
+      <div className="min-h-[calc(100vh-73px)] bg-background">
+        <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8">
+          <div className="max-w-6xl mx-auto">
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-foreground">Dashboard</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">
+                Welkom terug, {userData?.firstName || userData?.emailAddress || 'Gebruiker'}!
+              </p>
+              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-sm text-yellow-800">
+                  ⚠️ Database connectie probleem gedetecteerd. Sommige statistieken kunnen niet worden geladen.
+                  Controleer je database configuratie.
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4 sm:space-y-6">
+              {/* Lege tegels tonen */}
+              <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <div className="w-8 h-8 bg-muted rounded-lg"></div>
+                    <h3 className="text-base sm:text-lg font-semibold text-card-foreground">Projecten</h3>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Totaal</span>
+                      <span className="text-sm font-medium">-</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <div className="w-8 h-8 bg-muted rounded-lg"></div>
+                    <h3 className="text-base sm:text-lg font-semibold text-card-foreground">Veiligheidsmeldingen</h3>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Totaal</span>
+                      <span className="text-sm font-medium">-</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
+                    <div className="w-8 h-8 bg-muted rounded-lg"></div>
+                    <h3 className="text-base sm:text-lg font-semibold text-card-foreground">Module Toegang</h3>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm text-muted-foreground">
+                      {modulePermissions['ai-safety'] ? '✅' : '❌'} AI-Veiligheid<br/>
+                      {modulePermissions['ai-schouw'] ? '✅' : '❌'} AI-Schouw<br/>
+                      {modulePermissions['ai-toezicht'] ? '✅' : '❌'} AI-Toezicht
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }
 

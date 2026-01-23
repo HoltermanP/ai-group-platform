@@ -3,11 +3,20 @@
 
 'use client';
 
-import { UserProfile } from '@clerk/nextjs';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+// Dynamisch importeren om server-side bundling problemen te voorkomen
+const UserProfile = dynamic(
+  () => import('@clerk/nextjs').then((mod) => mod.UserProfile),
+  { 
+    ssr: false,
+    loading: () => <div>Laden...</div>
+  }
+);
 
 // Prevent static generation for this page
 

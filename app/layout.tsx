@@ -5,6 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Link from "next/link";
+import { ClerkProviderWrapper } from "@/components/clerk-provider-wrapper";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -51,9 +52,11 @@ export default function RootLayout({
               </div>
             </div>
           </header>
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
+          <ClerkProviderWrapper>
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </ClerkProviderWrapper>
         </ThemeProvider>
       </body>
     </html>
