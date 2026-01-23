@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useUser } from '@clerk/nextjs';
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -77,23 +78,38 @@ const navigationItems = [
 
 export function MainNav() {
   const pathname = usePathname();
+  const { isSignedIn, isLoaded } = useUser();
   const [modulePermissions, setModulePermissions] = useState<Record<string, boolean> | null>(null);
 
   useEffect(() => {
+    // Only fetch permissions if user is signed in
+    if (!isLoaded) return;
+    
+    if (!isSignedIn) {
+      // User is not signed in, set empty permissions
+      setModulePermissions({});
+      return;
+    }
+
     const fetchPermissions = async () => {
       try {
         const res = await fetch('/api/users/module-permissions');
         if (res.ok) {
           const data = await res.json();
           setModulePermissions(data.permissions);
+        } else if (res.status === 401) {
+          // User is not authenticated, set empty permissions
+          setModulePermissions({});
         }
       } catch (error) {
         console.error('Error fetching module permissions:', error);
+        // On error, set empty permissions to prevent blocking
+        setModulePermissions({});
       }
     };
 
     fetchPermissions();
-  }, []);
+  }, [isSignedIn, isLoaded]);
 
   // Filter items op basis van module rechten
   const visibleItems = navigationItems.filter(item => {
@@ -102,6 +118,9 @@ export function MainNav() {
     
     // Als permissions nog niet geladen zijn, niet tonen (voorkomt flash)
     if (modulePermissions === null) return false;
+    
+    // Als gebruiker niet is ingelogd, toon alleen items zonder module
+    if (!isSignedIn) return false;
     
     // Toon alleen als gebruiker toegang heeft
     return modulePermissions[item.module] === true;

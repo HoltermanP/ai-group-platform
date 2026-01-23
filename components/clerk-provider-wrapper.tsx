@@ -1,40 +1,23 @@
 'use client';
 
-import { ReactNode, useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { ReactNode } from 'react';
+import { ClerkProvider as ClerkProviderBase } from '@clerk/nextjs';
 
 // Check if Clerk is properly configured
 const hasClerkKeys = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-// Dynamically import ClerkProvider
-const ClerkProvider = dynamic(
-  () => import('@clerk/nextjs').then((mod) => ({ default: mod.ClerkProvider })),
-  { ssr: false }
-);
 
 interface ClerkProviderWrapperProps {
   children: ReactNode;
 }
 
 export function ClerkProviderWrapper({ children }: ClerkProviderWrapperProps) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   // If no Clerk keys configured, just render children
   if (!hasClerkKeys) {
     return <>{children}</>;
   }
 
-  // Wait for client-side mount before rendering ClerkProvider
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
   return (
-    <ClerkProvider
+    <ClerkProviderBase
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}
       appearance={{
         baseTheme: undefined,
@@ -64,6 +47,6 @@ export function ClerkProviderWrapper({ children }: ClerkProviderWrapperProps) {
       }}
     >
       {children}
-    </ClerkProvider>
+    </ClerkProviderBase>
   );
 }

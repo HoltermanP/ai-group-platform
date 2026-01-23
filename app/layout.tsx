@@ -33,28 +33,28 @@ export default function RootLayout({
           enableSystem={false}
           storageKey="ai-group-theme"
         >
-          <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
-              <div className="flex justify-between items-center gap-2 sm:gap-4">
-                <div className="flex items-center gap-2 sm:gap-4 md:gap-8 min-w-0 flex-1">
-                  <Link href="/" className="text-lg sm:text-xl font-bold text-foreground hover:text-primary transition-colors truncate">
-                    AI Group Platform
-                  </Link>
-                </div>
-                <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
-                  <AuthButtons />
-                  <ThemeSwitcher />
-                  <Link
-                    href="/setup"
-                    className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md text-sm sm:text-base"
-                  >
-                    Setup
-                  </Link>
+          <ClerkProviderWrapper>
+            <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+                <div className="flex justify-between items-center gap-2 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-4 md:gap-8 min-w-0 flex-1">
+                    <Link href="/" className="text-lg sm:text-xl font-bold text-foreground hover:text-primary transition-colors truncate">
+                      AI Group Platform
+                    </Link>
+                  </div>
+                  <div className="flex gap-1.5 sm:gap-2 md:gap-3 items-center shrink-0">
+                    <AuthButtons />
+                    <ThemeSwitcher />
+                    <Link
+                      href="/setup"
+                      className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg border border-border text-foreground hover:bg-accent hover:text-accent-foreground transition-all hover:shadow-md text-sm sm:text-base"
+                    >
+                      Setup
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          </header>
-          <ClerkProviderWrapper>
+            </header>
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
