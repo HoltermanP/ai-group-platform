@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
     const selectedModel = userPrefs.length > 0 && userPrefs[0].defaultAIModel
       ? userPrefs[0].defaultAIModel
-      : 'gpt-4';
+      : 'gpt-4o';
 
     // Debug logging
     console.log('=== AI ANALYSIS REQUEST ===');

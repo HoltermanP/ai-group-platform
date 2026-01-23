@@ -101,6 +101,62 @@ function usesMaxCompletionTokens(model: string): boolean {
 }
 
 /**
+ * Bepaal de context limit (max tokens) voor een model
+ */
+function getModelContextLimit(model: string): number {
+  const modelLower = model.toLowerCase();
+  
+  // GPT-4o en GPT-4 Turbo modellen hebben 128k context
+  if (modelLower.includes('gpt-4o') || modelLower.includes('gpt-4-turbo')) {
+    return 128000;
+  }
+  
+  // GPT-4 modellen hebben 8k context
+  if (modelLower.includes('gpt-4')) {
+    return 8192;
+  }
+  
+  // GPT-3.5 modellen hebben 16k context
+  if (modelLower.includes('gpt-3.5')) {
+    return 16384;
+  }
+  
+  // GPT-5 modellen hebben 128k context
+  if (modelLower.includes('gpt-5')) {
+    return 128000;
+  }
+  
+  // Default: 8k voor veiligheid
+  return 8192;
+}
+
+/**
+ * Bereken de maximale completion tokens op basis van model context limit en input tokens
+ */
+function calculateMaxCompletionTokens(model: string, inputTokens: number): number {
+  const contextLimit = getModelContextLimit(model);
+  
+  // Reserveer 10% van de context voor overhead en system messages
+  const availableTokens = Math.floor(contextLimit * 0.9);
+  
+  // Bereken beschikbare tokens voor completion
+  const maxCompletion = availableTokens - inputTokens;
+  
+  // Zorg ervoor dat we niet negatief zijn en een redelijke minimum hebben
+  // Voor modellen met hoge context limits, gebruik een redelijke max
+  if (contextLimit >= 128000) {
+    // Voor grote modellen, gebruik maximaal 32000 tokens voor completion
+    return Math.min(maxCompletion, 32000);
+  } else if (contextLimit >= 16384) {
+    // Voor medium modellen, gebruik maximaal 8000 tokens
+    return Math.min(maxCompletion, 8000);
+  } else {
+    // Voor kleine modellen (8k), gebruik maximaal 4000 tokens
+    return Math.min(maxCompletion, 4000);
+  }
+}
+
+/**
  * Genereer een AI prompt voor incident analyse als er geen custom prompt is
  */
 async function generateAnalysisPrompt(incidentsData: string, model: string = 'gpt-4'): Promise<string> {
@@ -689,7 +745,7 @@ Geef ALLEEN de JSON terug, zonder extra tekst of markdown.`;
 export async function analyzeSafetyIncidents(
   incidents: SafetyIncidentForAnalysis[],
   customPrompt?: string,
-  model: string = 'gpt-4'
+  model: string = 'gpt-4o'
 ): Promise<AIAnalysisResult> {
   if (!openai) {
     throw new Error('OpenAI API key is not configured');
@@ -887,12 +943,25 @@ Geef alleen de JSON terug, zonder extra tekst.`;
       ],
     };
     
+    // Schat input tokens (ongeveer 4 characters per token is een goede schatting)
+    const systemTokens = Math.ceil(systemMessage.length / 4);
+    const promptTokens = Math.ceil(prompt.length / 4);
+    const estimatedInputTokens = systemTokens + promptTokens + 50; // 50 tokens overhead
+    
+    // Bereken max completion tokens dynamisch op basis van model context limit
+    const maxCompletion = calculateMaxCompletionTokens(model, estimatedInputTokens);
+    
+    console.log('=== TOKEN CALCULATION ===');
+    console.log('Model:', model);
+    console.log('Model context limit:', getModelContextLimit(model));
+    console.log('Estimated input tokens:', estimatedInputTokens);
+    console.log('Calculated max completion tokens:', maxCompletion);
+    
     // GPT-5 modellen gebruiken max_completion_tokens in plaats van max_tokens
-    // Verhoogde limiet voor uitgebreide analyses (inclusief foto analyses)
     if (usesMaxCompletionTokens(model)) {
-      completionOptions.max_completion_tokens = 16000;
+      completionOptions.max_completion_tokens = maxCompletion;
     } else {
-      completionOptions.max_tokens = 16000;
+      completionOptions.max_tokens = maxCompletion;
     }
     
     // Voeg temperature alleen toe als het model dit ondersteunt

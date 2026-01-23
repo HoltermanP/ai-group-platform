@@ -89,7 +89,7 @@ export async function POST(
 
     const selectedModel = userPrefs.length > 0 && userPrefs[0].defaultAIModel
       ? userPrefs[0].defaultAIModel
-      : 'gpt-4';
+      : 'gpt-4o';
 
     // Als er geen analyse is, genereer er eerst een
     if (!analysis) {
