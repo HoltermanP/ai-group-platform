@@ -1,47 +1,33 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import dynamic from 'next/dynamic';
+import { ReactNode } from 'react';
 
-// Check if Clerk is properly configured - check client-side available keys
+// Check if Clerk is properly configured
 const hasClerkKeys = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-// Dynamisch importeren voor client-side rendering
-const ClerkProvider = dynamic(
-  () => import('@clerk/nextjs').then((mod) => mod.ClerkProvider),
-  {
-    ssr: false,
-    loading: () => <>{null}</>
-  }
-);
-
-// Server-side fallback provider voor SSR/build time
-function ClerkProviderSSR({ children, ...props }: any) {
-  return <>{children}</>;
+interface ClerkProviderWrapperProps {
+  children: ReactNode;
 }
 
-export function ClerkProviderWrapper({ children }: { children: React.ReactNode }) {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
+export function ClerkProviderWrapper({ children }: ClerkProviderWrapperProps) {
   // If no Clerk keys configured, just render children
   if (!hasClerkKeys) {
     return <>{children}</>;
   }
 
-  // During SSR/build time, use fallback provider
-  if (typeof window === 'undefined' || !mounted) {
-    return (
-      <ClerkProviderSSR>
-        {children}
-      </ClerkProviderSSR>
-    );
-  }
+  // Dynamically import and render ClerkProvider only on client side
+  return (
+    <ClerkProviderClient>
+      {children}
+    </ClerkProviderClient>
+  );
+}
 
-  // Client-side: use full ClerkProvider
+// Separate component that handles the dynamic import
+function ClerkProviderClient({ children }: { children: ReactNode }) {
+  // Use React.lazy and Suspense for better SSR handling
+  const ClerkProvider = require('@clerk/nextjs').ClerkProvider;
+
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}

@@ -1,9 +1,46 @@
-// Prevent static generation for this page due to Clerk components
-export const dynamic = 'force-dynamic';
-
 import Link from "next/link";
-import { SignedIn, SignedOut } from "@clerk/nextjs";
+import React from "react";
 import { ModuleCard } from "@/components/module-card";
+
+// Conditionally render Clerk components only on client side
+function ConditionalClerkComponents() {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <p className="text-sm sm:text-base lg:text-lg text-muted-foreground px-4">
+        Log in of registreer om toegang te krijgen tot onze AI-gestuurde tools
+      </p>
+    );
+  }
+
+  const { SignedIn, SignedOut } = require("@clerk/nextjs");
+
+  return (
+    <>
+      <SignedOut>
+        <p className="text-sm sm:text-base lg:text-lg text-muted-foreground px-4">
+          Log in of registreer om toegang te krijgen tot onze AI-gestuurde tools
+        </p>
+      </SignedOut>
+      <SignedIn>
+        <Link
+          href="/dashboard"
+          className="inline-flex h-12 sm:h-14 items-center justify-center gap-2 rounded-lg bg-primary px-6 sm:px-8 md:px-10 text-base sm:text-lg text-primary-foreground font-semibold transition-all hover:bg-primary/90 hover:shadow-xl hover:scale-105"
+        >
+          Ga naar Dashboard
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+      </SignedIn>
+    </>
+  );
+}
 
 export default function Home() {
   return (
@@ -19,22 +56,7 @@ export default function Home() {
           </p>
           
           <div className="flex flex-col gap-4 sm:flex-row justify-center mt-6 sm:mt-8">
-            <SignedOut>
-              <p className="text-sm sm:text-base lg:text-lg text-muted-foreground px-4">
-                Log in of registreer om toegang te krijgen tot onze AI-gestuurde tools
-              </p>
-            </SignedOut>
-            <SignedIn>
-              <Link
-                href="/dashboard"
-                className="inline-flex h-12 sm:h-14 items-center justify-center gap-2 rounded-lg bg-primary px-6 sm:px-8 md:px-10 text-base sm:text-lg text-primary-foreground font-semibold transition-all hover:bg-primary/90 hover:shadow-xl hover:scale-105"
-              >
-                Ga naar Dashboard
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </SignedIn>
+            <ConditionalClerkComponents />
           </div>
         </div>
 
@@ -77,30 +99,20 @@ export default function Home() {
             <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6">
               Ontdek hoe onze AI-gestuurde oplossingen uw infrastructuurbeheer naar een hoger niveau tillen.
             </p>
-            <SignedOut>
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-                <Link
-                  href="/sign-up"
-                  className="inline-flex h-11 sm:h-12 items-center justify-center rounded-lg bg-primary px-6 sm:px-8 text-primary-foreground font-semibold transition-all hover:bg-primary/90 hover:shadow-lg text-sm sm:text-base"
-                >
-                  Gratis starten
-                </Link>
-                <Link
-                  href="/sign-in"
-                  className="inline-flex h-11 sm:h-12 items-center justify-center rounded-lg border-2 border-border px-6 sm:px-8 font-semibold transition-all hover:bg-accent hover:border-primary text-sm sm:text-base"
-                >
-                  Inloggen
-                </Link>
-              </div>
-            </SignedOut>
-            <SignedIn>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
               <Link
-                href="/dashboard"
+                href="/sign-up"
                 className="inline-flex h-11 sm:h-12 items-center justify-center rounded-lg bg-primary px-6 sm:px-8 text-primary-foreground font-semibold transition-all hover:bg-primary/90 hover:shadow-lg text-sm sm:text-base"
               >
-                Naar Dashboard
+                Gratis starten
               </Link>
-            </SignedIn>
+              <Link
+                href="/sign-in"
+                className="inline-flex h-11 sm:h-12 items-center justify-center rounded-lg border-2 border-border px-6 sm:px-8 font-semibold transition-all hover:bg-accent hover:border-primary text-sm sm:text-base"
+              >
+                Inloggen
+              </Link>
+            </div>
           </div>
         </div>
       </main>
