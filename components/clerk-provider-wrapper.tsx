@@ -6,7 +6,7 @@ import dynamic from 'next/dynamic';
 // Check if Clerk is properly configured - check client-side available keys
 const hasClerkKeys = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
-// Dynamisch importeren om server-side bundling problemen te voorkomen
+// Dynamisch importeren voor client-side rendering
 const ClerkProvider = dynamic(
   () => import('@clerk/nextjs').then((mod) => mod.ClerkProvider),
   {
@@ -15,6 +15,11 @@ const ClerkProvider = dynamic(
   }
 );
 
+// Server-side fallback provider voor SSR/build time
+function ClerkProviderSSR({ children, ...props }: any) {
+  return <>{children}</>;
+}
+
 export function ClerkProviderWrapper({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
@@ -22,16 +27,21 @@ export function ClerkProviderWrapper({ children }: { children: React.ReactNode }
     setMounted(true);
   }, []);
 
-  // Only render ClerkProvider after mounting to avoid hydration issues
+  // If no Clerk keys configured, just render children
   if (!hasClerkKeys) {
     return <>{children}</>;
   }
 
-  if (!mounted) {
-    // Return children without ClerkProvider during SSR
-    return <>{children}</>;
+  // During SSR/build time, use fallback provider
+  if (typeof window === 'undefined' || !mounted) {
+    return (
+      <ClerkProviderSSR>
+        {children}
+      </ClerkProviderSSR>
+    );
   }
 
+  // Client-side: use full ClerkProvider
   return (
     <ClerkProvider
       publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}

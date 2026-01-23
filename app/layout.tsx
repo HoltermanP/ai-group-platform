@@ -1,3 +1,6 @@
+// Prevent static generation for layout due to Clerk components
+export const dynamic = 'force-dynamic';
+
 import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";

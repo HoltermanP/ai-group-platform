@@ -1,3 +1,6 @@
+// Prevent static generation for this page due to Clerk components
+export const dynamic = 'force-dynamic';
+
 import Link from "next/link";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import { ModuleCard } from "@/components/module-card";
