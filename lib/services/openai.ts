@@ -194,26 +194,38 @@ function getModelContextLimit(model: string): number {
 
 /**
  * Bereken de maximale completion tokens op basis van model context limit en input tokens
+ * Voor AI analyse gebruiken we veel meer tokens om ervoor te zorgen dat het volledige incidentAnalysis sjabloon wordt ingevuld
  */
-function calculateMaxCompletionTokens(model: string, inputTokens: number): number {
+function calculateMaxCompletionTokens(model: string, inputTokens: number, forAnalysis: boolean = false): number {
   const contextLimit = getModelContextLimit(model);
   
-  // Reserveer 10% van de context voor overhead en system messages
-  const availableTokens = Math.floor(contextLimit * 0.9);
+  // Voor analyse: gebruik bijna de volledige context om ervoor te zorgen dat alle data wordt gegenereerd
+  if (forAnalysis) {
+    // Reserveer slechts 5% voor overhead, gebruik de rest voor completion
+    const availableTokens = Math.floor(contextLimit * 0.95);
+    const maxCompletion = availableTokens - inputTokens;
+    
+    // Voor grote modellen (128k), gebruik maximaal 100k tokens voor completion
+    if (contextLimit >= 128000) {
+      return Math.max(Math.min(maxCompletion, 100000), 50000); // Minimaal 50k, maximaal 100k
+    } else if (contextLimit >= 16384) {
+      // Voor medium modellen, gebruik maximaal 12k tokens
+      return Math.max(Math.min(maxCompletion, 12000), 6000);
+    } else {
+      // Voor kleine modellen (8k), gebruik maximaal 6k tokens
+      return Math.max(Math.min(maxCompletion, 6000), 3000);
+    }
+  }
   
-  // Bereken beschikbare tokens voor completion
+  // Voor andere use cases: gebruik de oude logica
+  const availableTokens = Math.floor(contextLimit * 0.9);
   const maxCompletion = availableTokens - inputTokens;
   
-  // Zorg ervoor dat we niet negatief zijn en een redelijke minimum hebben
-  // Voor modellen met hoge context limits, gebruik een redelijke max
   if (contextLimit >= 128000) {
-    // Voor grote modellen, gebruik maximaal 32000 tokens voor completion
     return Math.min(maxCompletion, 32000);
   } else if (contextLimit >= 16384) {
-    // Voor medium modellen, gebruik maximaal 8000 tokens
     return Math.min(maxCompletion, 8000);
   } else {
-    // Voor kleine modellen (8k), gebruik maximaal 4000 tokens
     return Math.min(maxCompletion, 4000);
   }
 }
@@ -385,9 +397,9 @@ INSTRUCTIES:
 - SuggestedToolboxTopics: Minimaal 2-3 topics, elk met uitgebreide beschrijving (minimaal 100 woorden per topic)
 - RiskAssessment: Minimaal 250 woorden, zeer gedetailleerd
 - PreventiveMeasures: Minimaal 5-8 maatregelen, elk minimaal 2 zinnen
-- IncidentAnalysis: Vul alle 10 secties van het sjabloon volledig in met gedetailleerde informatie
+- IncidentAnalysis: VERPLICHT - Vul alle 10 secties van het sjabloon volledig in met gedetailleerde informatie. Dit is het primaire format voor de analyse.
 
-Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
+CRITIEK: Je antwoord MOET beginnen met een geldig JSON object. Geen tekst vooraf, geen uitleg, alleen JSON. Gebruik deze exacte structuur en vul alle velden in.`;
   }
 }
 
@@ -407,24 +419,77 @@ async function structureAnalysisOutput(
 Structureer deze output in een geldige JSON structuur.
 
 Raw output:
-${rawOutput.substring(0, 2000)}
+${rawOutput.substring(0, 5000)}
 
 ${expectedStructure ? `Verwachte structuur:\n${expectedStructure}` : 'Gebruik deze standaard structuur:'}
 
 {
-  "summary": "Een samenvatting van de analyse",
+  "summary": "Een UITGEBREIDE samenvatting (minimaal 300 woorden) van alle meldingen, patronen, trends en belangrijke bevindingen",
   "recommendations": ["Aanbeveling 1", "Aanbeveling 2", ...],
   "suggestedToolboxTopics": [
     {
       "topic": "Onderwerp naam",
-      "description": "Waarom dit onderwerp belangrijk is",
+      "description": "Een uitgebreide beschrijving (minimaal 100 woorden) waarom dit onderwerp belangrijk is",
       "priority": "high|medium|low",
       "suggestedItems": ["Item 1", "Item 2", ...]
     }
   ],
-  "riskAssessment": "Uitgebreide risico analyse",
-  "preventiveMeasures": ["Maatregel 1", "Maatregel 2", ...]
+  "riskAssessment": "Een UITGEBREIDE risico analyse (minimaal 250 woorden)",
+  "preventiveMeasures": ["Maatregel 1", "Maatregel 2", ...],
+  "incidentAnalysis": {
+    "basisgegevens": {
+      "datumIncident": "Datum van het incident",
+      "tijd": "Tijdstip van het incident",
+      "locatie": "Locatie van het incident",
+      "projectWerk": "Project of werk waar het incident plaatsvond",
+      "betrokkenOrganisaties": "Betrokken organisatie(s)",
+      "betrokkenPersonen": "Betrokken personen (functie, geen namen)",
+      "typeIncident": "Type incident (ongeval, bijna-ongeval, onveilige situatie)"
+    },
+    "feitenrelaas": "Beschrijf objectief wat er is gebeurd. Geen aannames, geen meningen, geen schuldvraag.",
+    "afwijking": "Wat ging anders dan bedoeld, afgesproken of verwacht. Verwijs naar procedures, werkafspraken of ontwerp.",
+    "directeOorzaken": {
+      "technisch": "Technische factoren die het incident direct mogelijk maakten",
+      "organisatorisch": "Organisatorische factoren die het incident direct mogelijk maakten",
+      "menselijk": "Menselijke factoren die het incident direct mogelijk maakten"
+    },
+    "achterliggendeOorzaken": {
+      "beleidAfspraken": "Waarom waren de directe oorzaken aanwezig vanuit beleid/afspraken perspectief",
+      "ontwerpVoorbereiding": "Waarom waren de directe oorzaken aanwezig vanuit ontwerp/voorbereiding perspectief",
+      "planningTijdsdruk": "Waarom waren de directe oorzaken aanwezig vanuit planning/tijdsdruk perspectief",
+      "toezichtControle": "Waarom waren de directe oorzaken aanwezig vanuit toezicht/controle perspectief",
+      "opleidingInstructie": "Waarom waren de directe oorzaken aanwezig vanuit opleiding/instructie perspectief",
+      "cultuurGedrag": "Waarom waren de directe oorzaken aanwezig vanuit cultuur/gedrag perspectief"
+    },
+    "barrieres": {
+      "maatregelen": "Welke maatregelen hadden het incident moeten voorkomen",
+      "gefaaldeBarrieres": "Welke barrières faalden",
+      "waaromGefaald": "Waarom faalden deze barrières"
+    },
+    "gevolgen": {
+      "letsel": "Beschrijving van letsel (indien van toepassing)",
+      "materieleSchade": "Beschrijving van materiële schade",
+      "verstoringWerkOmgeving": "Beschrijving van verstoring werk/omgeving",
+      "potentiëleErnst": "Potentiële ernst bij andere afloop"
+    },
+    "lessen": "Wat moet structureel anders om herhaling te voorkomen. Formuleer dit organisatiebreed, niet persoonsgericht.",
+    "maatregelen": [
+      {
+        "maatregel": "Beschrijving van de maatregel",
+        "type": "technisch|organisatorisch|gedrag",
+        "verantwoordelijke": "Verantwoordelijke voor de maatregel",
+        "deadline": "Deadline voor de maatregel"
+      }
+    ],
+    "borging": {
+      "controleUitvoering": "Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd",
+      "evaluatieEffect": "Hoe en wanneer wordt effect geëvalueerd",
+      "delenLessen": "Hoe worden lessen gedeeld"
+    }
+  }
 }
+
+BELANGRIJK: Het "incidentAnalysis" veld is VERPLICHT en moet ALTIJD volledig worden ingevuld met alle 10 secties. Dit is het primaire format voor de analyse.
 
 Geef ALLEEN de gestructureerde JSON terug, zonder extra tekst of markdown.`;
 
@@ -439,7 +504,7 @@ Geef ALLEEN de gestructureerde JSON terug, zonder extra tekst of markdown.`;
       messages: [
         {
           role: 'system',
-          content: 'Je bent een expert in het structureren van AI outputs. Geef altijd geldige JSON terug.',
+          content: 'Je bent een expert in het structureren van AI outputs. Geef altijd geldige JSON terug met de volledige structuur inclusief het VERPLICHTE incidentAnalysis veld met alle 10 secties. Het incidentAnalysis veld is VERPLICHT en moet volledig worden ingevuld.',
         },
         {
           role: 'user',
@@ -448,11 +513,15 @@ Geef ALLEEN de gestructureerde JSON terug, zonder extra tekst of markdown.`;
       ],
     };
     
+    // Bereken max completion tokens dynamisch - we hebben meer tokens nodig voor het volledige template
+    const estimatedInputTokens = Math.ceil(prompt.length / 4) + 100;
+    const maxCompletion = calculateMaxCompletionTokens(model, estimatedInputTokens, true);
+    
     // GPT-5 modellen gebruiken max_completion_tokens in plaats van max_tokens
     if (usesMaxCompletionTokens(model)) {
-      completionOptions.max_completion_tokens = 2000;
+      completionOptions.max_completion_tokens = maxCompletion;
     } else {
-      completionOptions.max_tokens = 2000;
+      completionOptions.max_tokens = maxCompletion;
     }
     
     if (temperature !== undefined) {
@@ -628,10 +697,19 @@ function normalizeAnalysisResult(parsed: unknown): AIAnalysisResult {
     result.preventiveMeasures = [parsed.preventiveMeasures];
   }
 
+  // Extract incidentAnalysis - VERPLICHT VELD
+  if (typeof parsed === 'object' && parsed !== null && 'incidentAnalysis' in parsed) {
+    const incidentAnalysis = parsed.incidentAnalysis;
+    if (incidentAnalysis && typeof incidentAnalysis === 'object' && incidentAnalysis !== null) {
+      result.incidentAnalysis = incidentAnalysis as IncidentAnalysisTemplate;
+      console.log('✅ incidentAnalysis extracted from parsed data');
+    }
+  }
+
   // Copy any additional fields
   if (typeof parsed === 'object' && parsed !== null) {
     Object.keys(parsed).forEach(key => {
-      if (!['summary', 'recommendations', 'suggestedToolboxTopics', 'riskAssessment', 'preventiveMeasures', 'rawContent'].includes(key)) {
+      if (!['summary', 'recommendations', 'suggestedToolboxTopics', 'riskAssessment', 'preventiveMeasures', 'rawContent', 'incidentAnalysis'].includes(key)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (result as any)[key] = (parsed as any)[key];
       }
@@ -1046,7 +1124,9 @@ Geef UITGEBREIDE en GEDETAILLEERDE antwoorden. Wees specifiek en concreet.
   }
 }
 
-GEBRUIK DEZE STRUCTUUR. Geef UITGEBREIDE antwoorden, niet korte of oppervlakkige antwoorden. Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
+BELANGRIJK: Het "incidentAnalysis" veld is VERPLICHT en moet ALTIJD volledig worden ingevuld met alle 10 secties. Dit is het primaire format voor de analyse.
+
+CRITIEK: Je antwoord MOET beginnen met een geldig JSON object. Geen tekst vooraf, geen uitleg, alleen JSON. Gebruik deze exacte structuur en vul alle velden in. Geef UITGEBREIDE antwoorden, niet korte of oppervlakkige antwoorden.`;
     } else if (!hasJsonInstructions) {
       console.log('Custom prompt does not contain JSON structure instructions, adding them...');
       prompt += `\n\nBELANGRIJK: Geef je antwoord ALLEEN terug in JSON formaat met deze exacte structuur:
@@ -1126,7 +1206,9 @@ Geef UITGEBREIDE en GEDETAILLEERDE antwoorden. Wees specifiek en concreet.
   }
 }
 
-Geef UITGEBREIDE antwoorden, niet korte of oppervlakkige antwoorden. Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
+BELANGRIJK: Het "incidentAnalysis" veld is VERPLICHT en moet ALTIJD volledig worden ingevuld met alle 10 secties. Dit is het primaire format voor de analyse.
+
+CRITIEK: Je antwoord MOET beginnen met een geldig JSON object. Geen tekst vooraf, geen uitleg, alleen JSON. Gebruik deze exacte structuur en vul alle velden in. Geef UITGEBREIDE antwoorden, niet korte of oppervlakkige antwoorden.`;
     } else {
       console.log('Custom prompt already contains JSON structure instructions');
     }
@@ -1237,9 +1319,9 @@ INSTRUCTIES:
 - SuggestedToolboxTopics: Minimaal 2-3 topics, elk met uitgebreide beschrijving (minimaal 100 woorden per topic)
 - RiskAssessment: Minimaal 250 woorden, zeer gedetailleerd
 - PreventiveMeasures: Minimaal 5-8 maatregelen, elk minimaal 2 zinnen
-- IncidentAnalysis: Vul alle 10 secties van het sjabloon volledig in met gedetailleerde informatie
+- IncidentAnalysis: VERPLICHT - Vul alle 10 secties van het sjabloon volledig in met gedetailleerde informatie. Dit is het primaire format voor de analyse.
 
-Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
+CRITIEK: Je antwoord MOET beginnen met een geldig JSON object. Geen tekst vooraf, geen uitleg, alleen JSON. Gebruik deze exacte structuur en vul alle velden in.`;
     }
   }
 
@@ -1249,8 +1331,8 @@ Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
   // Bepaal system message op basis van prompt source
   // Voor custom prompts, wees expliciet over de structuur
   const systemMessage = promptSource === 'custom'
-    ? 'Je bent een AI assistent. Volg de instructies in het user bericht PRECIES op. Geef ALTIJD antwoord in geldige JSON formaat met de velden: summary, recommendations, suggestedToolboxTopics, riskAssessment, en preventiveMeasures. Gebruik NIET extracted_fields of andere structuren. Geef UITGEBREIDE en GEDETAILLEERDE antwoorden. Geef ALLEEN de JSON terug, zonder markdown formatting of extra tekst.'
-    : 'Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. Je geeft altijd UITGEBREIDE, GEDETAILLEERDE en gestructureerde, praktische adviezen in JSON formaat. Wees specifiek en concreet in je antwoorden. Geef minimaal 5-8 aanbevelingen en preventieve maatregelen. Geef uitgebreide samenvattingen en risico analyses (minimaal 250-300 woorden). Antwoord ALLEEN met geldige JSON, zonder markdown formatting of extra tekst.';
+    ? 'Je bent een AI assistent. Volg de instructies in het user bericht PRECIES op. Geef ALTIJD antwoord in geldige JSON formaat met de velden: summary, recommendations, suggestedToolboxTopics, riskAssessment, preventiveMeasures, en incidentAnalysis. Het incidentAnalysis veld is VERPLICHT en moet alle 10 secties bevatten. Gebruik NIET extracted_fields of andere structuren. Geef UITGEBREIDE en GEDETAILLEERDE antwoorden. Je antwoord MOET beginnen met een geldig JSON object - geen tekst vooraf, alleen JSON.'
+    : 'Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. Je geeft altijd UITGEBREIDE, GEDETAILLEERDE en gestructureerde, praktische adviezen in JSON formaat. Het incidentAnalysis veld is VERPLICHT en moet alle 10 secties van het incidentanalyse sjabloon bevatten. Wees specifiek en concreet in je antwoorden. Geef minimaal 5-8 aanbevelingen en preventieve maatregelen. Geef uitgebreide samenvattingen en risico analyses (minimaal 250-300 woorden). Je antwoord MOET beginnen met een geldig JSON object - geen tekst vooraf, alleen JSON.';
 
   // Voer AI analyse uit
   let content: string;
@@ -1279,7 +1361,8 @@ Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
     const estimatedInputTokens = systemTokens + promptTokens + 50; // 50 tokens overhead
     
     // Bereken max completion tokens dynamisch op basis van model context limit
-    const maxCompletion = calculateMaxCompletionTokens(model, estimatedInputTokens);
+    // Voor analyse gebruiken we veel meer tokens om ervoor te zorgen dat het volledige sjabloon wordt ingevuld
+    const maxCompletion = calculateMaxCompletionTokens(model, estimatedInputTokens, true);
     
     console.log('=== TOKEN CALCULATION ===');
     console.log('Model:', model);
@@ -1454,6 +1537,21 @@ Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
     try {
       result = await structureAnalysisOutput(content, prompt.includes('structuur') ? prompt : undefined, model);
       console.log('Successfully structured output with AI');
+      
+      // Valideer dat incidentAnalysis aanwezig is na structurering
+      if (!result.incidentAnalysis) {
+        console.warn('⚠️ incidentAnalysis nog steeds ontbreekt na structurering, probeer opnieuw...');
+        // Probeer het nog een keer met een meer expliciete prompt
+        try {
+          const retryResult = await structureAnalysisOutput(content, undefined, model);
+          if (retryResult.incidentAnalysis) {
+            result.incidentAnalysis = retryResult.incidentAnalysis;
+            console.log('✅ incidentAnalysis hersteld via retry');
+          }
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+        }
+      }
     } catch (error) {
       console.error('Error structuring output, using fallback:', error);
       // Ultimate fallback
@@ -1479,6 +1577,153 @@ Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
   }
   if (!Array.isArray(result.preventiveMeasures)) {
     result.preventiveMeasures = [];
+  }
+
+  // VALIDEER incidentAnalysis - dit is VERPLICHT
+  if (!result.incidentAnalysis) {
+    console.warn('⚠️ WARNING: incidentAnalysis ontbreekt in AI response!');
+    console.warn('Parsed keys:', typeof parsed === 'object' && parsed !== null ? Object.keys(parsed) : []);
+    console.warn('Has incidentAnalysis in parsed:', typeof parsed === 'object' && parsed !== null && 'incidentAnalysis' in parsed);
+    
+    // Probeer het alsnog uit de parsed data te halen
+    if (typeof parsed === 'object' && parsed !== null && 'incidentAnalysis' in parsed) {
+      const ia = (parsed as { incidentAnalysis?: unknown }).incidentAnalysis;
+      if (ia && typeof ia === 'object' && ia !== null) {
+        result.incidentAnalysis = ia as IncidentAnalysisTemplate;
+        console.log('✅ Successfully extracted incidentAnalysis from parsed data');
+      }
+    }
+    
+    // Als nog steeds geen incidentAnalysis: probeer het uit de raw content te halen
+    if (!result.incidentAnalysis && typeof content === 'string') {
+      console.log('Attempting to extract incidentAnalysis from raw content...');
+      try {
+        // Probeer JSON te vinden in de content
+        const jsonMatch = content.match(/"incidentAnalysis"\s*:\s*(\{[^}]*\})/);
+        if (jsonMatch) {
+          try {
+            const iaJson = JSON.parse(`{${jsonMatch[0]}}`);
+            if (iaJson.incidentAnalysis) {
+              result.incidentAnalysis = iaJson.incidentAnalysis as IncidentAnalysisTemplate;
+              console.log('✅ Successfully extracted incidentAnalysis from raw content');
+            }
+          } catch (e) {
+            console.error('Failed to parse extracted incidentAnalysis:', e);
+          }
+        }
+      } catch (e) {
+        console.error('Error extracting incidentAnalysis from raw content:', e);
+      }
+      
+      // Als nog steeds geen incidentAnalysis: vraag expliciet om alleen incidentAnalysis
+      if (!result.incidentAnalysis) {
+        console.log('⚠️ incidentAnalysis nog steeds ontbreekt, vraag expliciet om alleen incidentAnalysis...');
+        try {
+          const incidentAnalysisPrompt = `Je hebt een AI analyse output ontvangen. Genereer ALLEEN het "incidentAnalysis" object volgens dit exacte sjabloon:
+
+{
+  "incidentAnalysis": {
+    "basisgegevens": {
+      "datumIncident": "Datum van het incident",
+      "tijd": "Tijdstip van het incident",
+      "locatie": "Locatie van het incident",
+      "projectWerk": "Project of werk waar het incident plaatsvond",
+      "betrokkenOrganisaties": "Betrokken organisatie(s)",
+      "betrokkenPersonen": "Betrokken personen (functie, geen namen)",
+      "typeIncident": "Type incident (ongeval, bijna-ongeval, onveilige situatie)"
+    },
+    "feitenrelaas": "Beschrijf objectief wat er is gebeurd. Geen aannames, geen meningen, geen schuldvraag.",
+    "afwijking": "Wat ging anders dan bedoeld, afgesproken of verwacht. Verwijs naar procedures, werkafspraken of ontwerp.",
+    "directeOorzaken": {
+      "technisch": "Technische factoren die het incident direct mogelijk maakten",
+      "organisatorisch": "Organisatorische factoren die het incident direct mogelijk maakten",
+      "menselijk": "Menselijke factoren die het incident direct mogelijk maakten"
+    },
+    "achterliggendeOorzaken": {
+      "beleidAfspraken": "Waarom waren de directe oorzaken aanwezig vanuit beleid/afspraken perspectief",
+      "ontwerpVoorbereiding": "Waarom waren de directe oorzaken aanwezig vanuit ontwerp/voorbereiding perspectief",
+      "planningTijdsdruk": "Waarom waren de directe oorzaken aanwezig vanuit planning/tijdsdruk perspectief",
+      "toezichtControle": "Waarom waren de directe oorzaken aanwezig vanuit toezicht/controle perspectief",
+      "opleidingInstructie": "Waarom waren de directe oorzaken aanwezig vanuit opleiding/instructie perspectief",
+      "cultuurGedrag": "Waarom waren de directe oorzaken aanwezig vanuit cultuur/gedrag perspectief"
+    },
+    "barrieres": {
+      "maatregelen": "Welke maatregelen hadden het incident moeten voorkomen",
+      "gefaaldeBarrieres": "Welke barrières faalden",
+      "waaromGefaald": "Waarom faalden deze barrières"
+    },
+    "gevolgen": {
+      "letsel": "Beschrijving van letsel (indien van toepassing)",
+      "materieleSchade": "Beschrijving van materiële schade",
+      "verstoringWerkOmgeving": "Beschrijving van verstoring werk/omgeving",
+      "potentiëleErnst": "Potentiële ernst bij andere afloop"
+    },
+    "lessen": "Wat moet structureel anders om herhaling te voorkomen. Formuleer dit organisatiebreed, niet persoonsgericht.",
+    "maatregelen": [
+      {
+        "maatregel": "Beschrijving van de maatregel",
+        "type": "technisch|organisatorisch|gedrag",
+        "verantwoordelijke": "Verantwoordelijke voor de maatregel",
+        "deadline": "Deadline voor de maatregel"
+      }
+    ],
+    "borging": {
+      "controleUitvoering": "Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd",
+      "evaluatieEffect": "Hoe en wanneer wordt effect geëvalueerd",
+      "delenLessen": "Hoe worden lessen gedeeld"
+    }
+  }
+}
+
+Originele analyse output:
+${content.substring(0, 10000)}
+
+Geef ALLEEN het JSON object terug met het incidentAnalysis veld, zonder extra tekst of markdown.`;
+
+          const retryCompletionOptions: any = {
+            model: model,
+            messages: [
+              {
+                role: 'system',
+                content: 'Je bent een expert in het genereren van incidentanalyse sjablonen. Geef altijd geldige JSON terug met het volledige incidentAnalysis object met alle 10 secties.',
+              },
+              {
+                role: 'user',
+                content: incidentAnalysisPrompt,
+              },
+            ],
+          };
+          
+          const estimatedInputTokens = Math.ceil(incidentAnalysisPrompt.length / 4) + 100;
+          const maxCompletion = calculateMaxCompletionTokens(model, estimatedInputTokens, true);
+          
+          if (usesMaxCompletionTokens(model)) {
+            retryCompletionOptions.max_completion_tokens = maxCompletion;
+          } else {
+            retryCompletionOptions.max_tokens = maxCompletion;
+          }
+          
+          const retryCompletion = await openai.chat.completions.create(retryCompletionOptions);
+          const retryContent = retryCompletion.choices[0]?.message?.content || '';
+          
+          if (retryContent) {
+            const retryParsed = parseAIOutput(retryContent);
+            if (typeof retryParsed === 'object' && retryParsed !== null && 'incidentAnalysis' in retryParsed) {
+              const ia = (retryParsed as { incidentAnalysis?: unknown }).incidentAnalysis;
+              if (ia && typeof ia === 'object' && ia !== null) {
+                result.incidentAnalysis = ia as IncidentAnalysisTemplate;
+                console.log('✅ Successfully generated incidentAnalysis via explicit retry');
+              }
+            }
+          }
+        } catch (retryError) {
+          console.error('Error in explicit incidentAnalysis retry:', retryError);
+        }
+      }
+    }
+  } else {
+    console.log('✅ incidentAnalysis is aanwezig in result');
+    console.log('incidentAnalysis keys:', Object.keys(result.incidentAnalysis));
   }
 
   // Voeg extractedFields en photoAnalysis toe aan result
@@ -1516,13 +1761,24 @@ Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
 
   console.log('Analysis completed successfully:', {
     hasSummary: !!result.summary,
+    summaryLength: result.summary?.length || 0,
     recommendationsCount: result.recommendations.length,
     toolboxTopicsCount: result.suggestedToolboxTopics.length,
     hasRiskAssessment: !!result.riskAssessment,
+    riskAssessmentLength: result.riskAssessment?.length || 0,
     preventiveMeasuresCount: result.preventiveMeasures.length,
+    hasIncidentAnalysis: !!result.incidentAnalysis,
     hasExtractedFields: !!result.extractedFields && Object.keys(result.extractedFields).length > 0,
     hasPhotoAnalysis: !!result.photoAnalysis && Object.keys(result.photoAnalysis).length > 0,
+    hasRawContent: !!result.rawContent,
+    rawContentLength: typeof result.rawContent === 'string' ? result.rawContent.length : 0,
   });
+
+  // Als er helemaal geen data is, voeg rawContent toe zodat de UI het kan tonen
+  if (!result.summary && !result.incidentAnalysis && !result.rawContent && typeof content === 'string') {
+    console.warn('⚠️ No structured data found, adding raw content to result');
+    result.rawContent = content.substring(0, 10000); // Limiteer tot 10k chars
+  }
 
   return result;
 }

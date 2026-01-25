@@ -111,12 +111,24 @@ export async function POST(req: Request) {
     console.log('Has suggestedToolboxTopics:', !!analysis.suggestedToolboxTopics, Array.isArray(analysis.suggestedToolboxTopics) ? `(${analysis.suggestedToolboxTopics.length} items)` : '');
     console.log('Has preventiveMeasures:', !!analysis.preventiveMeasures, Array.isArray(analysis.preventiveMeasures) ? `(${analysis.preventiveMeasures.length} items)` : '');
     console.log('Has riskAssessment:', !!analysis.riskAssessment, analysis.riskAssessment ? `(${analysis.riskAssessment.length} chars)` : '');
+    console.log('Has incidentAnalysis:', !!analysis.incidentAnalysis);
+    if (analysis.incidentAnalysis) {
+      console.log('incidentAnalysis type:', typeof analysis.incidentAnalysis);
+      console.log('incidentAnalysis keys:', Object.keys(analysis.incidentAnalysis));
+      console.log('incidentAnalysis preview:', JSON.stringify(analysis.incidentAnalysis, null, 2).substring(0, 1000));
+    }
     console.log('Has extractedFields:', !!analysis.extractedFields, analysis.extractedFields ? `(${Object.keys(analysis.extractedFields).length} incidents)` : '');
     console.log('Has photoAnalysis:', !!analysis.photoAnalysis, analysis.photoAnalysis ? `(${Object.keys(analysis.photoAnalysis).length} incidents)` : '');
     
     if (!analysis.summary || !analysis.recommendations || !analysis.suggestedToolboxTopics || !analysis.preventiveMeasures) {
       console.error('=== AI ANALYSIS MISSING REQUIRED FIELDS ===');
       console.error('Full analysis object:', JSON.stringify(analysis, null, 2));
+    }
+    
+    if (!analysis.incidentAnalysis) {
+      console.error('=== AI ANALYSIS MISSING incidentAnalysis ===');
+      console.error('This is a CRITICAL field that should always be present!');
+      console.error('Full analysis object (first 5000 chars):', JSON.stringify(analysis, null, 2).substring(0, 5000));
     }
 
     // Sla analyse alleen op als save=true
