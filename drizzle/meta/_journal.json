@@ -78,6 +78,20 @@
       "when": 1763552391308,
       "tag": "0010_acoustic_naoko",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1769192256387,
+      "tag": "0011_youthful_violations",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1769251663001,
+      "tag": "0012_bitter_sauron",
+      "breakpoints": true
     }
   ]
 }

@@ -163,7 +163,7 @@ export async function PUT(req: Request) {
           itemsPerPage: itemsPerPage || 25,
           emailNotifications: emailNotifications ?? true,
           aiAutoAnalysis: aiAutoAnalysis ?? false,
-          defaultAIModel: defaultAIModel || 'gpt-4',
+          defaultAIModel: defaultAIModel || 'gpt-4o',
           showAISuggestions: showAISuggestions ?? true,
           autoGenerateToolbox: autoGenerateToolbox ?? false,
           aiSafetyIncidentPrompt: aiSafetyIncidentPrompt || null,

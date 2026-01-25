@@ -27,7 +27,9 @@ export async function POST(req: Request) {
       suggestedToolboxTopics, 
       riskAssessment, 
       preventiveMeasures,
-      tokensUsed 
+      incidentAnalysis,
+      tokensUsed,
+      model
     } = body;
 
     if (!incidentIds || !Array.isArray(incidentIds) || incidentIds.length === 0) {
@@ -78,7 +80,8 @@ export async function POST(req: Request) {
       suggestedToolboxTopics: JSON.stringify(suggestedToolboxTopics),
       riskAssessment: riskAssessment || null,
       preventiveMeasures: JSON.stringify(preventiveMeasures),
-      model: 'gpt-4',
+      incidentAnalysis: incidentAnalysis ? JSON.stringify(incidentAnalysis) : null,
+      model: model || 'gpt-4o',
       tokensUsed: tokensUsed || null,
       createdBy: userId,
     }).returning();

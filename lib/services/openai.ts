@@ -37,12 +37,74 @@ export interface SuggestedToolboxTopic {
   suggestedItems?: string[];
 }
 
+export interface IncidentAnalysisTemplate {
+  // 1. Basisgegevens
+  basisgegevens?: {
+    datumIncident?: string;
+    tijd?: string;
+    locatie?: string;
+    projectWerk?: string;
+    betrokkenOrganisaties?: string;
+    betrokkenPersonen?: string; // Functie, geen namen
+    typeIncident?: string; // ongeval, bijna-ongeval, onveilige situatie
+  };
+  // 2. Feitenrelaas
+  feitenrelaas?: string;
+  // 3. Afwijking
+  afwijking?: string;
+  // 4. Directe oorzaken
+  directeOorzaken?: {
+    technisch?: string;
+    organisatorisch?: string;
+    menselijk?: string;
+  };
+  // 5. Achterliggende oorzaken
+  achterliggendeOorzaken?: {
+    beleidAfspraken?: string;
+    ontwerpVoorbereiding?: string;
+    planningTijdsdruk?: string;
+    toezichtControle?: string;
+    opleidingInstructie?: string;
+    cultuurGedrag?: string;
+  };
+  // 6. Barrières
+  barrieres?: {
+    maatregelen?: string; // Welke maatregelen hadden het incident moeten voorkomen
+    gefaaldeBarrieres?: string; // Welke barrières faalden
+    waaromGefaald?: string; // Waarom faalden deze barrières
+  };
+  // 7. Gevolgen
+  gevolgen?: {
+    letsel?: string;
+    materieleSchade?: string;
+    verstoringWerkOmgeving?: string;
+    potentiëleErnst?: string; // Potentiële ernst bij andere afloop
+  };
+  // 8. Lessen
+  lessen?: string;
+  // 9. Maatregelen
+  maatregelen?: Array<{
+    maatregel: string;
+    type: string; // technisch / organisatorisch / gedrag
+    verantwoordelijke: string;
+    deadline: string;
+  }>;
+  // 10. Borging
+  borging?: {
+    controleUitvoering?: string; // Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd
+    evaluatieEffect?: string; // Hoe en wanneer wordt effect geëvalueerd
+    delenLessen?: string; // Hoe worden lessen gedeeld
+  };
+}
+
 export interface AIAnalysisResult {
   summary: string;
   recommendations: string[];
   suggestedToolboxTopics: SuggestedToolboxTopic[];
   riskAssessment: string;
   preventiveMeasures: string[];
+  // Nieuwe sjabloon structuur
+  incidentAnalysis?: IncidentAnalysisTemplate;
   extractedFields?: { // Geëxtraheerde velden uit foto's
     [incidentId: string]: {
       [key: string]: unknown;
@@ -159,23 +221,27 @@ function calculateMaxCompletionTokens(model: string, inputTokens: number): numbe
 /**
  * Genereer een AI prompt voor incident analyse als er geen custom prompt is
  */
-async function generateAnalysisPrompt(incidentsData: string, model: string = 'gpt-4'): Promise<string> {
+async function generateAnalysisPrompt(incidentsData: string, model: string = 'gpt-4o'): Promise<string> {
   if (!openai) {
     throw new Error('OpenAI API key is not configured');
   }
 
   const prompt = `Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. 
-Maak een uitgebreid analyse prompt voor veiligheidsmeldingen.
+Maak een UITGEBREID en GEDETAILLEERD analyse prompt voor veiligheidsmeldingen.
 
 De incident data die geanalyseerd moet worden:
 ${incidentsData.substring(0, 500)}...
 
 Maak een prompt dat:
-1. De incidenten grondig analyseert
-2. Patronen en risico's identificeert
-3. Praktische aanbevelingen geeft
-4. Toolbox onderwerpen voorstelt
-5. Preventieve maatregelen benoemt
+1. De incidenten zeer grondig en gedetailleerd analyseert
+2. Patronen, trends en risico's identificeert en uitgebreid beschrijft
+3. Minimaal 5-8 concrete, praktische aanbevelingen geeft (elk minimaal 2 zinnen)
+4. Minimaal 2-3 toolbox onderwerpen voorstelt met uitgebreide beschrijvingen (minimaal 100 woorden per topic)
+5. Minimaal 5-8 preventieve maatregelen benoemt (elk minimaal 2 zinnen)
+6. Een zeer uitgebreide samenvatting vraagt (minimaal 300 woorden)
+7. Een zeer uitgebreide risico analyse vraagt (minimaal 250 woorden)
+
+Het prompt moet expliciet vragen om UITGEBREIDE en GEDETAILLEERDE antwoorden, niet korte of oppervlakkige antwoorden.
 
 Geef het prompt terug als een complete instructie die direct gebruikt kan worden voor AI analyse.
 Het prompt moet de {incidents} placeholder bevatten waar de incident data wordt ingevoegd.
@@ -227,30 +293,101 @@ Geef ALLEEN het prompt terug, zonder extra uitleg.`;
     return generatedPrompt;
   } catch (error) {
     console.error('Error generating prompt with AI, using fallback:', error);
-    // Fallback naar standaard prompt
+    // Fallback naar standaard prompt met nieuw sjabloon
     return `Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. 
-Analyseer de volgende veiligheidsmeldingen grondig en geef uitgebreid advies.
+Analyseer de volgende veiligheidsmeldingen grondig volgens het standaard incidentanalyse sjabloon.
 
 Veiligheidsmeldingen:
 {incidents}
 
+BELANGRIJK: Geef een zeer uitgebreide en gedetailleerde analyse volgens het onderstaande sjabloon. Wees specifiek en concreet in je antwoorden. Geen aannames, geen meningen, geen schuldvraag.
+
 Geef een uitgebreide analyse in JSON formaat met de volgende structuur:
 {
-  "summary": "Een samenvatting van alle meldingen en patronen die je ziet",
-  "recommendations": ["Aanbeveling 1", "Aanbeveling 2", ...],
+  "summary": "Een UITGEBREIDE samenvatting (minimaal 300 woorden) van alle meldingen, patronen, trends en belangrijke bevindingen die je ziet. Beschrijf gedetailleerd wat er aan de hand is, wat de oorzaken zijn, en wat de implicaties zijn.",
+  "recommendations": [
+    "Geef minimaal 5-8 concrete, uitvoerbare aanbevelingen. Elke aanbeveling moet specifiek zijn en uitleggen wat er moet gebeuren en waarom (minimaal 2 zinnen per aanbeveling).",
+    "Aanbeveling 2: ...",
+    "Aanbeveling 3: ...",
+    "..."
+  ],
   "suggestedToolboxTopics": [
     {
       "topic": "Onderwerp naam",
-      "description": "Waarom dit onderwerp belangrijk is",
+      "description": "Een uitgebreide beschrijving (minimaal 100 woorden) waarom dit onderwerp belangrijk is, wat de context is, en hoe het helpt om toekomstige incidenten te voorkomen",
       "priority": "high|medium|low",
-      "suggestedItems": ["Item 1", "Item 2", ...]
+      "suggestedItems": ["Item 1", "Item 2", "Item 3", "..."]
     }
   ],
-  "riskAssessment": "Uitgebreide risico analyse",
-  "preventiveMeasures": ["Maatregel 1", "Maatregel 2", ...]
+  "riskAssessment": "Een UITGEBREIDE risico analyse (minimaal 250 woorden) die beschrijft: welke risico's er zijn, hoe ernstig deze zijn, wat de waarschijnlijkheid is dat ze optreden, wat de potentiële impact is, en welke factoren het risico verhogen of verlagen.",
+  "preventiveMeasures": [
+    "Geef minimaal 5-8 concrete preventieve maatregelen. Elke maatregel moet specifiek zijn en uitleggen wat er moet gebeuren om toekomstige incidenten te voorkomen (minimaal 2 zinnen per maatregel).",
+    "Maatregel 2: ...",
+    "Maatregel 3: ...",
+    "..."
+  ],
+  "incidentAnalysis": {
+    "basisgegevens": {
+      "datumIncident": "Datum van het incident",
+      "tijd": "Tijdstip van het incident",
+      "locatie": "Locatie van het incident",
+      "projectWerk": "Project of werk waar het incident plaatsvond",
+      "betrokkenOrganisaties": "Betrokken organisatie(s)",
+      "betrokkenPersonen": "Betrokken personen (functie, geen namen)",
+      "typeIncident": "Type incident (ongeval, bijna-ongeval, onveilige situatie)"
+    },
+    "feitenrelaas": "Beschrijf objectief wat er is gebeurd. Geen aannames, geen meningen, geen schuldvraag.",
+    "afwijking": "Wat ging anders dan bedoeld, afgesproken of verwacht. Verwijs naar procedures, werkafspraken of ontwerp.",
+    "directeOorzaken": {
+      "technisch": "Technische factoren die het incident direct mogelijk maakten",
+      "organisatorisch": "Organisatorische factoren die het incident direct mogelijk maakten",
+      "menselijk": "Menselijke factoren die het incident direct mogelijk maakten"
+    },
+    "achterliggendeOorzaken": {
+      "beleidAfspraken": "Waarom waren de directe oorzaken aanwezig vanuit beleid/afspraken perspectief",
+      "ontwerpVoorbereiding": "Waarom waren de directe oorzaken aanwezig vanuit ontwerp/voorbereiding perspectief",
+      "planningTijdsdruk": "Waarom waren de directe oorzaken aanwezig vanuit planning/tijdsdruk perspectief",
+      "toezichtControle": "Waarom waren de directe oorzaken aanwezig vanuit toezicht/controle perspectief",
+      "opleidingInstructie": "Waarom waren de directe oorzaken aanwezig vanuit opleiding/instructie perspectief",
+      "cultuurGedrag": "Waarom waren de directe oorzaken aanwezig vanuit cultuur/gedrag perspectief"
+    },
+    "barrieres": {
+      "maatregelen": "Welke maatregelen hadden het incident moeten voorkomen",
+      "gefaaldeBarrieres": "Welke barrières faalden",
+      "waaromGefaald": "Waarom faalden deze barrières"
+    },
+    "gevolgen": {
+      "letsel": "Beschrijving van letsel (indien van toepassing)",
+      "materieleSchade": "Beschrijving van materiële schade",
+      "verstoringWerkOmgeving": "Beschrijving van verstoring werk/omgeving",
+      "potentiëleErnst": "Potentiële ernst bij andere afloop"
+    },
+    "lessen": "Wat moet structureel anders om herhaling te voorkomen. Formuleer dit organisatiebreed, niet persoonsgericht.",
+    "maatregelen": [
+      {
+        "maatregel": "Beschrijving van de maatregel",
+        "type": "technisch|organisatorisch|gedrag",
+        "verantwoordelijke": "Verantwoordelijke voor de maatregel",
+        "deadline": "Deadline voor de maatregel"
+      }
+    ],
+    "borging": {
+      "controleUitvoering": "Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd",
+      "evaluatieEffect": "Hoe en wanneer wordt effect geëvalueerd",
+      "delenLessen": "Hoe worden lessen gedeeld"
+    }
+  }
 }
 
-Geef alleen de JSON terug, zonder extra tekst.`;
+INSTRUCTIES:
+- Summary: Minimaal 300 woorden, zeer gedetailleerd
+- Recommendations: Minimaal 5-8 aanbevelingen, elk minimaal 2 zinnen
+- SuggestedToolboxTopics: Minimaal 2-3 topics, elk met uitgebreide beschrijving (minimaal 100 woorden per topic)
+- RiskAssessment: Minimaal 250 woorden, zeer gedetailleerd
+- PreventiveMeasures: Minimaal 5-8 maatregelen, elk minimaal 2 zinnen
+- IncidentAnalysis: Vul alle 10 secties van het sjabloon volledig in met gedetailleerde informatie
+
+Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
   }
 }
 
@@ -260,7 +397,7 @@ Geef alleen de JSON terug, zonder extra tekst.`;
 async function structureAnalysisOutput(
   rawOutput: string,
   expectedStructure?: string,
-  model: string = 'gpt-4'
+  model: string = 'gpt-4o'
 ): Promise<AIAnalysisResult> {
   if (!openai) {
     throw new Error('OpenAI API key is not configured');
@@ -833,41 +970,163 @@ ${photoInfo.extractedFields && typeof photoInfo.extractedFields === 'object' && 
     if (!hasExpectedFields || hasExtractedFields) {
       console.log('Custom prompt does not contain expected structure (summary/recommendations) or uses extracted_fields, adding explicit structure instructions...');
       prompt += `\n\nBELANGRIJK: Geef je antwoord ALLEEN terug in JSON formaat met deze EXACTE structuur (gebruik NIET extracted_fields):
+Geef UITGEBREIDE en GEDETAILLEERDE antwoorden. Wees specifiek en concreet.
+
 {
-  "summary": "Een uitgebreide samenvatting van alle meldingen en patronen die je ziet",
-  "recommendations": ["Aanbeveling 1", "Aanbeveling 2", ...],
+  "summary": "Een UITGEBREIDE samenvatting (minimaal 300 woorden) van alle meldingen, patronen, trends en belangrijke bevindingen. Beschrijf gedetailleerd wat er aan de hand is, wat de oorzaken zijn, en wat de implicaties zijn.",
+  "recommendations": [
+    "Geef minimaal 5-8 concrete, uitvoerbare aanbevelingen. Elke aanbeveling moet specifiek zijn en uitleggen wat er moet gebeuren en waarom (minimaal 2 zinnen per aanbeveling).",
+    "Aanbeveling 2: ...",
+    "..."
+  ],
   "suggestedToolboxTopics": [
     {
       "topic": "Onderwerp naam",
-      "description": "Waarom dit onderwerp belangrijk is",
+      "description": "Een uitgebreide beschrijving (minimaal 100 woorden) waarom dit onderwerp belangrijk is, wat de context is, en hoe het helpt om toekomstige incidenten te voorkomen",
       "priority": "high|medium|low",
       "suggestedItems": ["Item 1", "Item 2", ...]
     }
   ],
-  "riskAssessment": "Uitgebreide risico analyse",
-  "preventiveMeasures": ["Maatregel 1", "Maatregel 2", ...]
+  "riskAssessment": "Een UITGEBREIDE risico analyse (minimaal 250 woorden) die beschrijft: welke risico's er zijn, hoe ernstig deze zijn, wat de waarschijnlijkheid is dat ze optreden, wat de potentiële impact is, en welke factoren het risico verhogen of verlagen.",
+  "preventiveMeasures": [
+    "Geef minimaal 5-8 concrete preventieve maatregelen. Elke maatregel moet specifiek zijn en uitleggen wat er moet gebeuren om toekomstige incidenten te voorkomen (minimaal 2 zinnen per maatregel).",
+    "Maatregel 2: ...",
+    "..."
+  ],
+  "incidentAnalysis": {
+    "basisgegevens": {
+      "datumIncident": "Datum van het incident",
+      "tijd": "Tijdstip van het incident",
+      "locatie": "Locatie van het incident",
+      "projectWerk": "Project of werk waar het incident plaatsvond",
+      "betrokkenOrganisaties": "Betrokken organisatie(s)",
+      "betrokkenPersonen": "Betrokken personen (functie, geen namen)",
+      "typeIncident": "Type incident (ongeval, bijna-ongeval, onveilige situatie)"
+    },
+    "feitenrelaas": "Beschrijf objectief wat er is gebeurd. Geen aannames, geen meningen, geen schuldvraag.",
+    "afwijking": "Wat ging anders dan bedoeld, afgesproken of verwacht. Verwijs naar procedures, werkafspraken of ontwerp.",
+    "directeOorzaken": {
+      "technisch": "Technische factoren die het incident direct mogelijk maakten",
+      "organisatorisch": "Organisatorische factoren die het incident direct mogelijk maakten",
+      "menselijk": "Menselijke factoren die het incident direct mogelijk maakten"
+    },
+    "achterliggendeOorzaken": {
+      "beleidAfspraken": "Waarom waren de directe oorzaken aanwezig vanuit beleid/afspraken perspectief",
+      "ontwerpVoorbereiding": "Waarom waren de directe oorzaken aanwezig vanuit ontwerp/voorbereiding perspectief",
+      "planningTijdsdruk": "Waarom waren de directe oorzaken aanwezig vanuit planning/tijdsdruk perspectief",
+      "toezichtControle": "Waarom waren de directe oorzaken aanwezig vanuit toezicht/controle perspectief",
+      "opleidingInstructie": "Waarom waren de directe oorzaken aanwezig vanuit opleiding/instructie perspectief",
+      "cultuurGedrag": "Waarom waren de directe oorzaken aanwezig vanuit cultuur/gedrag perspectief"
+    },
+    "barrieres": {
+      "maatregelen": "Welke maatregelen hadden het incident moeten voorkomen",
+      "gefaaldeBarrieres": "Welke barrières faalden",
+      "waaromGefaald": "Waarom faalden deze barrières"
+    },
+    "gevolgen": {
+      "letsel": "Beschrijving van letsel (indien van toepassing)",
+      "materieleSchade": "Beschrijving van materiële schade",
+      "verstoringWerkOmgeving": "Beschrijving van verstoring werk/omgeving",
+      "potentiëleErnst": "Potentiële ernst bij andere afloop"
+    },
+    "lessen": "Wat moet structureel anders om herhaling te voorkomen. Formuleer dit organisatiebreed, niet persoonsgericht.",
+    "maatregelen": [
+      {
+        "maatregel": "Beschrijving van de maatregel",
+        "type": "technisch|organisatorisch|gedrag",
+        "verantwoordelijke": "Verantwoordelijke voor de maatregel",
+        "deadline": "Deadline voor de maatregel"
+      }
+    ],
+    "borging": {
+      "controleUitvoering": "Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd",
+      "evaluatieEffect": "Hoe en wanneer wordt effect geëvalueerd",
+      "delenLessen": "Hoe worden lessen gedeeld"
+    }
+  }
 }
 
-GEBRUIK DEZE STRUCTUUR. Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
+GEBRUIK DEZE STRUCTUUR. Geef UITGEBREIDE antwoorden, niet korte of oppervlakkige antwoorden. Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
     } else if (!hasJsonInstructions) {
       console.log('Custom prompt does not contain JSON structure instructions, adding them...');
       prompt += `\n\nBELANGRIJK: Geef je antwoord ALLEEN terug in JSON formaat met deze exacte structuur:
+Geef UITGEBREIDE en GEDETAILLEERDE antwoorden. Wees specifiek en concreet.
+
 {
-  "summary": "Een samenvatting van alle meldingen en patronen die je ziet",
-  "recommendations": ["Aanbeveling 1", "Aanbeveling 2", ...],
+  "summary": "Een UITGEBREIDE samenvatting (minimaal 300 woorden) van alle meldingen, patronen, trends en belangrijke bevindingen",
+  "recommendations": [
+    "Minimaal 5-8 concrete aanbevelingen (elk minimaal 2 zinnen)",
+    "Aanbeveling 2: ...",
+    "..."
+  ],
   "suggestedToolboxTopics": [
     {
       "topic": "Onderwerp naam",
-      "description": "Waarom dit onderwerp belangrijk is",
+      "description": "Uitgebreide beschrijving (minimaal 100 woorden) waarom dit onderwerp belangrijk is",
       "priority": "high|medium|low",
       "suggestedItems": ["Item 1", "Item 2", ...]
     }
   ],
-  "riskAssessment": "Uitgebreide risico analyse",
-  "preventiveMeasures": ["Maatregel 1", "Maatregel 2", ...]
+  "riskAssessment": "UITGEBREIDE risico analyse (minimaal 250 woorden)",
+  "preventiveMeasures": [
+    "Minimaal 5-8 concrete maatregelen (elk minimaal 2 zinnen)",
+    "Maatregel 2: ...",
+    "..."
+  ],
+  "incidentAnalysis": {
+    "basisgegevens": {
+      "datumIncident": "Datum van het incident",
+      "tijd": "Tijdstip van het incident",
+      "locatie": "Locatie van het incident",
+      "projectWerk": "Project of werk waar het incident plaatsvond",
+      "betrokkenOrganisaties": "Betrokken organisatie(s)",
+      "betrokkenPersonen": "Betrokken personen (functie, geen namen)",
+      "typeIncident": "Type incident (ongeval, bijna-ongeval, onveilige situatie)"
+    },
+    "feitenrelaas": "Beschrijf objectief wat er is gebeurd. Geen aannames, geen meningen, geen schuldvraag.",
+    "afwijking": "Wat ging anders dan bedoeld, afgesproken of verwacht. Verwijs naar procedures, werkafspraken of ontwerp.",
+    "directeOorzaken": {
+      "technisch": "Technische factoren die het incident direct mogelijk maakten",
+      "organisatorisch": "Organisatorische factoren die het incident direct mogelijk maakten",
+      "menselijk": "Menselijke factoren die het incident direct mogelijk maakten"
+    },
+    "achterliggendeOorzaken": {
+      "beleidAfspraken": "Waarom waren de directe oorzaken aanwezig vanuit beleid/afspraken perspectief",
+      "ontwerpVoorbereiding": "Waarom waren de directe oorzaken aanwezig vanuit ontwerp/voorbereiding perspectief",
+      "planningTijdsdruk": "Waarom waren de directe oorzaken aanwezig vanuit planning/tijdsdruk perspectief",
+      "toezichtControle": "Waarom waren de directe oorzaken aanwezig vanuit toezicht/controle perspectief",
+      "opleidingInstructie": "Waarom waren de directe oorzaken aanwezig vanuit opleiding/instructie perspectief",
+      "cultuurGedrag": "Waarom waren de directe oorzaken aanwezig vanuit cultuur/gedrag perspectief"
+    },
+    "barrieres": {
+      "maatregelen": "Welke maatregelen hadden het incident moeten voorkomen",
+      "gefaaldeBarrieres": "Welke barrières faalden",
+      "waaromGefaald": "Waarom faalden deze barrières"
+    },
+    "gevolgen": {
+      "letsel": "Beschrijving van letsel (indien van toepassing)",
+      "materieleSchade": "Beschrijving van materiële schade",
+      "verstoringWerkOmgeving": "Beschrijving van verstoring werk/omgeving",
+      "potentiëleErnst": "Potentiële ernst bij andere afloop"
+    },
+    "lessen": "Wat moet structureel anders om herhaling te voorkomen. Formuleer dit organisatiebreed, niet persoonsgericht.",
+    "maatregelen": [
+      {
+        "maatregel": "Beschrijving van de maatregel",
+        "type": "technisch|organisatorisch|gedrag",
+        "verantwoordelijke": "Verantwoordelijke voor de maatregel",
+        "deadline": "Deadline voor de maatregel"
+      }
+    ],
+    "borging": {
+      "controleUitvoering": "Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd",
+      "evaluatieEffect": "Hoe en wanneer wordt effect geëvalueerd",
+      "delenLessen": "Hoe worden lessen gedeeld"
+    }
+  }
 }
 
-Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
+Geef UITGEBREIDE antwoorden, niet korte of oppervlakkige antwoorden. Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
     } else {
       console.log('Custom prompt already contains JSON structure instructions');
     }
@@ -886,30 +1145,101 @@ Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
     } catch (error) {
       console.error('Error generating prompt, using default:', error);
       promptSource = 'default';
-      // Fallback naar standaard prompt
+      // Fallback naar standaard prompt met nieuw sjabloon
       prompt = `Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. 
-Analyseer de volgende veiligheidsmeldingen grondig en geef uitgebreid advies.
+Analyseer de volgende veiligheidsmeldingen grondig volgens het standaard incidentanalyse sjabloon.
 
 Veiligheidsmeldingen:
 ${incidentsData}
 
+BELANGRIJK: Geef een zeer uitgebreide en gedetailleerde analyse volgens het onderstaande sjabloon. Wees specifiek en concreet in je antwoorden. Geen aannames, geen meningen, geen schuldvraag.
+
 Geef een uitgebreide analyse in JSON formaat met de volgende structuur:
 {
-  "summary": "Een samenvatting van alle meldingen en patronen die je ziet",
-  "recommendations": ["Aanbeveling 1", "Aanbeveling 2", ...],
+  "summary": "Een UITGEBREIDE samenvatting (minimaal 300 woorden) van alle meldingen, patronen, trends en belangrijke bevindingen die je ziet. Beschrijf gedetailleerd wat er aan de hand is, wat de oorzaken zijn, en wat de implicaties zijn.",
+  "recommendations": [
+    "Geef minimaal 5-8 concrete, uitvoerbare aanbevelingen. Elke aanbeveling moet specifiek zijn en uitleggen wat er moet gebeuren en waarom.",
+    "Aanbeveling 2: ...",
+    "Aanbeveling 3: ...",
+    "..."
+  ],
   "suggestedToolboxTopics": [
     {
       "topic": "Onderwerp naam",
-      "description": "Waarom dit onderwerp belangrijk is",
+      "description": "Een uitgebreide beschrijving (minimaal 100 woorden) waarom dit onderwerp belangrijk is, wat de context is, en hoe het helpt om toekomstige incidenten te voorkomen",
       "priority": "high|medium|low",
-      "suggestedItems": ["Item 1", "Item 2", ...]
+      "suggestedItems": ["Item 1", "Item 2", "Item 3", "..."]
     }
   ],
-  "riskAssessment": "Uitgebreide risico analyse",
-  "preventiveMeasures": ["Maatregel 1", "Maatregel 2", ...]
+  "riskAssessment": "Een UITGEBREIDE risico analyse (minimaal 250 woorden) die beschrijft: welke risico's er zijn, hoe ernstig deze zijn, wat de waarschijnlijkheid is dat ze optreden, wat de potentiële impact is, en welke factoren het risico verhogen of verlagen.",
+  "preventiveMeasures": [
+    "Geef minimaal 5-8 concrete preventieve maatregelen. Elke maatregel moet specifiek zijn en uitleggen wat er moet gebeuren om toekomstige incidenten te voorkomen.",
+    "Maatregel 2: ...",
+    "Maatregel 3: ...",
+    "..."
+  ],
+  "incidentAnalysis": {
+    "basisgegevens": {
+      "datumIncident": "Datum van het incident",
+      "tijd": "Tijdstip van het incident",
+      "locatie": "Locatie van het incident",
+      "projectWerk": "Project of werk waar het incident plaatsvond",
+      "betrokkenOrganisaties": "Betrokken organisatie(s)",
+      "betrokkenPersonen": "Betrokken personen (functie, geen namen)",
+      "typeIncident": "Type incident (ongeval, bijna-ongeval, onveilige situatie)"
+    },
+    "feitenrelaas": "Beschrijf objectief wat er is gebeurd. Geen aannames, geen meningen, geen schuldvraag.",
+    "afwijking": "Wat ging anders dan bedoeld, afgesproken of verwacht. Verwijs naar procedures, werkafspraken of ontwerp.",
+    "directeOorzaken": {
+      "technisch": "Technische factoren die het incident direct mogelijk maakten",
+      "organisatorisch": "Organisatorische factoren die het incident direct mogelijk maakten",
+      "menselijk": "Menselijke factoren die het incident direct mogelijk maakten"
+    },
+    "achterliggendeOorzaken": {
+      "beleidAfspraken": "Waarom waren de directe oorzaken aanwezig vanuit beleid/afspraken perspectief",
+      "ontwerpVoorbereiding": "Waarom waren de directe oorzaken aanwezig vanuit ontwerp/voorbereiding perspectief",
+      "planningTijdsdruk": "Waarom waren de directe oorzaken aanwezig vanuit planning/tijdsdruk perspectief",
+      "toezichtControle": "Waarom waren de directe oorzaken aanwezig vanuit toezicht/controle perspectief",
+      "opleidingInstructie": "Waarom waren de directe oorzaken aanwezig vanuit opleiding/instructie perspectief",
+      "cultuurGedrag": "Waarom waren de directe oorzaken aanwezig vanuit cultuur/gedrag perspectief"
+    },
+    "barrieres": {
+      "maatregelen": "Welke maatregelen hadden het incident moeten voorkomen",
+      "gefaaldeBarrieres": "Welke barrières faalden",
+      "waaromGefaald": "Waarom faalden deze barrières"
+    },
+    "gevolgen": {
+      "letsel": "Beschrijving van letsel (indien van toepassing)",
+      "materieleSchade": "Beschrijving van materiële schade",
+      "verstoringWerkOmgeving": "Beschrijving van verstoring werk/omgeving",
+      "potentiëleErnst": "Potentiële ernst bij andere afloop"
+    },
+    "lessen": "Wat moet structureel anders om herhaling te voorkomen. Formuleer dit organisatiebreed, niet persoonsgericht.",
+    "maatregelen": [
+      {
+        "maatregel": "Beschrijving van de maatregel",
+        "type": "technisch|organisatorisch|gedrag",
+        "verantwoordelijke": "Verantwoordelijke voor de maatregel",
+        "deadline": "Deadline voor de maatregel"
+      }
+    ],
+    "borging": {
+      "controleUitvoering": "Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd",
+      "evaluatieEffect": "Hoe en wanneer wordt effect geëvalueerd",
+      "delenLessen": "Hoe worden lessen gedeeld"
+    }
+  }
 }
 
-Geef alleen de JSON terug, zonder extra tekst.`;
+INSTRUCTIES:
+- Summary: Minimaal 300 woorden, zeer gedetailleerd
+- Recommendations: Minimaal 5-8 aanbevelingen, elk minimaal 2 zinnen
+- SuggestedToolboxTopics: Minimaal 2-3 topics, elk met uitgebreide beschrijving (minimaal 100 woorden per topic)
+- RiskAssessment: Minimaal 250 woorden, zeer gedetailleerd
+- PreventiveMeasures: Minimaal 5-8 maatregelen, elk minimaal 2 zinnen
+- IncidentAnalysis: Vul alle 10 secties van het sjabloon volledig in met gedetailleerde informatie
+
+Geef ALLEEN de JSON terug, zonder extra tekst of markdown formatting.`;
     }
   }
 
@@ -919,8 +1249,8 @@ Geef alleen de JSON terug, zonder extra tekst.`;
   // Bepaal system message op basis van prompt source
   // Voor custom prompts, wees expliciet over de structuur
   const systemMessage = promptSource === 'custom'
-    ? 'Je bent een AI assistent. Volg de instructies in het user bericht PRECIES op. Geef ALTIJD antwoord in geldige JSON formaat met de velden: summary, recommendations, suggestedToolboxTopics, riskAssessment, en preventiveMeasures. Gebruik NIET extracted_fields of andere structuren. Geef ALLEEN de JSON terug, zonder markdown formatting of extra tekst.'
-    : 'Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. Je geeft altijd gestructureerde, praktische adviezen in JSON formaat. Antwoord ALLEEN met geldige JSON, zonder markdown formatting of extra tekst.';
+    ? 'Je bent een AI assistent. Volg de instructies in het user bericht PRECIES op. Geef ALTIJD antwoord in geldige JSON formaat met de velden: summary, recommendations, suggestedToolboxTopics, riskAssessment, en preventiveMeasures. Gebruik NIET extracted_fields of andere structuren. Geef UITGEBREIDE en GEDETAILLEERDE antwoorden. Geef ALLEEN de JSON terug, zonder markdown formatting of extra tekst.'
+    : 'Je bent een expert op het gebied van veiligheid in ondergrondse infrastructuur. Je geeft altijd UITGEBREIDE, GEDETAILLEERDE en gestructureerde, praktische adviezen in JSON formaat. Wees specifiek en concreet in je antwoorden. Geef minimaal 5-8 aanbevelingen en preventieve maatregelen. Geef uitgebreide samenvattingen en risico analyses (minimaal 250-300 woorden). Antwoord ALLEEN met geldige JSON, zonder markdown formatting of extra tekst.';
 
   // Voer AI analyse uit
   let content: string;
@@ -1203,8 +1533,16 @@ export async function generateToolboxContent(
   context?: {
     incidentIds?: string[];
     recommendations?: string[];
+    actions?: Array<{
+      title: string;
+      description: string;
+      priority: string;
+      status: string;
+      actionHolder?: string | null;
+      deadline?: string | null;
+    }>;
   },
-  model: string = 'gpt-4'
+  model: string = 'gpt-4o'
 ): Promise<{
   items: Array<{
     title: string;
@@ -1216,13 +1554,28 @@ export async function generateToolboxContent(
     throw new Error('OpenAI API key is not configured');
   }
 
+  let actionsText = '';
+  if (context?.actions && context.actions.length > 0) {
+    actionsText = `\n\nIncident Acties die moeten worden meegenomen:\n`;
+    context.actions.forEach((action, idx) => {
+      actionsText += `${idx + 1}. ${action.title}: ${action.description}`;
+      if (action.priority) {
+        actionsText += ` (Prioriteit: ${action.priority})`;
+      }
+      if (action.status) {
+        actionsText += ` (Status: ${action.status})`;
+      }
+      actionsText += `\n`;
+    });
+  }
+
   const prompt = `Genereer een toolbox voor het onderwerp: "${topic}"
 
 Beschrijving: ${description}
 
-${context?.recommendations ? `Aanbevelingen: ${context.recommendations.join(', ')}` : ''}
+${context?.recommendations ? `Aanbevelingen: ${context.recommendations.join(', ')}` : ''}${actionsText}
 
-Maak een praktische toolbox met items die nuttig zijn voor professionals die werken met dit onderwerp in de context van ondergrondse infrastructuur.
+Maak een praktische toolbox met items die nuttig zijn voor professionals die werken met dit onderwerp in de context van ondergrondse infrastructuur. Zorg ervoor dat de toolbox items aansluiten bij de aanbevelingen en incident acties.
 
 Geef ALLEEN de JSON terug in dit exacte formaat (zonder extra tekst of markdown):
 {
@@ -1312,7 +1665,7 @@ Geef ALLEEN de JSON terug in dit exacte formaat (zonder extra tekst of markdown)
 export async function suggestActionsFromAnalysis(
   analysis: AIAnalysisResult,
   incident: SafetyIncidentForAnalysis,
-  model: string = 'gpt-4'
+  model: string = 'gpt-4o'
 ): Promise<SuggestedAction[]> {
   if (!openai) {
     throw new Error('OpenAI API key is not configured');

@@ -74,6 +74,12 @@ const navigationItems = [
     icon: Award,
     module: null, // Geen module, altijd zichtbaar
   },
+  {
+    href: '/dashboard/toolboxen',
+    label: 'Toolboxen',
+    icon: FileText,
+    module: null, // Geen module, altijd zichtbaar
+  },
 ];
 
 export function MainNav() {

@@ -131,7 +131,8 @@ export async function POST(req: Request) {
         suggestedToolboxTopics: JSON.stringify(analysis.suggestedToolboxTopics),
         riskAssessment: analysis.riskAssessment,
         preventiveMeasures: JSON.stringify(analysis.preventiveMeasures),
-        model: 'gpt-4',
+        incidentAnalysis: analysis.incidentAnalysis ? JSON.stringify(analysis.incidentAnalysis) : null,
+        model: selectedModel,
         tokensUsed: analysis.tokensUsed || null,
         createdBy: userId,
       });

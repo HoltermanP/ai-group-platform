@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { safeAuth, safeCurrentUser } from '@/lib/auth-wrapper';
 import { db } from "@/lib/db";
-import { safetyIncidentsTable, aiAnalysesTable, userPreferencesTable } from "@/lib/db/schema";
-import { generateToolboxPresentation } from "@/lib/services/powerpoint";
+import { safetyIncidentsTable, aiAnalysesTable, userPreferencesTable, toolboxesTable, incidentActionsTable } from "@/lib/db/schema";
+import { createGammaDeck, generateGammaDeckContent } from "@/lib/services/gamma";
+import { generateToolboxContent } from "@/lib/services/openai";
 import { eq } from "drizzle-orm";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
 import { nanoid } from "nanoid";
 
 export async function POST(
@@ -58,11 +57,15 @@ export async function POST(
 
     const incident = incidents[0];
 
-    // Haal AI analyses op voor dit incident als die beschikbaar zijn
+    // VERPLICHT: Haal AI analyse op - toolbox kan alleen gemaakt worden met een bestaande analyse
     let savedAnalysis = null;
-    if (!aiAnalysis) {
+    
+    // Eerst kijken of er een analyse in de request body zit
+    if (aiAnalysis) {
+      savedAnalysis = aiAnalysis;
+    } else {
+      // Anders haal de laatste analyse uit de database
       try {
-        // Haal analyses direct uit de database
         const allAnalyses = await db.select().from(aiAnalysesTable);
         
         const incidentAnalyses = allAnalyses.filter(analysis => {
@@ -84,12 +87,37 @@ export async function POST(
             recommendations: latestAnalysis.recommendations ? JSON.parse(latestAnalysis.recommendations) : [],
             riskAssessment: latestAnalysis.riskAssessment,
             preventiveMeasures: latestAnalysis.preventiveMeasures ? JSON.parse(latestAnalysis.preventiveMeasures) : [],
+            suggestedToolboxTopics: latestAnalysis.suggestedToolboxTopics ? JSON.parse(latestAnalysis.suggestedToolboxTopics) : [],
           };
         }
       } catch (error) {
         console.error('Error fetching saved analysis:', error);
       }
     }
+
+    // CONTROLE: Als er geen analyse is, geef een foutmelding
+    if (!savedAnalysis) {
+      return NextResponse.json(
+        { error: "Er is geen AI analyse beschikbaar voor dit incident. Voer eerst een AI analyse uit voordat je een toolbox kunt aanmaken." },
+        { status: 400 }
+      );
+    }
+
+    // Haal incident actions op voor dit incident
+    const incidentActions = await db
+      .select()
+      .from(incidentActionsTable)
+      .where(eq(incidentActionsTable.incidentId, incidentId));
+
+    // Format acties voor gebruik in toolbox
+    const formattedActions = incidentActions.map(action => ({
+      title: action.title,
+      description: action.description,
+      priority: action.priority || 'medium',
+      status: action.status || 'open',
+      actionHolder: action.actionHolder,
+      deadline: action.deadline ? action.deadline.toISOString() : null,
+    }));
 
     // Haal user preferences op voor model
     const userPrefs = await db
@@ -100,53 +128,91 @@ export async function POST(
 
     const selectedModel = userPrefs.length > 0 && userPrefs[0].defaultAIModel
       ? userPrefs[0].defaultAIModel
-      : 'gpt-4';
+      : 'gpt-4o';
 
-    // Genereer PowerPoint met alle beschikbare informatie
-    const pptBuffer = await generateToolboxPresentation({
+    // Genereer toolbox items met AI (gebruik analyse data en acties)
+    const toolboxContent = await generateToolboxContent(
       topic,
       description,
-      incidentId: incident.incidentId,
-      incidentTitle: incident.title,
-      recommendations,
-      suggestedItems,
-      model: selectedModel,
-      incident: {
-        title: incident.title,
-        description: incident.description,
-        category: incident.category,
-        severity: incident.severity,
-        discipline: incident.discipline,
-        location: incident.location,
-        impact: incident.impact,
-        mitigation: incident.mitigation,
-        safetyMeasures: incident.safetyMeasures,
-        riskAssessment: incident.riskAssessment,
-        photos: incident.photos,
+      {
+        recommendations: recommendations || savedAnalysis?.recommendations || [],
+        actions: formattedActions,
       },
-      aiAnalysis: aiAnalysis || savedAnalysis,
-    });
+      selectedModel
+    );
 
-    // Sla PPT op in public/uploads/toolboxes/
-    const uploadsDir = join(process.cwd(), 'public', 'uploads', 'toolboxes');
-    await mkdir(uploadsDir, { recursive: true });
+    // Genereer Gamma deck content met AI analyse data en acties
+    const gammaContent = generateGammaDeckContent(
+      topic,
+      description,
+      toolboxContent.items,
+      {
+        title: incident.title,
+        category: incident.category || '',
+        severity: incident.severity || '',
+        description: incident.description || '',
+      },
+      savedAnalysis,
+      formattedActions
+    );
 
-    const fileName = `toolbox-${incident.incidentId}-${Date.now()}-${nanoid(6)}.pptx`;
-    const filePath = join(uploadsDir, fileName);
-    await writeFile(filePath, pptBuffer);
+    // Maak Gamma deck via API
+    let gammaDeck;
+    try {
+      gammaDeck = await createGammaDeck({
+        title: `Toolbox: ${topic}`,
+        description: description,
+        content: gammaContent,
+      });
+    } catch (gammaError) {
+      console.error("Error creating Gamma deck:", gammaError);
+      // Geef een duidelijke foutmelding terug
+      const errorMessage = gammaError instanceof Error 
+        ? gammaError.message 
+        : "Er is een fout opgetreden bij het aanmaken van de Gamma presentatie";
+      
+      return NextResponse.json(
+        { 
+          error: errorMessage,
+          details: process.env.NODE_ENV === 'development' 
+            ? (gammaError instanceof Error ? gammaError.stack : String(gammaError))
+            : undefined
+        },
+        { status: 500 }
+      );
+    }
 
-    const fileUrl = `/uploads/toolboxes/${fileName}`;
+    // Maak toolbox record in database
+    const toolboxId = `TB-${Date.now()}-${nanoid(6)}`;
+    const newToolbox = await db.insert(toolboxesTable).values({
+      toolboxId,
+      title: `Toolbox: ${topic}`,
+      description: description || null,
+      topic,
+      category: incident.category || 'veiligheid',
+      organizationId: incident.organizationId,
+      projectId: incident.projectId,
+      aiGenerated: true,
+      sourceIncidentIds: JSON.stringify([incidentId]),
+      aiAdvice: savedAnalysis ? JSON.stringify(savedAnalysis) : null,
+      items: JSON.stringify(toolboxContent.items),
+      gammaDeckId: gammaDeck.id,
+      gammaDeckUrl: gammaDeck.url,
+      incidentId: incidentId,
+      createdBy: userId,
+    }).returning();
 
-    // Update incident met nieuwe PPT
-    const existingPresentations = incident.toolboxPresentations 
-      ? JSON.parse(incident.toolboxPresentations) 
+    // Update incident met nieuwe toolbox referentie
+    const existingPresentations = incident.toolboxPresentations
+      ? JSON.parse(incident.toolboxPresentations)
       : [];
-    
+
     const newPresentation = {
       id: nanoid(),
       topic,
-      fileName,
-      fileUrl,
+      toolboxId: newToolbox[0].toolboxId,
+      gammaDeckId: gammaDeck.id,
+      fileUrl: gammaDeck.url,
       createdAt: new Date().toISOString(),
     };
 
@@ -163,7 +229,9 @@ export async function POST(
     return NextResponse.json({
       success: true,
       presentation: newPresentation,
-      fileUrl,
+      toolbox: newToolbox[0],
+      gammaDeckUrl: gammaDeck.url,
+      fileUrl: gammaDeck.url,
     });
   } catch (error) {
     console.error("Error generating toolbox presentation:", error);

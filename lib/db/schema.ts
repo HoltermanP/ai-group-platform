@@ -377,6 +377,7 @@ export const aiAnalysesTable = pgTable("ai_analyses", {
   suggestedToolboxTopics: text().notNull(), // JSON array van voorgestelde toolbox onderwerpen
   riskAssessment: text(), // Uitgebreide risico inschatting
   preventiveMeasures: text(), // JSON array van voorkomende maatregelen
+  incidentAnalysis: text(), // JSON object met gestructureerde incidentanalyse volgens sjabloon
   
   // Metadata
   model: varchar({ length: 50 }).default('gpt-4'), // Welk AI model gebruikt
@@ -406,6 +407,13 @@ export const toolboxesTable = pgTable("toolboxes", {
   
   // Toolbox inhoud
   items: text().notNull(), // JSON array van toolbox items
+  
+  // Gamma presentatie koppeling
+  gammaDeckId: varchar({ length: 255 }), // Gamma deck ID
+  gammaDeckUrl: varchar({ length: 500 }), // Gamma deck URL
+  
+  // Incident koppeling (voor toolboxen gemaakt vanuit incidenten)
+  incidentId: integer().references(() => safetyIncidentsTable.id, { onDelete: "set null" }),
   
   // Eigenaar
   createdBy: varchar({ length: 255 }).notNull(), // Clerk User ID

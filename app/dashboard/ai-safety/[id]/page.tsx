@@ -56,6 +56,56 @@ interface SafetyIncident {
   updatedAt: string;
 }
 
+interface IncidentAnalysisTemplate {
+  basisgegevens?: {
+    datumIncident?: string;
+    tijd?: string;
+    locatie?: string;
+    projectWerk?: string;
+    betrokkenOrganisaties?: string;
+    betrokkenPersonen?: string;
+    typeIncident?: string;
+  };
+  feitenrelaas?: string;
+  afwijking?: string;
+  directeOorzaken?: {
+    technisch?: string;
+    organisatorisch?: string;
+    menselijk?: string;
+  };
+  achterliggendeOorzaken?: {
+    beleidAfspraken?: string;
+    ontwerpVoorbereiding?: string;
+    planningTijdsdruk?: string;
+    toezichtControle?: string;
+    opleidingInstructie?: string;
+    cultuurGedrag?: string;
+  };
+  barrieres?: {
+    maatregelen?: string;
+    gefaaldeBarrieres?: string;
+    waaromGefaald?: string;
+  };
+  gevolgen?: {
+    letsel?: string;
+    materieleSchade?: string;
+    verstoringWerkOmgeving?: string;
+    potentiëleErnst?: string;
+  };
+  lessen?: string;
+  maatregelen?: Array<{
+    maatregel: string;
+    type: string;
+    verantwoordelijke: string;
+    deadline: string;
+  }>;
+  borging?: {
+    controleUitvoering?: string;
+    evaluatieEffect?: string;
+    delenLessen?: string;
+  };
+}
+
 interface AIAnalysisResult {
   summary: string;
   recommendations: string[];
@@ -67,6 +117,7 @@ interface AIAnalysisResult {
   }>;
   riskAssessment: string;
   preventiveMeasures: string[];
+  incidentAnalysis?: IncidentAnalysisTemplate;
   extractedFields?: {
     [incidentId: string]: {
       [key: string]: unknown;
@@ -93,6 +144,7 @@ interface SavedAnalysis {
   }>;
   riskAssessment: string | null;
   preventiveMeasures: string[];
+  incidentAnalysis?: IncidentAnalysisTemplate;
   model: string | null;
   tokensUsed: number | null;
   createdAt: string;
@@ -164,6 +216,7 @@ export default function SafetyIncidentDetailPage() {
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<number | null>(null);
   const [editingAction, setEditingAction] = useState<IncidentAction | null>(null);
   const [showEditActionDialog, setShowEditActionDialog] = useState(false);
+  const [showToolboxChoiceDialog, setShowToolboxChoiceDialog] = useState(false);
 
   useEffect(() => {
     const id = Array.isArray(params.id) ? params.id[0] : params.id;
@@ -377,7 +430,15 @@ export default function SafetyIncidentDetailPage() {
   }> => {
     if (!presentationsString) return [];
     try {
-      return JSON.parse(presentationsString);
+      const presentations = JSON.parse(presentationsString);
+      // Backwards compatibility: convert gammaDeckUrl to fileUrl if needed
+      return presentations.map((presentation: any) => ({
+        id: presentation.id || '',
+        topic: presentation.topic || '',
+        fileName: presentation.fileName || presentation.topic || 'Toolbox Presentatie',
+        fileUrl: presentation.fileUrl || presentation.gammaDeckUrl || '',
+        createdAt: presentation.createdAt || '',
+      }));
     } catch {
       return [];
     }
@@ -391,6 +452,20 @@ export default function SafetyIncidentDetailPage() {
   }) => {
     if (!incident) return;
 
+    // Gebruik de laatste opgeslagen analyse als aiAnalysis niet beschikbaar is
+    const analysisToUse = aiAnalysis || (savedAnalyses.length > 0 ? {
+      summary: savedAnalyses[0].summary,
+      recommendations: savedAnalyses[0].recommendations,
+      riskAssessment: savedAnalyses[0].riskAssessment,
+      preventiveMeasures: savedAnalyses[0].preventiveMeasures,
+      suggestedToolboxTopics: savedAnalyses[0].suggestedToolboxTopics,
+    } : null);
+
+    if (!analysisToUse) {
+      alert("Er is geen AI analyse beschikbaar. Voer eerst een AI analyse uit.");
+      return;
+    }
+
     setIsGeneratingPPT(topic.topic);
     try {
       const response = await fetch(`/api/safety-incidents/${incident.id}/toolbox-ppt`, {
@@ -399,14 +474,14 @@ export default function SafetyIncidentDetailPage() {
         body: JSON.stringify({
           topic: topic.topic,
           description: topic.description,
-          recommendations: aiAnalysis?.recommendations || [],
+          recommendations: analysisToUse.recommendations || [],
           suggestedItems: topic.suggestedItems || [],
-          aiAnalysis: aiAnalysis ? {
-            summary: aiAnalysis.summary,
-            recommendations: aiAnalysis.recommendations,
-            riskAssessment: aiAnalysis.riskAssessment,
-            preventiveMeasures: aiAnalysis.preventiveMeasures,
-          } : null,
+          aiAnalysis: {
+            summary: analysisToUse.summary,
+            recommendations: analysisToUse.recommendations || [],
+            riskAssessment: analysisToUse.riskAssessment,
+            preventiveMeasures: analysisToUse.preventiveMeasures || [],
+          },
         }),
       });
 
@@ -416,8 +491,13 @@ export default function SafetyIncidentDetailPage() {
       }
 
       const result = await response.json();
-      alert("Toolbox PowerPoint succesvol gegenereerd en opgeslagen!");
-      
+      alert("Toolbox presentatie succesvol gegenereerd via Gamma.app!");
+
+      // Open de toolbox direct na creatie
+      if (result.fileUrl || result.gammaDeckUrl) {
+        window.open(result.fileUrl || result.gammaDeckUrl, '_blank');
+      }
+
       // Refresh incident data om nieuwe PPTs te tonen
       fetchIncident(incident.id.toString());
     } catch (error) {
@@ -427,6 +507,7 @@ export default function SafetyIncidentDetailPage() {
       setIsGeneratingPPT(null);
     }
   };
+
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "-";
@@ -657,6 +738,7 @@ export default function SafetyIncidentDetailPage() {
           suggestedToolboxTopics: aiAnalysis.suggestedToolboxTopics || [],
           riskAssessment: aiAnalysis.riskAssessment || null,
           preventiveMeasures: aiAnalysis.preventiveMeasures || [],
+          incidentAnalysis: aiAnalysis.incidentAnalysis || null,
           tokensUsed: aiAnalysis.tokensUsed,
         }),
       });
@@ -743,6 +825,20 @@ export default function SafetyIncidentDetailPage() {
                 </div>
                 <p className="text-xs sm:text-sm text-muted-foreground">Incident ID: {incident.incidentId}</p>
               </div>
+              {savedAnalyses.length > 0 && (
+                <Button
+                  onClick={() => setShowToolboxChoiceDialog(true)}
+                  className="flex items-center gap-2 w-full sm:w-auto shrink-0"
+                  size="sm"
+                  variant="outline"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span className="hidden sm:inline">Toolbox Aanmaken</span>
+                  <span className="sm:hidden">Toolbox</span>
+                </Button>
+              )}
               <Button
                 onClick={handleAIAnalysis}
                 disabled={isAnalyzing}
@@ -1038,8 +1134,8 @@ export default function SafetyIncidentDetailPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                         </svg>
-                        <span className="hidden sm:inline">Download PPT</span>
-                        <span className="sm:hidden">Download</span>
+                        <span className="hidden sm:inline">Download PowerPoint</span>
+                        <span className="sm:hidden">Download PPT</span>
                       </a>
                     </div>
                   </div>
@@ -1110,6 +1206,7 @@ export default function SafetyIncidentDetailPage() {
                             suggestedToolboxTopics: analysis.suggestedToolboxTopics,
                             riskAssessment: analysis.riskAssessment || "",
                             preventiveMeasures: analysis.preventiveMeasures,
+                            incidentAnalysis: analysis.incidentAnalysis,
                           });
                           setIsViewingSavedAnalysis(true);
                           setShowAnalysisDialog(true);
@@ -1455,6 +1552,283 @@ export default function SafetyIncidentDetailPage() {
                           </li>
                         ))}
                       </ul>
+                    </div>
+                  )}
+
+                  {/* Incidentanalyse Sjabloon */}
+                  {aiAnalysis.incidentAnalysis && (
+                    <div className="bg-card border-2 border-primary/20 rounded-lg p-6 shadow-sm">
+                      <div className="flex items-center gap-2 mb-6">
+                        <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <h3 className="text-xl font-bold text-foreground">Incidentanalyse</h3>
+                      </div>
+
+                      <div className="space-y-6">
+                        {/* 1. Basisgegevens */}
+                        {aiAnalysis.incidentAnalysis.basisgegevens && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">1. Basisgegevens</h4>
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              {aiAnalysis.incidentAnalysis.basisgegevens.datumIncident && (
+                                <div>
+                                  <p className="text-sm text-muted-foreground mb-1">Datum incident</p>
+                                  <p className="text-foreground font-medium">{aiAnalysis.incidentAnalysis.basisgegevens.datumIncident}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.basisgegevens.tijd && (
+                                <div>
+                                  <p className="text-sm text-muted-foreground mb-1">Tijd</p>
+                                  <p className="text-foreground font-medium">{aiAnalysis.incidentAnalysis.basisgegevens.tijd}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.basisgegevens.locatie && (
+                                <div>
+                                  <p className="text-sm text-muted-foreground mb-1">Locatie</p>
+                                  <p className="text-foreground font-medium">{aiAnalysis.incidentAnalysis.basisgegevens.locatie}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.basisgegevens.projectWerk && (
+                                <div>
+                                  <p className="text-sm text-muted-foreground mb-1">Project / werk</p>
+                                  <p className="text-foreground font-medium">{aiAnalysis.incidentAnalysis.basisgegevens.projectWerk}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.basisgegevens.betrokkenOrganisaties && (
+                                <div>
+                                  <p className="text-sm text-muted-foreground mb-1">Betrokken organisatie(s)</p>
+                                  <p className="text-foreground font-medium">{aiAnalysis.incidentAnalysis.basisgegevens.betrokkenOrganisaties}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.basisgegevens.betrokkenPersonen && (
+                                <div>
+                                  <p className="text-sm text-muted-foreground mb-1">Betrokken personen (functie, geen namen)</p>
+                                  <p className="text-foreground font-medium">{aiAnalysis.incidentAnalysis.basisgegevens.betrokkenPersonen}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.basisgegevens.typeIncident && (
+                                <div>
+                                  <p className="text-sm text-muted-foreground mb-1">Type incident</p>
+                                  <p className="text-foreground font-medium">{aiAnalysis.incidentAnalysis.basisgegevens.typeIncident}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 2. Feitenrelaas */}
+                        {aiAnalysis.incidentAnalysis.feitenrelaas && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">2. Feitenrelaas</h4>
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.feitenrelaas}</p>
+                          </div>
+                        )}
+
+                        {/* 3. Afwijking */}
+                        {aiAnalysis.incidentAnalysis.afwijking && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">3. Afwijking</h4>
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.afwijking}</p>
+                          </div>
+                        )}
+
+                        {/* 4. Directe oorzaken */}
+                        {aiAnalysis.incidentAnalysis.directeOorzaken && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">4. Directe oorzaken</h4>
+                            <div className="space-y-4">
+                              {aiAnalysis.incidentAnalysis.directeOorzaken.technisch && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Technisch:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.directeOorzaken.technisch}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.directeOorzaken.organisatorisch && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Organisatorisch:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.directeOorzaken.organisatorisch}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.directeOorzaken.menselijk && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Menselijk:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.directeOorzaken.menselijk}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 5. Achterliggende oorzaken */}
+                        {aiAnalysis.incidentAnalysis.achterliggendeOorzaken && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">5. Achterliggende oorzaken</h4>
+                            <div className="space-y-4">
+                              {aiAnalysis.incidentAnalysis.achterliggendeOorzaken.beleidAfspraken && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Beleid / afspraken:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.achterliggendeOorzaken.beleidAfspraken}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.achterliggendeOorzaken.ontwerpVoorbereiding && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Ontwerp / voorbereiding:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.achterliggendeOorzaken.ontwerpVoorbereiding}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.achterliggendeOorzaken.planningTijdsdruk && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Planning / tijdsdruk:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.achterliggendeOorzaken.planningTijdsdruk}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.achterliggendeOorzaken.toezichtControle && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Toezicht / controle:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.achterliggendeOorzaken.toezichtControle}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.achterliggendeOorzaken.opleidingInstructie && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Opleiding / instructie:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.achterliggendeOorzaken.opleidingInstructie}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.achterliggendeOorzaken.cultuurGedrag && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Cultuur / gedrag:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.achterliggendeOorzaken.cultuurGedrag}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 6. Barrières */}
+                        {aiAnalysis.incidentAnalysis.barrieres && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">6. Barrières</h4>
+                            <div className="space-y-4">
+                              {aiAnalysis.incidentAnalysis.barrieres.maatregelen && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Welke maatregelen hadden het incident moeten voorkomen:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.barrieres.maatregelen}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.barrieres.gefaaldeBarrieres && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Welke barrières faalden:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.barrieres.gefaaldeBarrieres}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.barrieres.waaromGefaald && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Waarom faalden deze barrières:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.barrieres.waaromGefaald}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 7. Gevolgen */}
+                        {aiAnalysis.incidentAnalysis.gevolgen && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">7. Gevolgen</h4>
+                            <div className="space-y-4">
+                              {aiAnalysis.incidentAnalysis.gevolgen.letsel && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Letsel:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.gevolgen.letsel}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.gevolgen.materieleSchade && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Materiële schade:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.gevolgen.materieleSchade}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.gevolgen.verstoringWerkOmgeving && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Verstoring werk / omgeving:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.gevolgen.verstoringWerkOmgeving}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.gevolgen.potentiëleErnst && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Potentiële ernst bij andere afloop:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.gevolgen.potentiëleErnst}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 8. Lessen */}
+                        {aiAnalysis.incidentAnalysis.lessen && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">8. Lessen</h4>
+                            <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.lessen}</p>
+                          </div>
+                        )}
+
+                        {/* 9. Maatregelen */}
+                        {aiAnalysis.incidentAnalysis.maatregelen && aiAnalysis.incidentAnalysis.maatregelen.length > 0 && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">9. Maatregelen</h4>
+                            <div className="overflow-x-auto">
+                              <table className="w-full border-collapse">
+                                <thead>
+                                  <tr className="border-b border-border">
+                                    <th className="text-left p-3 text-sm font-semibold text-foreground">Maatregel</th>
+                                    <th className="text-left p-3 text-sm font-semibold text-foreground">Type</th>
+                                    <th className="text-left p-3 text-sm font-semibold text-foreground">Verantwoordelijke</th>
+                                    <th className="text-left p-3 text-sm font-semibold text-foreground">Deadline</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {aiAnalysis.incidentAnalysis.maatregelen.map((maatregel, index) => (
+                                    <tr key={index} className="border-b border-border/50">
+                                      <td className="p-3 text-sm text-foreground">{maatregel.maatregel}</td>
+                                      <td className="p-3 text-sm text-foreground">{maatregel.type}</td>
+                                      <td className="p-3 text-sm text-foreground">{maatregel.verantwoordelijke}</td>
+                                      <td className="p-3 text-sm text-foreground">{maatregel.deadline}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 10. Borging */}
+                        {aiAnalysis.incidentAnalysis.borging && (
+                          <div className="bg-muted/30 rounded-lg p-5 border border-border">
+                            <h4 className="text-lg font-semibold text-foreground mb-4">10. Borging</h4>
+                            <div className="space-y-4">
+                              {aiAnalysis.incidentAnalysis.borging.controleUitvoering && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Hoe wordt gecontroleerd dat maatregelen zijn uitgevoerd:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.borging.controleUitvoering}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.borging.evaluatieEffect && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Hoe en wanneer wordt effect geëvalueerd:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.borging.evaluatieEffect}</p>
+                                </div>
+                              )}
+                              {aiAnalysis.incidentAnalysis.borging.delenLessen && (
+                                <div>
+                                  <p className="text-sm font-semibold text-muted-foreground mb-2">Hoe worden lessen gedeeld:</p>
+                                  <p className="text-foreground whitespace-pre-wrap leading-relaxed">{aiAnalysis.incidentAnalysis.borging.delenLessen}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -1892,6 +2266,170 @@ export default function SafetyIncidentDetailPage() {
                   disabled={!editingAction || !editingAction.title || !editingAction.description}
                 >
                   Wijzigingen Opslaan
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Toolbox Choice Dialog */}
+          <Dialog open={showToolboxChoiceDialog} onOpenChange={setShowToolboxChoiceDialog}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Toolbox Aanmaken</DialogTitle>
+                <DialogDescription>
+                  Maak een toolbox presentatie via Gamma.app op basis van de AI analyse van dit incident.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                {savedAnalyses.length === 0 ? (
+                  <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-5 h-5 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <h4 className="font-medium text-yellow-900 dark:text-yellow-100">Geen AI Analyse Beschikbaar</h4>
+                    </div>
+                    <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-3">
+                      Er is nog geen AI analyse uitgevoerd voor dit incident. Voer eerst een AI analyse uit voordat je een toolbox kunt aanmaken.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setShowToolboxChoiceDialog(false);
+                        handleAIAnalysis();
+                      }}
+                      disabled={isAnalyzing}
+                      className="w-full"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Analyseren...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
+                          AI Analyse Uitvoeren
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {/* Toolboxen op basis van AI analyse */}
+                    {aiAnalysis?.suggestedToolboxTopics && aiAnalysis.suggestedToolboxTopics.length > 0 ? (
+                      <div className="space-y-3">
+                        <h3 className="font-semibold text-foreground text-base mb-3">Voorgestelde Toolbox Onderwerpen</h3>
+                        {aiAnalysis.suggestedToolboxTopics.map((topic, index) => (
+                          <div key={index} className="bg-card border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-semibold text-foreground mb-1">{topic.topic}</h4>
+                                <p className="text-sm text-muted-foreground mb-2">{topic.description}</p>
+                                <span className={`inline-flex px-2 py-1 rounded text-xs font-medium ${
+                                  topic.priority === 'high' ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200' :
+                                  topic.priority === 'medium' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200' :
+                                  'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                                }`}>
+                                  Prioriteit: {topic.priority === 'high' ? 'Hoog' : topic.priority === 'medium' ? 'Gemiddeld' : 'Laag'}
+                                </span>
+                              </div>
+                              <Button
+                                onClick={() => handleGenerateToolboxPPT(topic)}
+                                disabled={isGeneratingPPT === topic.topic}
+                                className="ml-4 shrink-0"
+                              >
+                                {isGeneratingPPT === topic.topic ? (
+                                  <>
+                                    <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Genereren...
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    Maak Toolbox
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <p className="text-sm text-blue-800 dark:text-blue-200 mb-3">
+                          Er zijn geen specifieke toolbox onderwerpen voorgesteld in de AI analyse. Je kunt een algemene toolbox maken op basis van de analyse.
+                        </p>
+                        <Button
+                          onClick={() => {
+                            if (savedAnalyses.length > 0) {
+                              const analysisToUse = savedAnalyses[0];
+                              handleGenerateToolboxPPT({
+                                topic: `Algemene Toolbox: ${incident?.title || 'Veiligheidsincident'}`,
+                                description: `Een algemene toolbox gebaseerd op de AI analyse van dit incident. Deze toolbox bevat aanbevelingen, risico inschattingen en preventieve maatregelen.`,
+                                priority: 'medium',
+                              });
+                              setShowToolboxChoiceDialog(false);
+                            }
+                          }}
+                          disabled={isGeneratingPPT !== null || savedAnalyses.length === 0}
+                          className="w-full"
+                        >
+                          {isGeneratingPPT ? (
+                            <>
+                              <svg className="animate-spin h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                              </svg>
+                              Toolbox aanmaken...
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              Algemene Toolbox Aanmaken
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Info over bestaande toolboxen */}
+                {toolboxPresentations.length > 0 && (
+                  <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <h4 className="font-medium text-blue-900 dark:text-blue-100">Bestaande Toolboxen</h4>
+                    </div>
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      Er {toolboxPresentations.length === 1 ? 'is' : 'zijn'} al {toolboxPresentations.length} toolbox{toolboxPresentations.length === 1 ? '' : 'en'} aangemaakt voor dit incident.
+                      Nieuwe toolboxen worden aan deze lijst toegevoegd.
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowToolboxChoiceDialog(false)}
+                >
+                  Annuleren
                 </Button>
               </DialogFooter>
             </DialogContent>

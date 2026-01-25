@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { toolboxesTable, userPreferencesTable } from "@/lib/db/schema";
 import { getUserOrganizationIds } from "@/lib/clerk-admin";
 import { generateToolboxContent } from "@/lib/services/openai";
+import { createGammaDeck, generateGammaDeckContent } from "@/lib/services/gamma";
 import { eq, desc, or, isNull, inArray, and } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
 
         const selectedModel = userPrefs.length > 0 && userPrefs[0].defaultAIModel
           ? userPrefs[0].defaultAIModel
-          : 'gpt-4';
+          : 'gpt-4o';
 
         const generated = await generateToolboxContent(topic, description || '', {
           incidentIds: sourceIncidentIds,
@@ -97,6 +98,46 @@ export async function POST(req: Request) {
       items: JSON.stringify(items),
       createdBy: userId,
     }).returning();
+
+    // Maak Gamma presentatie aan voor deze toolbox
+    try {
+      // Genereer Gamma deck content
+      const gammaContent = generateGammaDeckContent(
+        topic,
+        description || '',
+        items.map((item: any) => ({
+          title: typeof item === 'string' ? item : (item.title || item),
+          description: typeof item === 'string' ? item : (item.description || item.title || item),
+          category: category,
+        })),
+        undefined, // Geen incident info
+        undefined  // Geen AI analyse
+      );
+
+      // Maak Gamma deck via API
+      const gammaDeck = await createGammaDeck({
+        title: title,
+        description: description || '',
+        content: gammaContent,
+      });
+
+      // Update toolbox met Gamma deck info
+      await db
+        .update(toolboxesTable)
+        .set({
+          gammaDeckId: gammaDeck.id,
+          gammaDeckUrl: gammaDeck.url,
+        })
+        .where(eq(toolboxesTable.id, newToolbox[0].id));
+
+      // Voeg Gamma info toe aan response
+      newToolbox[0].gammaDeckId = gammaDeck.id;
+      newToolbox[0].gammaDeckUrl = gammaDeck.url;
+    } catch (gammaError) {
+      console.error("Error creating Gamma deck for toolbox:", gammaError);
+      // Toolbox is al aangemaakt, maar zonder Gamma presentatie
+      // Dit is geen fatale fout - de toolbox bestaat nog steeds
+    }
 
     return NextResponse.json(newToolbox[0], { status: 201 });
   } catch (error) {

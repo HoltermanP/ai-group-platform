@@ -54,6 +54,7 @@ export async function GET(
           suggestedToolboxTopics: analysis.suggestedToolboxTopics ? JSON.parse(analysis.suggestedToolboxTopics) : [],
           riskAssessment: analysis.riskAssessment,
           preventiveMeasures: analysis.preventiveMeasures ? JSON.parse(analysis.preventiveMeasures) : [],
+          incidentAnalysis: analysis.incidentAnalysis ? JSON.parse(analysis.incidentAnalysis) : undefined,
           model: analysis.model,
           tokensUsed: analysis.tokensUsed,
           createdAt: analysis.createdAt,

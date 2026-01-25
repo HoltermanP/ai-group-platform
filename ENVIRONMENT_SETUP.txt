@@ -54,7 +54,13 @@ TWILIO_AUTH_TOKEN=your-twilio-auth-token
 TWILIO_WHATSAPP_NUMBER=+14155238886
 
 # =================================================================
-# 6. APP URL (Optioneel - voor notificatie links)
+# 6. GAMMA.APP API KEY (Voor toolbox presentaties)
+# =================================================================
+# Haal op van: https://gamma.app (Account instellingen)
+GAMMA_API_KEY=sk-gamma-your-gamma-api-key-here
+
+# =================================================================
+# 7. APP URL (Optioneel - voor notificatie links)
 # =================================================================
 # Voor productie gebruik (automatisch gedetecteerd op Vercel):
 NEXT_PUBLIC_APP_URL=https://your-app.vercel.app
